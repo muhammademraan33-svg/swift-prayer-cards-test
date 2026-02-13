@@ -1,34 +1,21 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { Layers, Sparkles, Frame, Image } from "lucide-react";
+import metalPrintImg from "@/assets/metal-print.jpg";
+import acrylicPrintImg from "@/assets/acrylic-print.jpg";
 
 const products = [
   {
-    icon: Layers,
+    image: metalPrintImg,
     title: "Metal Prints",
     description:
-      "HD photographs printed directly on aluminum. Available in .040\" and .080\" thickness, single or double-sided. Sizes from 8\"×10\" to 48\"×96\".",
-    highlight: "Starting at $26",
+      'HD photographs printed directly on aluminum. Available in .040" and .080" thickness, single or double-sided. Sizes from 8"×10" to 48"×96".',
+    highlight: "Starting at $12",
   },
   {
-    icon: Sparkles,
+    image: acrylicPrintImg,
     title: "Acrylic Prints",
     description:
       "Vibrant, museum-quality acrylic prints with stunning depth and clarity. Available with stand-off mounting hardware in silver or black.",
-    highlight: "Starting at $43",
-  },
-  {
-    icon: Frame,
-    title: "Stand-Off Mounting",
-    description:
-      "Float your prints off the wall with premium silver or black stand-off hardware. Creates a modern, gallery-style presentation.",
-    highlight: "From $2.50 per stand-off",
-  },
-  {
-    icon: Image,
-    title: "Custom Sizes",
-    description:
-      "Any size from 8\"×10\" up to 48\"×96\". Rounded corner options available. Perfect for commercial, residential, and gallery installations.",
-    highlight: "48–72 hour delivery",
+    highlight: "Starting at $20",
   },
 ];
 
@@ -49,17 +36,22 @@ const ProductsSection = () => {
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid md:grid-cols-2 gap-8">
           {products.map((p) => (
             <Card
               key={p.title}
-              className="bg-card border-border hover:border-primary/40 transition-colors group"
+              className="bg-card border-border hover:border-primary/40 transition-colors group overflow-hidden"
             >
+              <div className="aspect-[4/3] overflow-hidden">
+                <img
+                  src={p.image}
+                  alt={p.title}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  loading="lazy"
+                />
+              </div>
               <CardContent className="p-8 text-center">
-                <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-primary/10 mb-6 group-hover:bg-primary/20 transition-colors">
-                  <p.icon className="w-6 h-6 text-primary" />
-                </div>
-                <h3 className="text-xl font-display font-semibold text-foreground mb-3">
+                <h3 className="text-2xl font-display font-semibold text-foreground mb-3">
                   {p.title}
                 </h3>
                 <p className="text-sm text-muted-foreground font-body leading-relaxed mb-4">

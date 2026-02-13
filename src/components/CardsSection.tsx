@@ -1,6 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { cardPricing } from "@/lib/pricing";
 import { Heart, Briefcase, Mail, BookOpen } from "lucide-react";
+import metalCardsImg from "@/assets/metal-cards.jpg";
 
 const cards = [
   {
@@ -54,6 +55,11 @@ const CardsSection = () => {
             From eternity cards to business cards — precision-cut metal cards that
             leave a lasting impression.
           </p>
+        </div>
+
+        {/* Featured image */}
+        <div className="mb-12 rounded overflow-hidden max-w-3xl mx-auto">
+          <img src={metalCardsImg} alt="Premium metal cards collection" className="w-full h-auto" loading="lazy" />
         </div>
 
         <div className="grid md:grid-cols-2 gap-8">

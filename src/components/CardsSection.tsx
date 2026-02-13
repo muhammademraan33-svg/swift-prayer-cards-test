@@ -8,11 +8,8 @@ const cards = [
     title: "Eternity Cards",
     description: "Beautifully crafted metal keepsake cards for memorials and celebrations of life.",
     pricing: cardPricing.eternityCard,
-    packs: ["1 card", "10 pack", "25 pack", "55 pack"],
+    packs: ["55 pack"],
     prices: [
-      cardPricing.eternityCard.single,
-      cardPricing.eternityCard.pack10,
-      cardPricing.eternityCard.pack25,
       cardPricing.eternityCard.pack55,
     ],
   },

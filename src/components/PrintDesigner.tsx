@@ -1,9 +1,8 @@
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Slider } from "@/components/ui/slider";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Select,
   SelectContent,
@@ -18,711 +17,291 @@ import {
   getShippingCost,
   addOns,
   standardSizes,
+  cardPricing,
 } from "@/lib/pricing";
-import {
-  ImagePlus,
-  Type,
-  Move,
-  ZoomIn,
-  ZoomOut,
-  RotateCcw,
-  Trash2,
-  Bold,
-  Italic,
-  AlignLeft,
-  AlignCenter,
-  AlignRight,
-  Layers,
-  ChevronUp,
-  ChevronDown,
-  Download,
-} from "lucide-react";
+import { ArrowRight, ArrowLeft, Upload, CheckCircle2, ImagePlus, Layers, Sparkles, Heart } from "lucide-react";
 
-interface DesignElement {
-  id: string;
-  type: "image" | "text";
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  rotation: number;
-  content: string; // src for image, text for text
-  fontSize?: number;
-  fontWeight?: string;
-  fontStyle?: string;
-  textAlign?: string;
-  color?: string;
-}
+type ProductType = "metal" | "acrylic" | "cards";
 
-const CANVAS_DISPLAY_W = 600;
+const STEPS = ["Product", "Options", "Upload", "Review"];
 
 const PrintDesigner = () => {
-  const [material, setMaterial] = useState<"metal" | "acrylic">("metal");
+  const [step, setStep] = useState(0);
+  const [product, setProduct] = useState<ProductType | null>(null);
   const [metalIdx, setMetalIdx] = useState(0);
   const [sizeIdx, setSizeIdx] = useState(2);
   const [orientation, setOrientation] = useState<"portrait" | "landscape">("portrait");
   const [roundedCorners, setRoundedCorners] = useState(false);
   const [standOff, setStandOff] = useState<"none" | "silver" | "black">("none");
   const [standOffQty, setStandOffQty] = useState(4);
-  const [zoom, setZoom] = useState(100);
-
-  const [elements, setElements] = useState<DesignElement[]>([]);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [dragging, setDragging] = useState<{ id: string; startX: number; startY: number; elX: number; elY: number } | null>(null);
-  const [activeTab, setActiveTab] = useState<"design" | "settings">("design");
-
-  const canvasRef = useRef<HTMLDivElement>(null);
+  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+  const [fileName, setFileName] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const size = standardSizes[sizeIdx];
   const w = orientation === "portrait" ? size.w : size.h;
   const h = orientation === "portrait" ? size.h : size.w;
-  const aspectRatio = w / h;
 
-  // Canvas display dimensions
-  const canvasW = CANVAS_DISPLAY_W * (zoom / 100);
-  const canvasH = canvasW / aspectRatio;
+  const getPrice = () => {
+    if (product === "cards") return cardPricing.eternityCard.pack55;
+    if (product === "metal") return calcMetalPrice(size.w, size.h, metalOptions[metalIdx]);
+    return calcAcrylicPrice(size.w, size.h);
+  };
 
-  const printPrice =
-    material === "metal"
-      ? calcMetalPrice(size.w, size.h, metalOptions[metalIdx])
-      : calcAcrylicPrice(size.w, size.h);
-  const shipping = getShippingCost(size.w, size.h);
-  let addOnTotal = 0;
-  if (roundedCorners) addOnTotal += addOns.roundedCorners;
-  if (material === "acrylic" && standOff === "silver") addOnTotal += addOns.standOffSilver * standOffQty;
-  if (material === "acrylic" && standOff === "black") addOnTotal += addOns.standOffBlack * standOffQty;
-  const total = printPrice + shipping.cost + addOnTotal;
+  const getShipping = () => {
+    if (product === "cards") return { cost: 10, label: "Standard", note: undefined };
+    return getShippingCost(size.w, size.h);
+  };
 
-  const selectedElement = elements.find((e) => e.id === selectedId) || null;
+  const getAddOns = () => {
+    let total = 0;
+    if (product !== "cards" && roundedCorners) total += addOns.roundedCorners;
+    if (product === "acrylic" && standOff === "silver") total += addOns.standOffSilver * standOffQty;
+    if (product === "acrylic" && standOff === "black") total += addOns.standOffBlack * standOffQty;
+    return total;
+  };
 
-  const addImage = useCallback((file: File) => {
+  const price = getPrice();
+  const shipping = getShipping();
+  const addOnTotal = getAddOns();
+  const total = price + shipping.cost + addOnTotal;
+
+  const canProceed = () => {
+    if (step === 0) return product !== null;
+    if (step === 1) return true;
+    if (step === 2) return uploadedImage !== null;
+    return true;
+  };
+
+  const handleFileUpload = (file: File) => {
+    setFileName(file.name);
     const reader = new FileReader();
-    reader.onload = (ev) => {
-      const img = new Image();
-      img.onload = () => {
-        const scale = Math.min(80 / img.width, 80 / img.height, 1);
-        const newEl: DesignElement = {
-          id: crypto.randomUUID(),
-          type: "image",
-          x: 10,
-          y: 10,
-          width: (img.width * scale),
-          height: (img.height * scale),
-          rotation: 0,
-          content: ev.target?.result as string,
-        };
-        setElements((prev) => [...prev, newEl]);
-        setSelectedId(newEl.id);
-      };
-      img.src = ev.target?.result as string;
-    };
+    reader.onload = (e) => setUploadedImage(e.target?.result as string);
     reader.readAsDataURL(file);
-  }, []);
-
-  const addText = useCallback(() => {
-    const newEl: DesignElement = {
-      id: crypto.randomUUID(),
-      type: "text",
-      x: 20,
-      y: 20,
-      width: 60,
-      height: 10,
-      rotation: 0,
-      content: "Your text here",
-      fontSize: 24,
-      fontWeight: "normal",
-      fontStyle: "normal",
-      textAlign: "center",
-      color: "#ffffff",
-    };
-    setElements((prev) => [...prev, newEl]);
-    setSelectedId(newEl.id);
-  }, []);
-
-  const updateElement = useCallback((id: string, updates: Partial<DesignElement>) => {
-    setElements((prev) => prev.map((el) => (el.id === id ? { ...el, ...updates } : el)));
-  }, []);
-
-  const deleteElement = useCallback((id: string) => {
-    setElements((prev) => prev.filter((el) => el.id !== id));
-    if (selectedId === id) setSelectedId(null);
-  }, [selectedId]);
-
-  const moveLayer = useCallback((id: string, direction: "up" | "down") => {
-    setElements((prev) => {
-      const idx = prev.findIndex((el) => el.id === id);
-      if (idx === -1) return prev;
-      const newArr = [...prev];
-      const swapIdx = direction === "up" ? idx + 1 : idx - 1;
-      if (swapIdx < 0 || swapIdx >= newArr.length) return prev;
-      [newArr[idx], newArr[swapIdx]] = [newArr[swapIdx], newArr[idx]];
-      return newArr;
-    });
-  }, []);
-
-  // Mouse drag handling
-  const handleMouseDown = useCallback((e: React.MouseEvent, id: string) => {
-    e.stopPropagation();
-    setSelectedId(id);
-    const el = elements.find((el) => el.id === id);
-    if (!el) return;
-    setDragging({ id, startX: e.clientX, startY: e.clientY, elX: el.x, elY: el.y });
-  }, [elements]);
-
-  useEffect(() => {
-    if (!dragging) return;
-    const handleMove = (e: MouseEvent) => {
-      const dx = ((e.clientX - dragging.startX) / canvasW) * 100;
-      const dy = ((e.clientY - dragging.startY) / canvasH) * 100;
-      updateElement(dragging.id, { x: dragging.elX + dx, y: dragging.elY + dy });
-    };
-    const handleUp = () => setDragging(null);
-    window.addEventListener("mousemove", handleMove);
-    window.addEventListener("mouseup", handleUp);
-    return () => {
-      window.removeEventListener("mousemove", handleMove);
-      window.removeEventListener("mouseup", handleUp);
-    };
-  }, [dragging, canvasW, canvasH, updateElement]);
-
-  const materialLabel = material === "metal" ? metalOptions[metalIdx].label : "Acrylic";
+  };
 
   return (
     <section id="designer" className="py-24 px-6">
-      <div className="max-w-[1400px] mx-auto">
+      <div className="max-w-3xl mx-auto">
         <div className="text-center mb-12">
           <span className="text-sm tracking-[0.3em] uppercase text-primary font-body">
             Design Studio
           </span>
           <h2 className="text-4xl md:text-5xl font-display font-bold mt-3 text-foreground">
-            Create Your Print
+            Start Designing
           </h2>
-          <p className="text-muted-foreground font-body mt-4 max-w-xl mx-auto">
-            Upload images, add text, and preview your custom print before ordering.
-          </p>
         </div>
 
-        <div className="flex flex-col lg:flex-row gap-4 min-h-[700px]">
-          {/* Left toolbar */}
-          <div className="lg:w-16 flex lg:flex-col gap-2 bg-card border border-border rounded-lg p-2">
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="w-12 h-12 rounded-lg flex items-center justify-center hover:bg-primary/10 transition-colors text-muted-foreground hover:text-primary"
-              title="Add Image"
-            >
-              <ImagePlus className="w-5 h-5" />
-            </button>
-            <button
-              onClick={addText}
-              className="w-12 h-12 rounded-lg flex items-center justify-center hover:bg-primary/10 transition-colors text-muted-foreground hover:text-primary"
-              title="Add Text"
-            >
-              <Type className="w-5 h-5" />
-            </button>
-            <div className="border-t border-border lg:border-t lg:border-l-0 my-1" />
-            <button
-              onClick={() => setZoom((z) => Math.min(z + 10, 150))}
-              className="w-12 h-12 rounded-lg flex items-center justify-center hover:bg-primary/10 transition-colors text-muted-foreground hover:text-primary"
-              title="Zoom In"
-            >
-              <ZoomIn className="w-5 h-5" />
-            </button>
-            <button
-              onClick={() => setZoom((z) => Math.max(z - 10, 50))}
-              className="w-12 h-12 rounded-lg flex items-center justify-center hover:bg-primary/10 transition-colors text-muted-foreground hover:text-primary"
-              title="Zoom Out"
-            >
-              <ZoomOut className="w-5 h-5" />
-            </button>
-            <button
-              onClick={() => { setZoom(100); }}
-              className="w-12 h-12 rounded-lg flex items-center justify-center hover:bg-primary/10 transition-colors text-muted-foreground hover:text-primary"
-              title="Reset View"
-            >
-              <RotateCcw className="w-4 h-4" />
-            </button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) addImage(file);
-                e.target.value = "";
-              }}
-            />
-          </div>
-
-          {/* Canvas area */}
-          <div className="flex-1 bg-[hsl(220,10%,6%)] rounded-lg border border-border overflow-auto flex items-center justify-center p-8 min-h-[500px]">
-            <div className="relative" style={{ width: canvasW, height: canvasH }}>
-              {/* Print surface */}
-              <div
-                ref={canvasRef}
-                className={`absolute inset-0 overflow-hidden cursor-crosshair ${
-                  roundedCorners ? "rounded-xl" : ""
-                } ${
-                  material === "metal"
-                    ? "bg-gradient-to-br from-[hsl(220,8%,50%)] via-[hsl(220,6%,62%)] to-[hsl(220,8%,48%)]"
-                    : "bg-gradient-to-br from-[hsl(200,15%,85%)] via-[hsl(200,20%,92%)] to-[hsl(200,15%,80%)]"
+        {/* Progress steps */}
+        <div className="flex items-center justify-center gap-2 mb-12">
+          {STEPS.map((label, i) => (
+            <div key={label} className="flex items-center gap-2">
+              <button
+                onClick={() => i < step && setStep(i)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-body font-medium transition-all ${
+                  i === step
+                    ? "bg-primary text-primary-foreground"
+                    : i < step
+                    ? "bg-primary/20 text-primary cursor-pointer hover:bg-primary/30"
+                    : "bg-secondary text-muted-foreground"
                 }`}
-                style={{
-                  boxShadow: material === "acrylic" && standOff !== "none"
-                    ? "8px 8px 24px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.05)"
-                    : "4px 4px 12px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.05)",
-                }}
-                onClick={() => setSelectedId(null)}
               >
-                {/* Brushed metal texture overlay */}
-                {material === "metal" && (
-                  <div className="absolute inset-0 opacity-30 pointer-events-none" style={{
-                    backgroundImage: `repeating-linear-gradient(
-                      90deg, transparent, transparent 1px, rgba(255,255,255,0.03) 1px, rgba(255,255,255,0.03) 2px
-                    )`
-                  }} />
+                {i < step ? (
+                  <CheckCircle2 className="w-4 h-4" />
+                ) : (
+                  <span className="w-5 h-5 rounded-full border border-current flex items-center justify-center text-xs">
+                    {i + 1}
+                  </span>
                 )}
+                <span className="hidden sm:inline">{label}</span>
+              </button>
+              {i < STEPS.length - 1 && (
+                <div className={`w-8 h-px ${i < step ? "bg-primary" : "bg-border"}`} />
+              )}
+            </div>
+          ))}
+        </div>
 
-                {/* Acrylic gloss overlay */}
-                {material === "acrylic" && (
-                  <div className="absolute inset-0 pointer-events-none" style={{
-                    background: "linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 50%, rgba(255,255,255,0.05) 100%)"
-                  }} />
-                )}
+        {/* Step content */}
+        <div className="bg-card border border-border rounded-xl p-8 md:p-12">
 
-                {/* Design elements */}
-                {elements.map((el) => (
-                  <div
-                    key={el.id}
-                    className={`absolute cursor-move select-none ${
-                      selectedId === el.id
-                        ? "ring-2 ring-primary ring-offset-1 ring-offset-transparent"
-                        : "hover:ring-1 hover:ring-primary/50"
+          {/* Step 1: Choose product */}
+          {step === 0 && (
+            <div className="space-y-6">
+              <h3 className="text-2xl font-display font-semibold text-foreground text-center mb-8">
+                What would you like to create?
+              </h3>
+              <div className="grid md:grid-cols-3 gap-4">
+                {([
+                  { type: "metal" as ProductType, icon: Layers, title: "Metal Print", desc: "HD prints on brushed aluminum in .040\" or .080\" thickness" },
+                  { type: "acrylic" as ProductType, icon: Sparkles, title: "Acrylic Print", desc: "Vibrant prints on crystal-clear acrylic with optional stand-offs" },
+                  { type: "cards" as ProductType, icon: Heart, title: "Eternity Cards", desc: "Premium metal keepsake cards — sets of 55" },
+                ]).map((p) => (
+                  <button
+                    key={p.type}
+                    onClick={() => setProduct(p.type)}
+                    className={`group relative p-6 rounded-xl border-2 text-left transition-all ${
+                      product === p.type
+                        ? "border-primary bg-primary/5 shadow-lg shadow-primary/10"
+                        : "border-border hover:border-primary/40 bg-secondary/30"
                     }`}
-                    style={{
-                      left: `${el.x}%`,
-                      top: `${el.y}%`,
-                      width: `${el.width}%`,
-                      height: el.type === "text" ? "auto" : `${el.height}%`,
-                      transform: `rotate(${el.rotation}deg)`,
-                      zIndex: selectedId === el.id ? 50 : undefined,
-                    }}
-                    onMouseDown={(e) => handleMouseDown(e, el.id)}
-                    onClick={(e) => { e.stopPropagation(); setSelectedId(el.id); }}
                   >
-                    {el.type === "image" ? (
-                      <img
-                        src={el.content}
-                        alt="Design element"
-                        className="w-full h-full object-cover pointer-events-none"
-                        draggable={false}
-                      />
-                    ) : (
-                      <div
-                        contentEditable
-                        suppressContentEditableWarning
-                        className="w-full outline-none pointer-events-auto font-body"
-                        style={{
-                          fontSize: `${(el.fontSize || 24) * (zoom / 100)}px`,
-                          fontWeight: el.fontWeight,
-                          fontStyle: el.fontStyle,
-                          textAlign: el.textAlign as any,
-                          color: el.color,
-                          lineHeight: 1.3,
-                        }}
-                        onBlur={(e) => updateElement(el.id, { content: e.currentTarget.textContent || "" })}
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        {el.content}
-                      </div>
-                    )}
-
-                    {/* Resize handle */}
-                    {selectedId === el.id && el.type === "image" && (
-                      <div
-                        className="absolute -bottom-1 -right-1 w-3 h-3 bg-primary rounded-sm cursor-se-resize"
-                        onMouseDown={(e) => {
-                          e.stopPropagation();
-                          const startX = e.clientX;
-                          const startY = e.clientY;
-                          const startW = el.width;
-                          const startH = el.height;
-                          const onMove = (ev: MouseEvent) => {
-                            const dw = ((ev.clientX - startX) / canvasW) * 100;
-                            const dh = ((ev.clientY - startY) / canvasH) * 100;
-                            updateElement(el.id, {
-                              width: Math.max(5, startW + dw),
-                              height: Math.max(5, startH + dh),
-                            });
-                          };
-                          const onUp = () => {
-                            window.removeEventListener("mousemove", onMove);
-                            window.removeEventListener("mouseup", onUp);
-                          };
-                          window.addEventListener("mousemove", onMove);
-                          window.addEventListener("mouseup", onUp);
-                        }}
-                      />
-                    )}
-                  </div>
-                ))}
-
-                {/* Empty state */}
-                {elements.length === 0 && (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center text-foreground/30">
-                    <ImagePlus className="w-12 h-12 mb-3" />
-                    <p className="font-body text-sm">Click the image icon to upload</p>
-                    <p className="font-body text-xs mt-1">or add text to get started</p>
-                  </div>
-                )}
-
-                {/* Stand-off dots */}
-                {material === "acrylic" && standOff !== "none" && (
-                  <>
-                    {[
-                      "top-3 left-3", "top-3 right-3", "bottom-3 left-3", "bottom-3 right-3"
-                    ].map((pos, i) => (
-                      <div key={i} className={`absolute ${pos} w-3 h-3 rounded-full pointer-events-none shadow-md ${
-                        standOff === "silver" ? "bg-[hsl(0,0%,78%)]" : "bg-[hsl(0,0%,18%)]"
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-4 transition-colors ${
+                      product === p.type ? "bg-primary/20" : "bg-secondary group-hover:bg-primary/10"
+                    }`}>
+                      <p.icon className={`w-5 h-5 transition-colors ${
+                        product === p.type ? "text-primary" : "text-muted-foreground group-hover:text-primary"
                       }`} />
-                    ))}
-                  </>
-                )}
-              </div>
-
-              {/* Size label */}
-              <div className="absolute -bottom-7 left-1/2 -translate-x-1/2 text-xs text-muted-foreground font-body">
-                {w}" × {h}" — {zoom}%
-              </div>
-            </div>
-          </div>
-
-          {/* Right panel */}
-          <div className="lg:w-72 bg-card border border-border rounded-lg overflow-hidden flex flex-col">
-            {/* Panel tabs */}
-            <div className="flex border-b border-border">
-              <button
-                onClick={() => setActiveTab("design")}
-                className={`flex-1 py-3 text-xs font-body font-semibold tracking-wider uppercase transition-colors ${
-                  activeTab === "design" ? "text-primary border-b-2 border-primary" : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                Design
-              </button>
-              <button
-                onClick={() => setActiveTab("settings")}
-                className={`flex-1 py-3 text-xs font-body font-semibold tracking-wider uppercase transition-colors ${
-                  activeTab === "settings" ? "text-primary border-b-2 border-primary" : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                Print Settings
-              </button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-4 space-y-5">
-              {activeTab === "design" ? (
-                <>
-                  {/* Selected element properties */}
-                  {selectedElement ? (
-                    <>
-                      <div className="flex items-center justify-between">
-                        <Label className="text-foreground font-body font-semibold tracking-wider uppercase text-xs">
-                          {selectedElement.type === "image" ? "Image" : "Text"} Properties
-                        </Label>
-                        <button
-                          onClick={() => deleteElement(selectedElement.id)}
-                          className="text-destructive hover:text-destructive/80 transition-colors"
-                          title="Delete"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-
-                      {selectedElement.type === "text" && (
-                        <>
-                          <div>
-                            <Label className="text-xs text-muted-foreground font-body mb-1 block">Font Size</Label>
-                            <Slider
-                              value={[selectedElement.fontSize || 24]}
-                              onValueChange={([v]) => updateElement(selectedElement.id, { fontSize: v })}
-                              min={8}
-                              max={120}
-                              step={1}
-                            />
-                            <span className="text-xs text-muted-foreground font-body">{selectedElement.fontSize}px</span>
-                          </div>
-
-                          <div className="flex gap-1">
-                            <button
-                              onClick={() => updateElement(selectedElement.id, {
-                                fontWeight: selectedElement.fontWeight === "bold" ? "normal" : "bold"
-                              })}
-                              className={`w-8 h-8 rounded flex items-center justify-center border transition-colors ${
-                                selectedElement.fontWeight === "bold"
-                                  ? "bg-primary text-primary-foreground border-primary"
-                                  : "border-border text-muted-foreground hover:text-foreground"
-                              }`}
-                            >
-                              <Bold className="w-3 h-3" />
-                            </button>
-                            <button
-                              onClick={() => updateElement(selectedElement.id, {
-                                fontStyle: selectedElement.fontStyle === "italic" ? "normal" : "italic"
-                              })}
-                              className={`w-8 h-8 rounded flex items-center justify-center border transition-colors ${
-                                selectedElement.fontStyle === "italic"
-                                  ? "bg-primary text-primary-foreground border-primary"
-                                  : "border-border text-muted-foreground hover:text-foreground"
-                              }`}
-                            >
-                              <Italic className="w-3 h-3" />
-                            </button>
-                            <button
-                              onClick={() => updateElement(selectedElement.id, { textAlign: "left" })}
-                              className={`w-8 h-8 rounded flex items-center justify-center border transition-colors ${
-                                selectedElement.textAlign === "left"
-                                  ? "bg-primary text-primary-foreground border-primary"
-                                  : "border-border text-muted-foreground hover:text-foreground"
-                              }`}
-                            >
-                              <AlignLeft className="w-3 h-3" />
-                            </button>
-                            <button
-                              onClick={() => updateElement(selectedElement.id, { textAlign: "center" })}
-                              className={`w-8 h-8 rounded flex items-center justify-center border transition-colors ${
-                                selectedElement.textAlign === "center"
-                                  ? "bg-primary text-primary-foreground border-primary"
-                                  : "border-border text-muted-foreground hover:text-foreground"
-                              }`}
-                            >
-                              <AlignCenter className="w-3 h-3" />
-                            </button>
-                            <button
-                              onClick={() => updateElement(selectedElement.id, { textAlign: "right" })}
-                              className={`w-8 h-8 rounded flex items-center justify-center border transition-colors ${
-                                selectedElement.textAlign === "right"
-                                  ? "bg-primary text-primary-foreground border-primary"
-                                  : "border-border text-muted-foreground hover:text-foreground"
-                              }`}
-                            >
-                              <AlignRight className="w-3 h-3" />
-                            </button>
-                          </div>
-
-                          <div>
-                            <Label className="text-xs text-muted-foreground font-body mb-1 block">Color</Label>
-                            <input
-                              type="color"
-                              value={selectedElement.color || "#ffffff"}
-                              onChange={(e) => updateElement(selectedElement.id, { color: e.target.value })}
-                              className="w-full h-8 rounded border border-border cursor-pointer"
-                            />
-                          </div>
-                        </>
-                      )}
-
-                      <div>
-                        <Label className="text-xs text-muted-foreground font-body mb-1 block">Rotation</Label>
-                        <Slider
-                          value={[selectedElement.rotation]}
-                          onValueChange={([v]) => updateElement(selectedElement.id, { rotation: v })}
-                          min={-180}
-                          max={180}
-                          step={1}
-                        />
-                        <span className="text-xs text-muted-foreground font-body">{selectedElement.rotation}°</span>
-                      </div>
-
-                      {/* Layer controls */}
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => moveLayer(selectedElement.id, "up")}
-                          className="flex-1 flex items-center justify-center gap-1 py-2 rounded border border-border text-xs text-muted-foreground hover:text-foreground hover:border-primary/50 transition-colors font-body"
-                        >
-                          <ChevronUp className="w-3 h-3" /> Forward
-                        </button>
-                        <button
-                          onClick={() => moveLayer(selectedElement.id, "down")}
-                          className="flex-1 flex items-center justify-center gap-1 py-2 rounded border border-border text-xs text-muted-foreground hover:text-foreground hover:border-primary/50 transition-colors font-body"
-                        >
-                          <ChevronDown className="w-3 h-3" /> Back
-                        </button>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="text-center py-8">
-                      <Layers className="w-8 h-8 mx-auto text-muted-foreground/40 mb-3" />
-                      <p className="text-sm text-muted-foreground font-body">
-                        Select an element to edit its properties
-                      </p>
-                      <p className="text-xs text-muted-foreground/60 font-body mt-2">
-                        Use the toolbar to add images or text
-                      </p>
                     </div>
-                  )}
+                    <h4 className="font-display font-semibold text-lg text-foreground mb-1">{p.title}</h4>
+                    <p className="text-sm text-muted-foreground font-body leading-relaxed">{p.desc}</p>
+                    {product === p.type && (
+                      <div className="absolute top-3 right-3">
+                        <CheckCircle2 className="w-5 h-5 text-primary" />
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
-                  {/* Layers list */}
-                  {elements.length > 0 && (
+          {/* Step 2: Size & Options */}
+          {step === 1 && (
+            <div className="space-y-8">
+              <h3 className="text-2xl font-display font-semibold text-foreground text-center mb-8">
+                {product === "cards" ? "Card Options" : "Size & Options"}
+              </h3>
+
+              {product === "cards" ? (
+                <div className="text-center space-y-4">
+                  <div className="inline-block bg-secondary/50 rounded-xl p-8 border border-border">
+                    <p className="text-muted-foreground font-body mb-2">Set of 55 Metal Cards</p>
+                    <p className="text-4xl font-display font-bold text-gradient-gold">${cardPricing.eternityCard.pack55}</p>
+                    <p className="text-sm text-muted-foreground font-body mt-2">+ $10 shipping</p>
+                  </div>
+                  <p className="text-sm text-muted-foreground font-body">
+                    Upload your design in the next step
+                  </p>
+                </div>
+              ) : (
+                <div className="grid md:grid-cols-2 gap-8">
+                  <div className="space-y-6">
+                    {product === "metal" && (
+                      <div>
+                        <Label className="text-foreground font-body font-semibold tracking-wider uppercase text-xs mb-3 block">
+                          Metal Type
+                        </Label>
+                        <Select value={String(metalIdx)} onValueChange={(v) => setMetalIdx(Number(v))}>
+                          <SelectTrigger className="bg-secondary border-border text-foreground font-body">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {metalOptions.map((opt, i) => (
+                              <SelectItem key={i} value={String(i)}>{opt.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+
                     <div>
-                      <Label className="text-foreground font-body font-semibold tracking-wider uppercase text-xs mb-2 block">
-                        Layers
+                      <Label className="text-foreground font-body font-semibold tracking-wider uppercase text-xs mb-3 block">
+                        Size
                       </Label>
-                      <div className="space-y-1">
-                        {[...elements].reverse().map((el) => (
+                      <div className="grid grid-cols-3 gap-2">
+                        {standardSizes.map((s, i) => (
                           <button
-                            key={el.id}
-                            onClick={() => setSelectedId(el.id)}
-                            className={`w-full flex items-center gap-2 px-3 py-2 rounded text-xs font-body text-left transition-colors ${
-                              selectedId === el.id
-                                ? "bg-primary/15 text-primary border border-primary/30"
-                                : "text-muted-foreground hover:text-foreground hover:bg-secondary/50 border border-transparent"
+                            key={i}
+                            onClick={() => setSizeIdx(i)}
+                            className={`py-2 px-3 rounded-lg text-sm font-body font-medium border transition-all ${
+                              sizeIdx === i
+                                ? "border-primary bg-primary/10 text-primary"
+                                : "border-border text-muted-foreground hover:border-primary/40 hover:text-foreground"
                             }`}
                           >
-                            {el.type === "image" ? (
-                              <ImagePlus className="w-3 h-3 shrink-0" />
-                            ) : (
-                              <Type className="w-3 h-3 shrink-0" />
-                            )}
-                            <span className="truncate">
-                              {el.type === "image" ? "Image" : el.content.slice(0, 20)}
-                            </span>
+                            {s.label}
                           </button>
                         ))}
                       </div>
                     </div>
-                  )}
-                </>
-              ) : (
-                /* Print settings tab */
-                <>
-                  <div>
-                    <Label className="text-foreground font-body font-semibold tracking-wider uppercase text-xs mb-2 block">
-                      Material
-                    </Label>
-                    <RadioGroup
-                      value={material}
-                      onValueChange={(v) => {
-                        setMaterial(v as "metal" | "acrylic");
-                        if (v === "metal") setStandOff("none");
-                      }}
-                      className="flex gap-3"
-                    >
-                      <div className="flex items-center gap-2">
-                        <RadioGroupItem value="metal" id="pd-metal" />
-                        <Label htmlFor="pd-metal" className="font-body text-foreground cursor-pointer text-sm">Metal</Label>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <RadioGroupItem value="acrylic" id="pd-acrylic" />
-                        <Label htmlFor="pd-acrylic" className="font-body text-foreground cursor-pointer text-sm">Acrylic</Label>
-                      </div>
-                    </RadioGroup>
-                  </div>
 
-                  {material === "metal" && (
                     <div>
-                      <Label className="text-foreground font-body font-semibold tracking-wider uppercase text-xs mb-2 block">
-                        Metal Type
+                      <Label className="text-foreground font-body font-semibold tracking-wider uppercase text-xs mb-3 block">
+                        Orientation
                       </Label>
-                      <Select value={String(metalIdx)} onValueChange={(v) => setMetalIdx(Number(v))}>
-                        <SelectTrigger className="bg-secondary border-border text-foreground font-body text-sm">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {metalOptions.map((opt, i) => (
-                            <SelectItem key={i} value={String(i)}>{opt.label}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  )}
-
-                  <div>
-                    <Label className="text-foreground font-body font-semibold tracking-wider uppercase text-xs mb-2 block">
-                      Size
-                    </Label>
-                    <Select value={String(sizeIdx)} onValueChange={(v) => setSizeIdx(Number(v))}>
-                      <SelectTrigger className="bg-secondary border-border text-foreground font-body text-sm">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {standardSizes.map((s, i) => (
-                          <SelectItem key={i} value={String(i)}>{s.label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label className="text-foreground font-body font-semibold tracking-wider uppercase text-xs mb-2 block">
-                      Orientation
-                    </Label>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => setOrientation("portrait")}
-                        className={`flex items-center gap-2 px-3 py-2 rounded font-body text-sm border transition-colors ${
-                          orientation === "portrait"
-                            ? "bg-primary text-primary-foreground border-primary"
-                            : "bg-secondary text-foreground border-border hover:border-primary/50"
-                        }`}
-                      >
-                        <div className="w-2.5 h-3.5 border border-current rounded-sm" />
-                        Portrait
-                      </button>
-                      <button
-                        onClick={() => setOrientation("landscape")}
-                        className={`flex items-center gap-2 px-3 py-2 rounded font-body text-sm border transition-colors ${
-                          orientation === "landscape"
-                            ? "bg-primary text-primary-foreground border-primary"
-                            : "bg-secondary text-foreground border-border hover:border-primary/50"
-                        }`}
-                      >
-                        <div className="w-3.5 h-2.5 border border-current rounded-sm" />
-                        Landscape
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="space-y-3">
-                    <Label className="text-foreground font-body font-semibold tracking-wider uppercase text-xs block">
-                      Add-Ons
-                    </Label>
-                    <div className="flex items-center gap-2">
-                      <Checkbox
-                        id="pd-rounded"
-                        checked={roundedCorners}
-                        onCheckedChange={(v) => setRoundedCorners(!!v)}
-                      />
-                      <Label htmlFor="pd-rounded" className="font-body text-foreground cursor-pointer text-sm">
-                        Rounded Corners (+$5)
-                      </Label>
-                    </div>
-
-                    {material === "acrylic" && (
-                      <div>
-                        <Label className="text-foreground font-body text-sm mb-2 block">Stand-Off Mounting</Label>
-                        <RadioGroup
-                          value={standOff}
-                          onValueChange={(v) => setStandOff(v as "none" | "silver" | "black")}
-                          className="space-y-2"
+                      <div className="flex gap-3">
+                        <button
+                          onClick={() => setOrientation("portrait")}
+                          className={`flex-1 flex flex-col items-center gap-2 py-4 rounded-lg border-2 transition-all ${
+                            orientation === "portrait"
+                              ? "border-primary bg-primary/5"
+                              : "border-border hover:border-primary/40"
+                          }`}
                         >
-                          <div className="flex items-center gap-2">
-                            <RadioGroupItem value="none" id="pd-so-none" />
-                            <Label htmlFor="pd-so-none" className="font-body text-foreground cursor-pointer text-sm">None</Label>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <RadioGroupItem value="silver" id="pd-so-silver" />
-                            <Label htmlFor="pd-so-silver" className="font-body text-foreground cursor-pointer text-sm">Silver ($2.50)</Label>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <RadioGroupItem value="black" id="pd-so-black" />
-                            <Label htmlFor="pd-so-black" className="font-body text-foreground cursor-pointer text-sm">Black ($3.50)</Label>
-                          </div>
-                        </RadioGroup>
-                        {standOff !== "none" && (
-                          <div className="mt-2">
+                          <div className={`w-8 h-12 rounded border-2 ${
+                            orientation === "portrait" ? "border-primary" : "border-muted-foreground"
+                          }`} />
+                          <span className="text-sm font-body text-foreground">Portrait</span>
+                        </button>
+                        <button
+                          onClick={() => setOrientation("landscape")}
+                          className={`flex-1 flex flex-col items-center gap-2 py-4 rounded-lg border-2 transition-all ${
+                            orientation === "landscape"
+                              ? "border-primary bg-primary/5"
+                              : "border-border hover:border-primary/40"
+                          }`}
+                        >
+                          <div className={`w-12 h-8 rounded border-2 ${
+                            orientation === "landscape" ? "border-primary" : "border-muted-foreground"
+                          }`} />
+                          <span className="text-sm font-body text-foreground">Landscape</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right side: add-ons + preview */}
+                  <div className="space-y-6">
+                    <div className="space-y-4">
+                      <Label className="text-foreground font-body font-semibold tracking-wider uppercase text-xs block">
+                        Add-Ons
+                      </Label>
+                      <div className="flex items-center gap-3">
+                        <Checkbox
+                          id="flow-rounded"
+                          checked={roundedCorners}
+                          onCheckedChange={(v) => setRoundedCorners(!!v)}
+                        />
+                        <Label htmlFor="flow-rounded" className="font-body text-foreground cursor-pointer text-sm">
+                          Rounded Corners (+$5.00)
+                        </Label>
+                      </div>
+
+                      {product === "acrylic" && (
+                        <div className="space-y-3">
+                          <Label className="text-foreground font-body text-sm block">Stand-Off Mounting</Label>
+                          <RadioGroup
+                            value={standOff}
+                            onValueChange={(v) => setStandOff(v as "none" | "silver" | "black")}
+                            className="space-y-2"
+                          >
+                            <div className="flex items-center gap-2">
+                              <RadioGroupItem value="none" id="flow-so-none" />
+                              <Label htmlFor="flow-so-none" className="font-body text-foreground cursor-pointer text-sm">None</Label>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <RadioGroupItem value="silver" id="flow-so-silver" />
+                              <Label htmlFor="flow-so-silver" className="font-body text-foreground cursor-pointer text-sm">Silver ($2.50 ea)</Label>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <RadioGroupItem value="black" id="flow-so-black" />
+                              <Label htmlFor="flow-so-black" className="font-body text-foreground cursor-pointer text-sm">Black ($3.50 ea)</Label>
+                            </div>
+                          </RadioGroup>
+                          {standOff !== "none" && (
                             <Select value={String(standOffQty)} onValueChange={(v) => setStandOffQty(Number(v))}>
-                              <SelectTrigger className="bg-secondary border-border text-foreground font-body text-sm w-20">
+                              <SelectTrigger className="bg-secondary border-border text-foreground font-body text-sm w-24">
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
@@ -731,46 +310,225 @@ const PrintDesigner = () => {
                                 ))}
                               </SelectContent>
                             </Select>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Size preview */}
+                    <div className="bg-secondary/30 rounded-xl p-6 border border-border">
+                      <div className="flex items-center justify-center" style={{ minHeight: 120 }}>
+                        <div
+                          className={`border-2 border-primary/50 flex items-center justify-center transition-all ${
+                            roundedCorners ? "rounded-lg" : ""
+                          } ${
+                            product === "metal"
+                              ? "bg-gradient-to-br from-[hsl(220,8%,50%)] to-[hsl(220,8%,42%)]"
+                              : "bg-gradient-to-br from-[hsl(200,15%,85%)] to-[hsl(200,15%,75%)]"
+                          }`}
+                          style={{
+                            width: Math.min(w * 2.5, 200),
+                            height: Math.min(h * 2.5, 160),
+                          }}
+                        >
+                          <span className="text-xs font-body text-foreground/60">{w}"×{h}"</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Step 3: Upload */}
+          {step === 2 && (
+            <div className="space-y-6">
+              <h3 className="text-2xl font-display font-semibold text-foreground text-center mb-8">
+                Upload Your {product === "cards" ? "Card Design" : "Photo"}
+              </h3>
+
+              <div
+                className={`relative border-2 border-dashed rounded-xl transition-colors ${
+                  uploadedImage ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"
+                }`}
+              >
+                {uploadedImage ? (
+                  <div className="p-4">
+                    <div className="relative aspect-video max-w-lg mx-auto rounded-lg overflow-hidden bg-secondary">
+                      <img src={uploadedImage} alt="Uploaded design" className="w-full h-full object-contain" />
+                    </div>
+                    <div className="text-center mt-4">
+                      <p className="text-sm font-body text-foreground">{fileName}</p>
+                      <button
+                        onClick={() => { setUploadedImage(null); setFileName(""); }}
+                        className="text-xs text-primary font-body mt-1 hover:underline"
+                      >
+                        Remove and upload a different file
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-full py-16 flex flex-col items-center gap-4 cursor-pointer"
+                  >
+                    <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Upload className="w-7 h-7 text-primary" />
+                    </div>
+                    <div className="text-center">
+                      <p className="font-body font-semibold text-foreground">Click to upload your file</p>
+                      <p className="text-sm text-muted-foreground font-body mt-1">
+                        PNG, JPG, PDF, or AI — high resolution recommended
+                      </p>
+                    </div>
+                  </button>
+                )}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*,.pdf,.ai"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleFileUpload(file);
+                    e.target.value = "";
+                  }}
+                />
+              </div>
+
+              {product !== "cards" && (
+                <p className="text-xs text-muted-foreground font-body text-center">
+                  For best results on a {w}"×{h}" print, use an image at least {w * 150}×{h * 150} pixels
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Step 4: Review */}
+          {step === 3 && (
+            <div className="space-y-8">
+              <h3 className="text-2xl font-display font-semibold text-foreground text-center mb-8">
+                Review Your Order
+              </h3>
+
+              <div className="grid md:grid-cols-2 gap-8">
+                {/* Preview */}
+                <div className="bg-secondary/30 rounded-xl p-6 border border-border flex items-center justify-center">
+                  {uploadedImage && (
+                    <div
+                      className={`overflow-hidden shadow-xl ${roundedCorners ? "rounded-xl" : ""}`}
+                      style={{ maxWidth: 280, maxHeight: 280 }}
+                    >
+                      <img src={uploadedImage} alt="Your design" className="w-full h-full object-contain" />
+                    </div>
+                  )}
+                </div>
+
+                {/* Order summary */}
+                <div className="space-y-4">
+                  <div className="space-y-3">
+                    <div className="flex justify-between font-body text-sm">
+                      <span className="text-muted-foreground">Product</span>
+                      <span className="text-foreground font-medium">
+                        {product === "metal" ? "Metal Print" : product === "acrylic" ? "Acrylic Print" : "Eternity Cards"}
+                      </span>
+                    </div>
+                    {product === "metal" && (
+                      <div className="flex justify-between font-body text-sm">
+                        <span className="text-muted-foreground">Type</span>
+                        <span className="text-foreground">{metalOptions[metalIdx].label}</span>
+                      </div>
+                    )}
+                    {product !== "cards" && (
+                      <>
+                        <div className="flex justify-between font-body text-sm">
+                          <span className="text-muted-foreground">Size</span>
+                          <span className="text-foreground">{w}" × {h}" ({orientation})</span>
+                        </div>
+                        {roundedCorners && (
+                          <div className="flex justify-between font-body text-sm">
+                            <span className="text-muted-foreground">Rounded Corners</span>
+                            <span className="text-foreground">Yes</span>
                           </div>
                         )}
+                        {product === "acrylic" && standOff !== "none" && (
+                          <div className="flex justify-between font-body text-sm">
+                            <span className="text-muted-foreground">Stand-Offs</span>
+                            <span className="text-foreground capitalize">{standOff} × {standOffQty}</span>
+                          </div>
+                        )}
+                      </>
+                    )}
+                    {product === "cards" && (
+                      <div className="flex justify-between font-body text-sm">
+                        <span className="text-muted-foreground">Quantity</span>
+                        <span className="text-foreground">Set of 55</span>
                       </div>
                     )}
+                    <div className="flex justify-between font-body text-sm">
+                      <span className="text-muted-foreground">File</span>
+                      <span className="text-foreground truncate max-w-[180px]">{fileName}</span>
+                    </div>
                   </div>
 
-                  {/* Price */}
                   <div className="border-t border-border pt-4 space-y-2">
-                    <div className="flex justify-between text-xs font-body text-muted-foreground">
-                      <span>{materialLabel} — {w}"×{h}"</span>
-                      <span>${printPrice.toFixed(2)}</span>
+                    <div className="flex justify-between font-body text-sm text-muted-foreground">
+                      <span>
+                        {product === "cards" ? "Set of 55" : `${product === "metal" ? metalOptions[metalIdx].label : "Acrylic"} — ${w}"×${h}"`}
+                      </span>
+                      <span>${price.toFixed(2)}</span>
                     </div>
-                    {roundedCorners && (
-                      <div className="flex justify-between text-xs font-body text-muted-foreground">
-                        <span>Rounded Corners</span>
-                        <span>$5.00</span>
+                    {addOnTotal > 0 && (
+                      <div className="flex justify-between font-body text-sm text-muted-foreground">
+                        <span>Add-ons</span>
+                        <span>${addOnTotal.toFixed(2)}</span>
                       </div>
                     )}
-                    {material === "acrylic" && standOff !== "none" && (
-                      <div className="flex justify-between text-xs font-body text-muted-foreground">
-                        <span>Stand-Off ({standOff}) ×{standOffQty}</span>
-                        <span>${((standOff === "silver" ? addOns.standOffSilver : addOns.standOffBlack) * standOffQty).toFixed(2)}</span>
-                      </div>
-                    )}
-                    <div className="flex justify-between text-xs font-body text-muted-foreground">
+                    <div className="flex justify-between font-body text-sm text-muted-foreground">
                       <span>Shipping</span>
-                      <span>${shipping.cost.toFixed(2)}</span>
+                      <span>
+                        ${shipping.cost.toFixed(2)}
+                        {shipping.note && <span className="text-xs ml-1">({shipping.note})</span>}
+                      </span>
                     </div>
-                    <div className="flex justify-between font-body font-bold text-foreground border-t border-border pt-2">
+                    <div className="flex justify-between font-body text-xl font-bold text-foreground border-t border-border pt-3">
                       <span>Total</span>
                       <span className="text-gradient-gold">${total.toFixed(2)}</span>
                     </div>
                   </div>
 
-                  <Button className="w-full bg-gradient-gold text-primary-foreground font-body font-semibold tracking-wide hover:opacity-90">
-                    Request This Quote
-                  </Button>
-                </>
-              )}
+                  <p className="text-xs text-muted-foreground font-body">
+                    Delivered in 48–72 hours
+                  </p>
+                </div>
+              </div>
+
+              <Button className="w-full bg-gradient-gold text-primary-foreground font-body font-semibold tracking-wide text-lg py-6 hover:opacity-90">
+                Submit Order Request
+              </Button>
             </div>
+          )}
+
+          {/* Navigation */}
+          <div className="flex justify-between mt-10 pt-6 border-t border-border">
+            <Button
+              variant="ghost"
+              onClick={() => setStep((s) => s - 1)}
+              disabled={step === 0}
+              className="text-muted-foreground font-body"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" /> Back
+            </Button>
+            {step < 3 && (
+              <Button
+                onClick={() => setStep((s) => s + 1)}
+                disabled={!canProceed()}
+                className="bg-gradient-gold text-primary-foreground font-body font-semibold tracking-wide hover:opacity-90"
+              >
+                Continue <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            )}
           </div>
         </div>
       </div>

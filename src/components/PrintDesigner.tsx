@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -18,19 +18,29 @@ import {
   addOns,
   standardSizes,
   cardPricing,
+  recommendStandOffs,
 } from "@/lib/pricing";
-import { ArrowRight, ArrowLeft, Upload, CheckCircle2, ImagePlus, Layers, Sparkles, Heart } from "lucide-react";
+import { ArrowRight, ArrowLeft, Upload, CheckCircle2, Layers, Sparkles, Heart, Briefcase, Mail, BookOpen, Info } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
 type ProductType = "metal" | "acrylic" | "cards";
+type CardType = "eternity" | "business" | "invitation" | "prayer";
 
 const STEPS = ["Product", "Options", "Upload", "Review"];
+
+const cardTypes: { type: CardType; icon: typeof Heart; title: string; desc: string }[] = [
+  { type: "eternity", icon: Heart, title: "Eternity Cards", desc: "Memorial & celebration of life keepsakes" },
+  { type: "business", icon: Briefcase, title: "Business Cards", desc: "Premium metal business cards" },
+  { type: "invitation", icon: Mail, title: "Invitations", desc: "Stunning metal event invitations" },
+  { type: "prayer", icon: BookOpen, title: "Prayer Cards", desc: "Timeless memorial prayer cards" },
+];
 
 const PrintDesigner = () => {
   const [step, setStep] = useState(0);
   const [product, setProduct] = useState<ProductType | null>(null);
+  const [cardType, setCardType] = useState<CardType>("eternity");
   const [metalIdx, setMetalIdx] = useState(0);
-  const [sizeIdx, setSizeIdx] = useState<number | "custom">(2);
+  const [sizeIdx, setSizeIdx] = useState<number | "custom">(3);
   const [customW, setCustomW] = useState(24);
   const [customH, setCustomH] = useState(36);
   const [orientation, setOrientation] = useState<"portrait" | "landscape">("portrait");
@@ -42,10 +52,18 @@ const PrintDesigner = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isCustom = sizeIdx === "custom";
-  const baseW = isCustom ? customW : standardSizes[sizeIdx].w;
-  const baseH = isCustom ? customH : standardSizes[sizeIdx].h;
+  const baseW = isCustom ? customW : standardSizes[sizeIdx as number].w;
+  const baseH = isCustom ? customH : standardSizes[sizeIdx as number].h;
   const w = orientation === "portrait" ? baseW : baseH;
   const h = orientation === "portrait" ? baseH : baseW;
+
+  // Auto-recommend stand-offs when size changes
+  const recommended = recommendStandOffs(w, h);
+  useEffect(() => {
+    if (standOff !== "none") {
+      setStandOffQty(recommended);
+    }
+  }, [w, h, recommended, standOff]);
 
   const getPrice = () => {
     if (product === "cards") return cardPricing.eternityCard.pack55;
@@ -61,15 +79,25 @@ const PrintDesigner = () => {
   const getAddOns = () => {
     let total = 0;
     if (product !== "cards" && roundedCorners) total += addOns.roundedCorners;
-    if (product === "acrylic" && standOff === "silver") total += addOns.standOffSilver * standOffQty;
-    if (product === "acrylic" && standOff === "black") total += addOns.standOffBlack * standOffQty;
+    if (product !== "cards" && standOff !== "none") {
+      const unitPrice = standOff === "silver" ? addOns.standOffSilver : addOns.standOffBlack;
+      total += unitPrice * standOffQty;
+    }
     return total;
+  };
+
+  const getMetalSurcharge = () => {
+    if (product === "metal" && standOff !== "none") {
+      return Math.ceil(getPrice() * addOns.metalStandOffSurcharge);
+    }
+    return 0;
   };
 
   const price = getPrice();
   const shipping = getShipping();
   const addOnTotal = getAddOns();
-  const total = price + shipping.cost + addOnTotal;
+  const metalSurcharge = getMetalSurcharge();
+  const total = price + shipping.cost + addOnTotal + metalSurcharge;
 
   const canProceed = () => {
     if (step === 0) return product !== null;
@@ -84,6 +112,8 @@ const PrintDesigner = () => {
     reader.onload = (e) => setUploadedImage(e.target?.result as string);
     reader.readAsDataURL(file);
   };
+
+  const cardTypeLabel = cardTypes.find(c => c.type === cardType)?.title || "Eternity Cards";
 
   return (
     <section id="designer" className="py-24 px-6">
@@ -138,13 +168,13 @@ const PrintDesigner = () => {
               </h3>
               <div className="grid md:grid-cols-3 gap-4">
                 {([
-                  { type: "metal" as ProductType, icon: Layers, title: "Metal Print", desc: "HD prints on brushed aluminum in .040\" or .080\" thickness" },
+                  { type: "metal" as ProductType, icon: Layers, title: "Metal Print", desc: 'HD prints on brushed aluminum in .040" or .080" thickness' },
                   { type: "acrylic" as ProductType, icon: Sparkles, title: "Acrylic Print", desc: "Vibrant prints on crystal-clear acrylic with optional stand-offs" },
-                  { type: "cards" as ProductType, icon: Heart, title: "Eternity Cards", desc: "Premium metal keepsake cards — sets of 55" },
+                  { type: "cards" as ProductType, icon: Heart, title: "Metal Cards", desc: "Premium metal cards — eternity, business, invitation, prayer" },
                 ]).map((p) => (
                   <button
                     key={p.type}
-                    onClick={() => setProduct(p.type)}
+                    onClick={() => { setProduct(p.type); if (p.type !== "cards") setStandOff("none"); }}
                     className={`group relative p-6 rounded-xl border-2 text-left transition-all ${
                       product === p.type
                         ? "border-primary bg-primary/5 shadow-lg shadow-primary/10"
@@ -179,15 +209,40 @@ const PrintDesigner = () => {
               </h3>
 
               {product === "cards" ? (
-                <div className="text-center space-y-4">
-                  <div className="inline-block bg-secondary/50 rounded-xl p-8 border border-border">
-                    <p className="text-muted-foreground font-body mb-2">Set of 55 Metal Cards</p>
-                    <p className="text-4xl font-display font-bold text-gradient-gold">${cardPricing.eternityCard.pack55}</p>
-                    <p className="text-sm text-muted-foreground font-body mt-2">+ $10 shipping</p>
+                <div className="space-y-6">
+                  <div>
+                    <Label className="text-foreground font-body font-semibold tracking-wider uppercase text-xs mb-3 block">
+                      Card Type
+                    </Label>
+                    <div className="grid grid-cols-2 gap-3">
+                      {cardTypes.map((c) => (
+                        <button
+                          key={c.type}
+                          onClick={() => setCardType(c.type)}
+                          className={`flex items-center gap-3 p-4 rounded-lg border-2 text-left transition-all ${
+                            cardType === c.type
+                              ? "border-primary bg-primary/5"
+                              : "border-border hover:border-primary/40 bg-secondary/30"
+                          }`}
+                        >
+                          <c.icon className={`w-5 h-5 shrink-0 ${
+                            cardType === c.type ? "text-primary" : "text-muted-foreground"
+                          }`} />
+                          <div>
+                            <p className="font-body font-medium text-foreground text-sm">{c.title}</p>
+                            <p className="text-xs text-muted-foreground font-body">{c.desc}</p>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                  <p className="text-sm text-muted-foreground font-body">
-                    Upload your design in the next step
-                  </p>
+                  <div className="text-center">
+                    <div className="inline-block bg-secondary/50 rounded-xl p-8 border border-border">
+                      <p className="text-muted-foreground font-body mb-2">Set of 55 — {cardTypeLabel}</p>
+                      <p className="text-4xl font-display font-bold text-gradient-gold">${cardPricing.eternityCard.pack55}</p>
+                      <p className="text-sm text-muted-foreground font-body mt-2">+ $10 shipping</p>
+                    </div>
+                  </div>
                 </div>
               ) : (
                 <div className="grid md:grid-cols-2 gap-8">
@@ -320,41 +375,56 @@ const PrintDesigner = () => {
                         </Label>
                       </div>
 
-                      {product === "acrylic" && (
-                        <div className="space-y-3">
-                          <Label className="text-foreground font-body text-sm block">Stand-Off Mounting</Label>
-                          <RadioGroup
-                            value={standOff}
-                            onValueChange={(v) => setStandOff(v as "none" | "silver" | "black")}
-                            className="space-y-2"
-                          >
-                            <div className="flex items-center gap-2">
-                              <RadioGroupItem value="none" id="flow-so-none" />
-                              <Label htmlFor="flow-so-none" className="font-body text-foreground cursor-pointer text-sm">None</Label>
+                      <div className="space-y-3">
+                        <Label className="text-foreground font-body text-sm block">Stand-Off Mounting</Label>
+                        <RadioGroup
+                          value={standOff}
+                          onValueChange={(v) => {
+                            const val = v as "none" | "silver" | "black";
+                            setStandOff(val);
+                            if (val !== "none") setStandOffQty(recommended);
+                          }}
+                          className="space-y-2"
+                        >
+                          <div className="flex items-center gap-2">
+                            <RadioGroupItem value="none" id="flow-so-none" />
+                            <Label htmlFor="flow-so-none" className="font-body text-foreground cursor-pointer text-sm">None</Label>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <RadioGroupItem value="silver" id="flow-so-silver" />
+                            <Label htmlFor="flow-so-silver" className="font-body text-foreground cursor-pointer text-sm">Silver ($2.50 ea)</Label>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <RadioGroupItem value="black" id="flow-so-black" />
+                            <Label htmlFor="flow-so-black" className="font-body text-foreground cursor-pointer text-sm">Black ($3.50 ea)</Label>
+                          </div>
+                        </RadioGroup>
+                        {standOff !== "none" && (
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground font-body">
+                              <Info className="w-3 h-3" />
+                              <span>Recommended: {recommended} stand-offs for {w}"×{h}"</span>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <RadioGroupItem value="silver" id="flow-so-silver" />
-                              <Label htmlFor="flow-so-silver" className="font-body text-foreground cursor-pointer text-sm">Silver ($2.50 ea)</Label>
+                            <div className="flex items-center gap-3">
+                              <Label className="text-foreground font-body text-sm">Qty:</Label>
+                              <Input
+                                type="number"
+                                min={4}
+                                max={20}
+                                value={standOffQty}
+                                onChange={(e) => setStandOffQty(Math.max(4, Number(e.target.value)))}
+                                className="bg-secondary border-border text-foreground font-body w-20"
+                              />
                             </div>
-                            <div className="flex items-center gap-2">
-                              <RadioGroupItem value="black" id="flow-so-black" />
-                              <Label htmlFor="flow-so-black" className="font-body text-foreground cursor-pointer text-sm">Black ($3.50 ea)</Label>
-                            </div>
-                          </RadioGroup>
-                          {standOff !== "none" && (
-                            <Select value={String(standOffQty)} onValueChange={(v) => setStandOffQty(Number(v))}>
-                              <SelectTrigger className="bg-secondary border-border text-foreground font-body text-sm w-24">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {[2, 4, 6, 8, 10, 12].map((n) => (
-                                  <SelectItem key={n} value={String(n)}>×{n}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          )}
-                        </div>
-                      )}
+                            {product === "metal" && (
+                              <p className="text-xs text-primary font-body flex items-center gap-1">
+                                <Info className="w-3 h-3" />
+                                15% surcharge applies for metal stand-off mounting (+${Math.ceil(price * 0.15)})
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                     {/* Size preview */}
@@ -473,7 +543,7 @@ const PrintDesigner = () => {
                     <div className="flex justify-between font-body text-sm">
                       <span className="text-muted-foreground">Product</span>
                       <span className="text-foreground font-medium">
-                        {product === "metal" ? "Metal Print" : product === "acrylic" ? "Acrylic Print" : "Eternity Cards"}
+                        {product === "metal" ? "Metal Print" : product === "acrylic" ? "Acrylic Print" : cardTypeLabel}
                       </span>
                     </div>
                     {product === "metal" && (
@@ -494,7 +564,7 @@ const PrintDesigner = () => {
                             <span className="text-foreground">Yes</span>
                           </div>
                         )}
-                        {product === "acrylic" && standOff !== "none" && (
+                        {standOff !== "none" && (
                           <div className="flex justify-between font-body text-sm">
                             <span className="text-muted-foreground">Stand-Offs</span>
                             <span className="text-foreground capitalize">{standOff} × {standOffQty}</span>
@@ -517,14 +587,26 @@ const PrintDesigner = () => {
                   <div className="border-t border-border pt-4 space-y-2">
                     <div className="flex justify-between font-body text-sm text-muted-foreground">
                       <span>
-                        {product === "cards" ? "Set of 55" : `${product === "metal" ? metalOptions[metalIdx].label : "Acrylic"} — ${w}"×${h}"`}
+                        {product === "cards" ? `Set of 55 — ${cardTypeLabel}` : `${product === "metal" ? metalOptions[metalIdx].label : "Acrylic"} — ${w}"×${h}"`}
                       </span>
                       <span>${price.toFixed(2)}</span>
                     </div>
-                    {addOnTotal > 0 && (
+                    {metalSurcharge > 0 && (
                       <div className="flex justify-between font-body text-sm text-muted-foreground">
-                        <span>Add-ons</span>
-                        <span>${addOnTotal.toFixed(2)}</span>
+                        <span>Metal stand-off surcharge (15%)</span>
+                        <span>${metalSurcharge.toFixed(2)}</span>
+                      </div>
+                    )}
+                    {standOff !== "none" && (
+                      <div className="flex justify-between font-body text-sm text-muted-foreground">
+                        <span>Stand-offs ({standOff}) × {standOffQty}</span>
+                        <span>${((standOff === "silver" ? addOns.standOffSilver : addOns.standOffBlack) * standOffQty).toFixed(2)}</span>
+                      </div>
+                    )}
+                    {roundedCorners && (
+                      <div className="flex justify-between font-body text-sm text-muted-foreground">
+                        <span>Rounded Corners</span>
+                        <span>$5.00</span>
                       </div>
                     )}
                     <div className="flex justify-between font-body text-sm text-muted-foreground">
@@ -547,7 +629,7 @@ const PrintDesigner = () => {
               </div>
 
               <Button className="w-full bg-gradient-gold text-primary-foreground font-body font-semibold tracking-wide text-lg py-6 hover:opacity-90">
-                Submit Order Request
+                Place Order
               </Button>
             </div>
           )}

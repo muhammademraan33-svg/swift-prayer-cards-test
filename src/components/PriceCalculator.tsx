@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -18,37 +19,57 @@ import {
   getShippingCost,
   addOns,
   standardSizes,
+  recommendStandOffs,
 } from "@/lib/pricing";
+import { Info } from "lucide-react";
 
 const PriceCalculator = () => {
   const [material, setMaterial] = useState<"metal" | "acrylic">("metal");
   const [metalIdx, setMetalIdx] = useState(0);
-  const [sizeIdx, setSizeIdx] = useState(0);
+  const [sizeIdx, setSizeIdx] = useState<number | "custom">(0);
+  const [customW, setCustomW] = useState(24);
+  const [customH, setCustomH] = useState(36);
   const [roundedCorners, setRoundedCorners] = useState(false);
   const [standOff, setStandOff] = useState<"none" | "silver" | "black">("none");
   const [standOffQty, setStandOffQty] = useState(4);
 
-  const size = standardSizes[sizeIdx];
+  const isCustom = sizeIdx === "custom";
+  const w = isCustom ? customW : standardSizes[sizeIdx as number].w;
+  const h = isCustom ? customH : standardSizes[sizeIdx as number].h;
+  const sizeLabel = isCustom ? `${w}"×${h}" (custom)` : standardSizes[sizeIdx as number].label;
+
+  const recommended = recommendStandOffs(w, h);
+
+  useEffect(() => {
+    if (standOff !== "none") setStandOffQty(recommended);
+  }, [w, h, recommended, standOff]);
+
   const printPrice =
     material === "metal"
-      ? calcMetalPrice(size.w, size.h, metalOptions[metalIdx])
-      : calcAcrylicPrice(size.w, size.h);
+      ? calcMetalPrice(w, h, metalOptions[metalIdx])
+      : calcAcrylicPrice(w, h);
 
-  const shipping = getShippingCost(size.w, size.h);
+  const shipping = getShippingCost(w, h);
 
   let addOnTotal = 0;
   if (roundedCorners) addOnTotal += addOns.roundedCorners;
-  if (material === "acrylic" && standOff === "silver") addOnTotal += addOns.standOffSilver * standOffQty;
-  if (material === "acrylic" && standOff === "black") addOnTotal += addOns.standOffBlack * standOffQty;
+  if (standOff !== "none") {
+    const unitPrice = standOff === "silver" ? addOns.standOffSilver : addOns.standOffBlack;
+    addOnTotal += unitPrice * standOffQty;
+  }
 
-  const total = printPrice + shipping.cost + addOnTotal;
+  const metalSurcharge = material === "metal" && standOff !== "none"
+    ? Math.ceil(printPrice * addOns.metalStandOffSurcharge)
+    : 0;
+
+  const total = printPrice + shipping.cost + addOnTotal + metalSurcharge;
 
   return (
     <section id="calculator" className="py-24 px-6">
       <div className="max-w-3xl mx-auto">
         <div className="text-center mb-12">
           <span className="text-sm tracking-[0.3em] uppercase text-primary font-body">
-            Instant Quote
+            Instant Pricing
           </span>
           <h2 className="text-4xl md:text-5xl font-display font-bold mt-3 text-foreground">
             Price Calculator
@@ -69,7 +90,6 @@ const PriceCalculator = () => {
                 value={material}
                 onValueChange={(v) => {
                   setMaterial(v as "metal" | "acrylic");
-                  if (v === "metal") setStandOff("none");
                 }}
                 className="flex gap-6"
               >
@@ -115,7 +135,7 @@ const PriceCalculator = () => {
               </Label>
               <Select
                 value={String(sizeIdx)}
-                onValueChange={(v) => setSizeIdx(Number(v))}
+                onValueChange={(v) => setSizeIdx(v === "custom" ? "custom" : Number(v))}
               >
                 <SelectTrigger className="bg-secondary border-border text-foreground font-body">
                   <SelectValue />
@@ -126,8 +146,37 @@ const PriceCalculator = () => {
                       {s.label}
                     </SelectItem>
                   ))}
+                  <SelectItem value="custom">Custom Size</SelectItem>
                 </SelectContent>
               </Select>
+
+              {isCustom && (
+                <div className="flex gap-3 mt-3 items-center">
+                  <div className="flex-1">
+                    <Label className="text-xs text-muted-foreground font-body mb-1 block">Width (in)</Label>
+                    <Input
+                      type="number"
+                      min={4}
+                      max={96}
+                      value={customW}
+                      onChange={(e) => setCustomW(Math.max(4, Math.min(96, Number(e.target.value))))}
+                      className="bg-secondary border-border text-foreground font-body"
+                    />
+                  </div>
+                  <span className="text-muted-foreground font-body mt-5">×</span>
+                  <div className="flex-1">
+                    <Label className="text-xs text-muted-foreground font-body mb-1 block">Height (in)</Label>
+                    <Input
+                      type="number"
+                      min={4}
+                      max={96}
+                      value={customH}
+                      onChange={(e) => setCustomH(Math.max(4, Math.min(96, Number(e.target.value))))}
+                      className="bg-secondary border-border text-foreground font-body"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Add-ons */}
@@ -147,14 +196,17 @@ const PriceCalculator = () => {
                 </Label>
               </div>
 
-              {material === "acrylic" && (
               <div>
                 <Label className="text-foreground font-body text-sm mb-2 block">
                   Stand-Off Mounting
                 </Label>
                 <RadioGroup
                   value={standOff}
-                  onValueChange={(v) => setStandOff(v as "none" | "silver" | "black")}
+                  onValueChange={(v) => {
+                    const val = v as "none" | "silver" | "black";
+                    setStandOff(val);
+                    if (val !== "none") setStandOffQty(recommended);
+                  }}
                   className="flex flex-wrap gap-4"
                 >
                   <div className="flex items-center gap-2">
@@ -176,36 +228,38 @@ const PriceCalculator = () => {
                 </RadioGroup>
 
                 {standOff !== "none" && (
-                  <div className="mt-3">
-                    <Label className="text-foreground font-body text-sm mb-1 block">
-                      Quantity of stand-offs
-                    </Label>
-                    <Select
-                      value={String(standOffQty)}
-                      onValueChange={(v) => setStandOffQty(Number(v))}
-                    >
-                      <SelectTrigger className="bg-secondary border-border text-foreground font-body w-24">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {[2, 4, 6, 8, 10, 12].map((n) => (
-                          <SelectItem key={n} value={String(n)}>
-                            {n}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                  <div className="mt-3 space-y-2">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground font-body">
+                      <Info className="w-3 h-3" />
+                      <span>Recommended: {recommended} stand-offs for {w}"×{h}" (every 2–3 ft)</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Label className="text-foreground font-body text-sm">Qty:</Label>
+                      <Input
+                        type="number"
+                        min={4}
+                        max={20}
+                        value={standOffQty}
+                        onChange={(e) => setStandOffQty(Math.max(4, Number(e.target.value)))}
+                        className="bg-secondary border-border text-foreground font-body w-20"
+                      />
+                    </div>
+                    {material === "metal" && (
+                      <p className="text-xs text-primary font-body flex items-center gap-1">
+                        <Info className="w-3 h-3" />
+                        15% surcharge for metal stand-off mounting (+${metalSurcharge})
+                      </p>
+                    )}
                   </div>
                 )}
               </div>
-              )}
             </div>
 
             {/* Price breakdown */}
             <div className="border-t border-border pt-6 space-y-3">
               <div className="flex justify-between font-body text-sm text-muted-foreground">
                 <span>
-                  {material === "metal" ? metalOptions[metalIdx].label : "Acrylic"} — {size.label}
+                  {material === "metal" ? metalOptions[metalIdx].label : "Acrylic"} — {sizeLabel}
                 </span>
                 <span>${printPrice.toFixed(2)}</span>
               </div>
@@ -215,18 +269,19 @@ const PriceCalculator = () => {
                   <span>${addOns.roundedCorners.toFixed(2)}</span>
                 </div>
               )}
+              {metalSurcharge > 0 && (
+                <div className="flex justify-between font-body text-sm text-muted-foreground">
+                  <span>Metal stand-off surcharge (15%)</span>
+                  <span>${metalSurcharge.toFixed(2)}</span>
+                </div>
+              )}
               {standOff !== "none" && (
                 <div className="flex justify-between font-body text-sm text-muted-foreground">
                   <span>
-                    Stand-Off ({standOff}) × {standOffQty}
+                    Stand-offs ({standOff}) × {standOffQty}
                   </span>
                   <span>
-                    $
-                    {(
-                      (standOff === "silver"
-                        ? addOns.standOffSilver
-                        : addOns.standOffBlack) * standOffQty
-                    ).toFixed(2)}
+                    ${((standOff === "silver" ? addOns.standOffSilver : addOns.standOffBlack) * standOffQty).toFixed(2)}
                   </span>
                 </div>
               )}
@@ -246,7 +301,7 @@ const PriceCalculator = () => {
             </div>
 
             <Button className="w-full bg-gradient-gold text-primary-foreground font-body font-semibold tracking-wide hover:opacity-90">
-              Request This Quote
+              Order Now
             </Button>
           </CardContent>
         </Card>

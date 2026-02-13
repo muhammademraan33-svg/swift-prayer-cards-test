@@ -63,9 +63,9 @@ export function calcAcrylicPrice(widthIn: number, heightIn: number): number {
 // Eternity / business cards: cost $1 ea, retail ~$5 ea
 export const cardPricing = {
   eternityCard: { pack55: 165 },
-  businessCard: { single: 5, pack25: 100, pack50: 175, pack100: 300 },
-  invitationCard: { single: 6, pack25: 125, pack50: 225 },
-  prayerCard: { single: 5, pack10: 40, pack25: 90, pack55: 175 },
+  businessCard: { pack55: 165 },
+  invitationCard: { pack55: 165 },
+  prayerCard: { pack55: 165 },
 };
 
 export const standardSizes = [

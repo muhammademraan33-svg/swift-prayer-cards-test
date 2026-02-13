@@ -1,5 +1,5 @@
 // Cost prices - marked up ~3x for retail
-const MARKUP = 3;
+const MARKUP = 1.4;
 
 export interface MetalOption {
   label: string;
@@ -62,10 +62,10 @@ export function calcAcrylicPrice(widthIn: number, heightIn: number): number {
 
 // Eternity / business cards: cost $1 ea, retail ~$5 ea
 export const cardPricing = {
-  eternityCard: { pack55: 165 },
-  businessCard: { pack55: 165 },
-  invitationCard: { pack55: 165 },
-  prayerCard: { pack55: 165 },
+  eternityCard: { pack55: 77 },
+  businessCard: { pack55: 77 },
+  invitationCard: { pack55: 77 },
+  prayerCard: { pack55: 77 },
 };
 
 export const standardSizes = [

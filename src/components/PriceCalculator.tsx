@@ -17,9 +17,14 @@ import {
   calcMetalPrice,
   calcAcrylicPrice,
   getShippingCost,
+  calcLuxpressShipping,
+  calcOvernightShipping,
   addOns,
   standardSizes,
   recommendStandOffs,
+  acrylicCostPerSqIn,
+  acrylicMinCost,
+  type ShippingSpeed,
 } from "@/lib/pricing";
 import { Info } from "lucide-react";
 
@@ -32,6 +37,7 @@ const PriceCalculator = () => {
   const [roundedCorners, setRoundedCorners] = useState(false);
   const [standOff, setStandOff] = useState<"none" | "silver" | "black">("none");
   const [standOffQty, setStandOffQty] = useState(4);
+  const [shippingSpeed, setShippingSpeed] = useState<ShippingSpeed>("standard");
 
   const isCustom = sizeIdx === "custom";
   const w = isCustom ? customW : standardSizes[sizeIdx as number].w;
@@ -49,7 +55,24 @@ const PriceCalculator = () => {
       ? calcMetalPrice(w, h, metalOptions[metalIdx])
       : calcAcrylicPrice(w, h);
 
-  const shipping = getShippingCost(w, h);
+  const standardShipping = getShippingCost(w, h);
+
+  const costPerSqIn = material === "metal" ? metalOptions[metalIdx].costPerSqIn : acrylicCostPerSqIn;
+  const minCost = material === "metal" ? metalOptions[metalIdx].minCost : acrylicMinCost;
+
+  const shippingCost =
+    shippingSpeed === "overnight"
+      ? calcOvernightShipping(w, h, costPerSqIn, minCost)
+      : shippingSpeed === "luxpress"
+        ? calcLuxpressShipping(standardShipping.cost)
+        : standardShipping.cost;
+
+  const shippingLabel =
+    shippingSpeed === "overnight"
+      ? "Overnight (24h)"
+      : shippingSpeed === "luxpress"
+        ? `LuXpress 47h (${standardShipping.label})`
+        : `Standard 72h (${standardShipping.label})`;
 
   let addOnTotal = 0;
   if (roundedCorners) addOnTotal += addOns.roundedCorners;
@@ -62,7 +85,7 @@ const PriceCalculator = () => {
     ? Math.ceil(printPrice * addOns.metalStandOffSurcharge)
     : 0;
 
-  const total = printPrice + shipping.cost + addOnTotal + metalSurcharge;
+  const total = printPrice + shippingCost + addOnTotal + metalSurcharge;
 
   return (
     <section id="calculator" className="py-24 px-6">
@@ -255,6 +278,37 @@ const PriceCalculator = () => {
               </div>
             </div>
 
+            {/* Shipping Speed */}
+            <div>
+              <Label className="text-foreground font-body font-semibold tracking-wider uppercase text-xs mb-3 block">
+                Shipping Speed
+              </Label>
+              <RadioGroup
+                value={shippingSpeed}
+                onValueChange={(v) => setShippingSpeed(v as ShippingSpeed)}
+                className="flex flex-wrap gap-4"
+              >
+                <div className="flex items-center gap-2">
+                  <RadioGroupItem value="standard" id="ship-standard" />
+                  <Label htmlFor="ship-standard" className="font-body text-foreground cursor-pointer">
+                    Standard (72h)
+                  </Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <RadioGroupItem value="luxpress" id="ship-luxpress" />
+                  <Label htmlFor="ship-luxpress" className="font-body text-foreground cursor-pointer">
+                    LuXpress (47h)
+                  </Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <RadioGroupItem value="overnight" id="ship-overnight" />
+                  <Label htmlFor="ship-overnight" className="font-body text-foreground cursor-pointer">
+                    Overnight (24h)
+                  </Label>
+                </div>
+              </RadioGroup>
+            </div>
+
             {/* Price breakdown */}
             <div className="border-t border-border pt-6 space-y-3">
               <div className="flex justify-between font-body text-sm text-muted-foreground">
@@ -286,13 +340,8 @@ const PriceCalculator = () => {
                 </div>
               )}
               <div className="flex justify-between font-body text-sm text-muted-foreground">
-                <span>Shipping ({shipping.label})</span>
-                <span>
-                  ${shipping.cost.toFixed(2)}
-                  {shipping.note && (
-                    <span className="text-xs ml-1">({shipping.note})</span>
-                  )}
-                </span>
+                <span>Shipping — {shippingLabel}</span>
+                <span>${shippingCost.toFixed(2)}</span>
               </div>
               <div className="flex justify-between font-body text-lg font-bold text-foreground border-t border-border pt-3">
                 <span>Total</span>

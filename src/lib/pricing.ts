@@ -48,6 +48,26 @@ export function getShippingCost(widthIn: number, heightIn: number): ShippingTier
   return shippingTiers[5];
 }
 
+const LUXPRESS_MULTIPLIER = 1.50;
+const OVERNIGHT_MULTIPLIER = 2.20;
+const OVERNIGHT_MIN_RAW_COST = 8.64;
+
+export type ShippingSpeed = 'standard' | 'luxpress' | 'overnight';
+
+export function calcLuxpressShipping(standardCost: number): number {
+  return Math.ceil(standardCost * LUXPRESS_MULTIPLIER);
+}
+
+export function calcOvernightShipping(
+  widthIn: number,
+  heightIn: number,
+  costPerSqIn: number,
+  minCost: number,
+): number {
+  const rawCost = Math.max(widthIn * heightIn * costPerSqIn, Math.max(minCost, OVERNIGHT_MIN_RAW_COST));
+  return Math.ceil(rawCost * OVERNIGHT_MULTIPLIER);
+}
+
 export function calcMetalPrice(widthIn: number, heightIn: number, option: MetalOption): number {
   const sqIn = widthIn * heightIn;
   const cost = Math.max(sqIn * option.costPerSqIn, option.minCost);

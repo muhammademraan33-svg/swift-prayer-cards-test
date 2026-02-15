@@ -128,7 +128,7 @@ const StepUpsell = ({ frontImage, backImage, backUploadedFile, doubleSided, mate
     handlers: ReturnType<typeof makePointerHandlers>,
     isPlaceholder?: boolean,
   ) => (
-    <div className="flex-1 text-center">
+    <div className="flex-1 min-w-0 text-center">
       <div
         className="relative w-full overflow-hidden rounded-lg border-2 border-border bg-secondary cursor-grab active:cursor-grabbing"
         style={{ aspectRatio: `${displayW} / ${displayH}`, maxHeight: 200 }}
@@ -185,7 +185,7 @@ const StepUpsell = ({ frontImage, backImage, backUploadedFile, doubleSided, mate
 
       {/* Side-by-side previews with pan/zoom */}
       <div className="bg-card border border-border rounded-lg p-4">
-        <div className="flex items-start gap-3">
+        <div className="flex items-start gap-3 flex-nowrap">
           {renderPreviewBox(frontImage, "Front", frontZoom, setFrontZoom, frontPan, setFrontPan, frontHandlers)}
           <div className="flex items-center pt-12">
             <RotateCw className="w-5 h-5 text-primary shrink-0" />

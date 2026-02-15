@@ -22,7 +22,7 @@ export const addOns = {
   roundedCorners: 5.00,
   standOffSilver: 3.00,
   standOffBlack: 4.00,
-  metalStandOffSurcharge: 0.15, // 15% of base print price
+  metalStandOffSurcharge: 0.10, // 10% of COGS for mounting holes
 };
 
 export type ShippingTier = { label: string; cost: number; note?: string };

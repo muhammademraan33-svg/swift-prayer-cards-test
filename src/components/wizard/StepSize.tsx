@@ -8,22 +8,14 @@ import roomBackdrop from "@/assets/room-backdrop.jpg";
 import acrylicImg from "@/assets/acrylic-print.jpg";
 import metalImg from "@/assets/metal-print.jpg";
 import metalMuseumImg from "@/assets/metal-museum-print.jpg";
-import type { MaterialChoice, SelectedImage } from "./types";
-import BackImagePicker from "./BackImagePicker";
+import type { MaterialChoice } from "./types";
 
 interface Props {
   imageUrl: string;
   sizeIdx: number;
   material: MaterialChoice;
-  backImage: SelectedImage | null;
-  backUploadedFile: string | null;
-  doubleSided: boolean;
   onSelect: (idx: number) => void;
   onSelectMaterial: (m: MaterialChoice) => void;
-  onSelectBack: (img: SelectedImage) => void;
-  onUploadBack: (dataUrl: string) => void;
-  onRemoveBack: () => void;
-  onToggleDouble: (v: boolean) => void;
   onNext: () => void;
   onBack: () => void;
 }
@@ -46,7 +38,7 @@ const sizeGroups = [
 // The couch sits at ~62% from top in the image, so prints must stay above that.
 const WALL_WIDTH_IN = 120;
 
-const StepSize = ({ imageUrl, sizeIdx, material, backImage, backUploadedFile, doubleSided, onSelect, onSelectMaterial, onSelectBack, onUploadBack, onRemoveBack, onToggleDouble, onNext, onBack }: Props) => {
+const StepSize = ({ imageUrl, sizeIdx, material, onSelect, onSelectMaterial, onNext, onBack }: Props) => {
   const selected = standardSizes[sizeIdx];
   const [orientation, setOrientation] = useState<"landscape" | "portrait">("landscape");
   const [zoom, setZoom] = useState(1);
@@ -251,23 +243,6 @@ const StepSize = ({ imageUrl, sizeIdx, material, backImage, backUploadedFile, do
         </div>
       </div>
 
-      {/* Back image picker for metal */}
-      {material.startsWith("metal") && (() => {
-        const size = standardSizes[sizeIdx];
-        const sIdx = material === "metal-designer" ? 0 : 2;
-        const dIdx = material === "metal-designer" ? 1 : 3;
-        const upsellCost = calcMetalPrice(size.w, size.h, metalOptions[dIdx]) - calcMetalPrice(size.w, size.h, metalOptions[sIdx]);
-        return (
-          <BackImagePicker
-            backImage={backImage}
-            backUploadedFile={backUploadedFile}
-            upsellCost={upsellCost}
-            onSelectBack={(img) => { onSelectBack(img); onToggleDouble(true); }}
-            onUploadBack={(dataUrl) => { onUploadBack(dataUrl); onToggleDouble(true); }}
-            onRemoveBack={onRemoveBack}
-          />
-        );
-      })()}
 
       {/* Horizontal scrollable size rows */}
       {sizeGroups.map((group) => {

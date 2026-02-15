@@ -1,10 +1,8 @@
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
 import HowItWorks from "@/components/HowItWorks";
-import ShopBySize from "@/components/ShopBySize";
+import PrintWizard from "@/components/wizard/PrintWizard";
 import BundlesSection from "@/components/BundlesSection";
-import ShopByImage from "@/components/ShopByImage";
-import PriceCalculator from "@/components/PriceCalculator";
 import Testimonials from "@/components/Testimonials";
 import FAQ from "@/components/FAQ";
 import FinalCTA from "@/components/FinalCTA";
@@ -37,10 +35,8 @@ const Index = () => {
       <main>
         <Hero />
         <HowItWorks />
-        <ShopBySize />
+        <PrintWizard />
         <BundlesSection />
-        <ShopByImage />
-        <PriceCalculator />
         <Testimonials />
         <FAQ />
         <FinalCTA />

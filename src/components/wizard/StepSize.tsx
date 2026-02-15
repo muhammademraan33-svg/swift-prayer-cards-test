@@ -273,9 +273,9 @@ const StepSize = ({ imageUrl, sizeIdx, material, onSelect, onSelectMaterial, onN
                 {selectedBundle.name} — Add Your Images
               </span>
             </div>
-            <button onClick={onClearBundle} className="text-[10px] text-muted-foreground hover:text-foreground font-body underline">
-              Cancel bundle
-            </button>
+            <Button variant="outline" size="sm" onClick={onClearBundle} className="font-body text-[10px] h-7 gap-1 tracking-wider">
+              <ArrowLeft className="w-3 h-3" /> Continue Shopping
+            </Button>
           </div>
           <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
             {(() => {

@@ -54,6 +54,7 @@ const StepReview = ({ state, onBack }: Props) => {
     ? Math.ceil(cogs * addOns.metalStandOffSurcharge)
     : 0;
 
+  const displayPrintPrice = printPrice + metalSurcharge; // fold surcharge into print line
   const total = printPrice + shipping.cost + addOnTotal + metalSurcharge;
 
   return (
@@ -90,7 +91,7 @@ const StepReview = ({ state, onBack }: Props) => {
         <div className="p-6 space-y-3">
           <div className="flex justify-between font-body text-sm text-muted-foreground">
             <span>{getMaterialLabel(state.material)}{state.doubleSided ? " (Double-Sided)" : ""} — {size.label}</span>
-            <span>${printPrice.toFixed(2)}</span>
+            <span>${displayPrintPrice.toFixed(2)}</span>
           </div>
           {state.roundedCorners && (
             <div className="flex justify-between font-body text-sm text-muted-foreground">
@@ -102,12 +103,6 @@ const StepReview = ({ state, onBack }: Props) => {
             <div className="flex justify-between font-body text-sm text-muted-foreground">
               <span>Stand-offs ({state.standOff}) × {state.standOffQty}</span>
               <span>${((state.standOff === "silver" ? addOns.standOffSilver : addOns.standOffBlack) * state.standOffQty).toFixed(2)}</span>
-            </div>
-          )}
-          {metalSurcharge > 0 && (
-            <div className="flex justify-between font-body text-sm text-muted-foreground">
-              <span>Metal mounting surcharge (15%)</span>
-              <span>${metalSurcharge.toFixed(2)}</span>
             </div>
           )}
           <div className="flex justify-between font-body text-sm text-muted-foreground">

@@ -23,34 +23,31 @@ const steps = [
 
 const HowItWorks = () => {
   return (
-    <section id="how-it-works" className="py-28 md:py-36 px-6">
+    <section id="how-it-works" className="py-14 md:py-20 px-6">
       <div className="max-w-5xl mx-auto">
-        <div className="text-center mb-20">
-          <p className="text-[10px] tracking-[0.4em] uppercase text-primary font-body mb-4">
+        <div className="text-center mb-10">
+          <p className="text-[10px] tracking-[0.4em] uppercase text-primary font-body mb-2">
             The Process
           </p>
-          <h2 className="text-3xl md:text-5xl font-display font-bold text-foreground">
+          <h2 className="text-2xl md:text-3xl font-display font-bold text-foreground">
             From Vision to Masterpiece
           </h2>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-16 md:gap-10">
+        <div className="grid md:grid-cols-3 gap-6">
           {steps.map((s) => (
-            <div key={s.step} className="text-center group">
-              <div className="relative mb-8">
-                <span className="text-7xl font-display font-bold text-foreground/[0.03] absolute -top-4 left-1/2 -translate-x-1/2">
-                  {s.step}
-                </span>
-                <div className="relative w-16 h-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors duration-500">
-                  <s.icon className="w-7 h-7 text-primary" />
-                </div>
+            <div key={s.step} className="flex items-start gap-4 group">
+              <div className="relative shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors duration-500">
+                <s.icon className="w-5 h-5 text-primary" />
               </div>
-              <h3 className="text-xl font-display font-semibold text-foreground mb-3">
-                {s.title}
-              </h3>
-              <p className="text-sm text-muted-foreground font-body leading-relaxed max-w-xs mx-auto">
-                {s.description}
-              </p>
+              <div>
+                <h3 className="text-sm font-display font-semibold text-foreground mb-1">
+                  {s.title}
+                </h3>
+                <p className="text-xs text-muted-foreground font-body leading-relaxed">
+                  {s.description}
+                </p>
+              </div>
             </div>
           ))}
         </div>

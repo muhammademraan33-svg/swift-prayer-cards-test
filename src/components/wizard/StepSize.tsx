@@ -89,13 +89,13 @@ const StepSize = ({ imageUrl, sizeIdx, material, onSelect, onSelectMaterial, onN
         {(() => {
           const isDesk = sizeIdx < 4;
           const backdropImg = isDesk ? credenzaBackdrop : luxuryWall;
-          // Desk: credenza ~48" wide, Wall: ~120" wide
-          const WALL_W = isDesk ? 48 : 120;
+          // Credenza is ~60" wide in real life; wall scene ~120"
+          const WALL_W = isDesk ? 60 : 120;
           const WALL_H = WALL_W * (9 / 16);
           const printWPct = Math.max((displayW / WALL_W) * 100, 10);
           const printHPct = Math.max((displayH / WALL_H) * 100, 10);
-          // Position print higher on credenza (above the furniture)
-          const printTop = isDesk ? "35%" : "50%";
+          // Desk prints sit just above credenza surface (~60% from top)
+          const printTop = isDesk ? "40%" : "50%";
           return (
         <div className="relative w-full overflow-hidden rounded-lg border border-border" style={{ maxWidth: 720, aspectRatio: "16/9" }}>
           <img src={backdropImg} alt="Room backdrop" className="absolute inset-0 w-full h-full object-cover" />

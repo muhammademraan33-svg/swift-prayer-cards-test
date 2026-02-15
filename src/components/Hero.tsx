@@ -45,23 +45,11 @@ const Hero = () => {
               className="bg-gradient-gold text-primary-foreground font-body font-semibold tracking-[0.2em] hover:opacity-90 px-12 h-14 text-xs"
               onClick={() =>
                 document
-                  .getElementById("shop-by-size")
+                  .getElementById("wizard")
                   ?.scrollIntoView({ behavior: "smooth" })
               }
             >
-              EXPLORE COLLECTION
-            </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              className="border-foreground/15 text-foreground font-body tracking-[0.2em] hover:bg-foreground/5 px-12 h-14 text-xs"
-              onClick={() =>
-                document
-                  .getElementById("calculator")
-                  ?.scrollIntoView({ behavior: "smooth" })
-              }
-            >
-              COMMISSION A PIECE
+              CREATE YOUR PRINT
             </Button>
           </div>
 

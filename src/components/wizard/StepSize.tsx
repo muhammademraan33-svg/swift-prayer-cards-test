@@ -82,11 +82,17 @@ const StepSize = ({ imageUrl, sizeIdx, material, onSelect, onSelectMaterial, onN
         </p>
       </div>
 
-      {/* Image preview — clean box, no room backdrop */}
+      {/* Image preview — scales proportionally to print size */}
       <div className="flex justify-center">
+        {(() => {
+          const maxDim = 96; // largest dimension in catalog
+          const scaleFactor = Math.max(displayW, displayH) / maxDim;
+          // Scale from 40% to 100% of container width
+          const widthPct = 40 + scaleFactor * 60;
+          return (
         <div
-          className="relative w-full overflow-hidden rounded-lg border-2 border-border bg-secondary cursor-grab active:cursor-grabbing"
-          style={{ maxWidth: 520, aspectRatio: `${displayW} / ${displayH}` }}
+          className="relative overflow-hidden rounded-lg border-2 border-border bg-secondary cursor-grab active:cursor-grabbing transition-all duration-500 ease-out"
+          style={{ width: `${widthPct}%`, maxWidth: 520, aspectRatio: `${displayW} / ${displayH}` }}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
@@ -133,6 +139,8 @@ const StepSize = ({ imageUrl, sizeIdx, material, onSelect, onSelectMaterial, onN
             )}
           </div>
         </div>
+          );
+        })()}
       </div>
 
       {/* Size selection */}

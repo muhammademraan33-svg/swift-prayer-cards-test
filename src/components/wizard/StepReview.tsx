@@ -42,13 +42,12 @@ const StepReview = ({ state, onBack }: Props) => {
 
   const printPrice = calcPrintPrice(state.material, size.w, size.h, state.doubleSided);
 
-  // Companion print pricing
-  const companion = state.companionPrint;
-  const companionSize = companion ? standardSizes[companion.sizeIdx] : null;
-  const companionPrice = companion && companionSize
-    ? calcPrintPrice(state.material, companionSize.w, companionSize.h, false)
-    : 0;
-  const companionImgSrc = companion?.uploadedFile || companion?.image?.url;
+  // Companion prints pricing
+  const companions = state.companionPrints;
+  const companionTotalPrice = companions.reduce((sum, cp) => {
+    const cs = standardSizes[cp.sizeIdx];
+    return sum + calcPrintPrice(state.material, cs.w, cs.h, false);
+  }, 0);
 
   const shipping = getShippingCost(size.w, size.h);
 
@@ -64,8 +63,7 @@ const StepReview = ({ state, onBack }: Props) => {
     ? Math.ceil(cogs * addOns.metalStandOffSurcharge)
     : 0;
 
-  const displayPrintPrice = printPrice + metalSurcharge;
-  const total = printPrice + companionPrice + shipping.cost + addOnTotal + metalSurcharge;
+  const total = printPrice + companionTotalPrice + shipping.cost + addOnTotal + metalSurcharge;
 
   return (
     <div className="space-y-8">
@@ -74,7 +72,7 @@ const StepReview = ({ state, onBack }: Props) => {
           Your Commission
         </h2>
         <p className="text-muted-foreground font-body mt-3 tracking-wide">
-          Review your bespoke print{companion ? "s" : ""} before placing your order.
+          Review your bespoke print{companions.length > 0 ? "s" : ""} before placing your order.
         </p>
       </div>
 
@@ -85,7 +83,7 @@ const StepReview = ({ state, onBack }: Props) => {
             <img src={imageUrl} alt="Front" className="w-full h-full object-cover" />
           </div>
           {state.doubleSided && <p className="text-[10px] text-primary font-body mt-2 font-semibold">FRONT</p>}
-          {!state.doubleSided && companion && <p className="text-[10px] text-primary font-body mt-2 font-semibold">{size.label}</p>}
+          {!state.doubleSided && companions.length > 0 && <p className="text-[10px] text-primary font-body mt-2 font-semibold">{size.label}</p>}
         </div>
         {state.doubleSided && backUrl && (
           <div className="text-center">
@@ -95,14 +93,18 @@ const StepReview = ({ state, onBack }: Props) => {
             <p className="text-[10px] text-muted-foreground font-body mt-2 font-semibold">BACK</p>
           </div>
         )}
-        {companion && companionImgSrc && companionSize && (
-          <div className="text-center">
-            <div className="w-48 h-36 rounded-lg overflow-hidden border border-border shadow-xl">
-              <img src={companionImgSrc} alt="Companion print" className="w-full h-full object-cover" />
+        {companions.map((cp, i) => {
+          const cpImgSrc = cp.uploadedFile || cp.image?.url;
+          const cpSize = standardSizes[cp.sizeIdx];
+          return cpImgSrc ? (
+            <div key={i} className="text-center">
+              <div className="w-48 h-36 rounded-lg overflow-hidden border border-border shadow-xl">
+                <img src={cpImgSrc} alt={`Companion ${i + 1}`} className="w-full h-full object-cover" />
+              </div>
+              <p className="text-[10px] text-muted-foreground font-body mt-2 font-semibold">{cpSize.label}</p>
             </div>
-            <p className="text-[10px] text-muted-foreground font-body mt-2 font-semibold">{companionSize.label}</p>
-          </div>
-        )}
+          ) : null;
+        })}
       </div>
 
       {/* Price breakdown */}
@@ -110,14 +112,18 @@ const StepReview = ({ state, onBack }: Props) => {
         <div className="p-6 space-y-3">
           <div className="flex justify-between font-body text-sm text-muted-foreground">
             <span>{getMaterialLabel(state.material)}{state.doubleSided ? " (Double-Sided)" : ""} — {size.label}</span>
-            <span>${displayPrintPrice.toFixed(2)}</span>
+            <span>${(printPrice + metalSurcharge).toFixed(2)}</span>
           </div>
-          {companion && companionSize && (
-            <div className="flex justify-between font-body text-sm text-muted-foreground">
-              <span>Companion — {getMaterialLabel(state.material)} — {companionSize.label}</span>
-              <span>${companionPrice.toFixed(2)}</span>
-            </div>
-          )}
+          {companions.map((cp, i) => {
+            const cpSize = standardSizes[cp.sizeIdx];
+            const cpPrice = calcPrintPrice(state.material, cpSize.w, cpSize.h, false);
+            return (
+              <div key={i} className="flex justify-between font-body text-sm text-muted-foreground">
+                <span>Companion {i + 1} — {getMaterialLabel(state.material)} — {cpSize.label}</span>
+                <span>${cpPrice.toFixed(2)}</span>
+              </div>
+            );
+          })}
           {state.roundedCorners && (
             <div className="flex justify-between font-body text-sm text-muted-foreground">
               <span>Rounded Corners</span>

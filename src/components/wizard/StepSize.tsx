@@ -15,10 +15,10 @@ interface Props {
   imageUrl: string;
   sizeIdx: number;
   material: MaterialChoice;
-  companionPrint: CompanionPrint | null;
+  companionPrints: CompanionPrint[];
   onSelect: (idx: number) => void;
   onSelectMaterial: (m: MaterialChoice) => void;
-  onCompanionChange: (cp: CompanionPrint | null) => void;
+  onCompanionPrintsChange: (cps: CompanionPrint[]) => void;
   onNext: () => void;
   onBack: () => void;
 }
@@ -36,17 +36,18 @@ const sizeGroups = [
   { label: "Grand Scale", range: [16, 21] as const },
 ];
 
-// Desk & shelf size indices
 const DESK_SHELF_MAX_IDX = 4;
+const MAX_COMPANIONS = 5;
 
-const StepSize = ({ imageUrl, sizeIdx, material, companionPrint, onSelect, onSelectMaterial, onCompanionChange, onNext, onBack }: Props) => {
+const StepSize = ({ imageUrl, sizeIdx, material, companionPrints, onSelect, onSelectMaterial, onCompanionPrintsChange, onNext, onBack }: Props) => {
   const selected = standardSizes[sizeIdx];
   const [orientation, setOrientation] = useState<"landscape" | "portrait">("landscape");
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const isDragging = useRef(false);
   const dragStart = useRef({ x: 0, y: 0, panX: 0, panY: 0 });
-  const companionFileRef = useRef<HTMLInputElement>(null);
+  const companionFileRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const [activeUploadIdx, setActiveUploadIdx] = useState<number>(-1);
 
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
     isDragging.current = true;
@@ -80,46 +81,61 @@ const StepSize = ({ imageUrl, sizeIdx, material, companionPrint, onSelect, onSel
       : `${Math.max(selected.w, selected.h)}"×${Math.min(selected.w, selected.h)}"`;
 
   const isDesk = sizeIdx < DESK_SHELF_MAX_IDX;
-  const hasCompanion = !!companionPrint;
-  const companionImgSrc = companionPrint?.uploadedFile || companionPrint?.image?.url || "";
 
-  const handleCompanionUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCompanionUpload = (e: React.ChangeEvent<HTMLInputElement>, idx: number) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => {
-      onCompanionChange({
-        image: null,
-        uploadedFile: reader.result as string,
-        sizeIdx: sizeIdx,
-        orientation: "landscape",
-      });
+      if (idx < companionPrints.length) {
+        // Update existing companion
+        const updated = [...companionPrints];
+        updated[idx] = { ...updated[idx], uploadedFile: reader.result as string, image: null };
+        onCompanionPrintsChange(updated);
+      } else {
+        // Add new companion
+        onCompanionPrintsChange([...companionPrints, {
+          image: null,
+          uploadedFile: reader.result as string,
+          sizeIdx: sizeIdx,
+          orientation: "landscape",
+        }]);
+      }
     };
     reader.readAsDataURL(file);
     e.target.value = "";
   };
 
   const addCompanion = () => {
-    onCompanionChange({
+    if (companionPrints.length >= MAX_COMPANIONS) return;
+    onCompanionPrintsChange([...companionPrints, {
       image: null,
       uploadedFile: null,
       sizeIdx: sizeIdx,
       orientation: "landscape",
-    });
+    }]);
   };
 
-  const removeCompanion = () => {
-    onCompanionChange(null);
+  const removeCompanion = (idx: number) => {
+    onCompanionPrintsChange(companionPrints.filter((_, i) => i !== idx));
   };
 
-  // Companion display dimensions
-  const companionSize = companionPrint ? standardSizes[companionPrint.sizeIdx] : null;
-  const companionDisplayW = companionSize
-    ? (companionPrint?.orientation === "portrait" ? Math.min(companionSize.w, companionSize.h) : Math.max(companionSize.w, companionSize.h))
-    : 0;
-  const companionDisplayH = companionSize
-    ? (companionPrint?.orientation === "portrait" ? Math.max(companionSize.w, companionSize.h) : Math.min(companionSize.w, companionSize.h))
-    : 0;
+  // Calculate total companion price for material cards
+  const calcCompanionTotalPrice = (matId: MaterialChoice) => {
+    return companionPrints.reduce((sum, cp) => {
+      const cs = standardSizes[cp.sizeIdx];
+      const price = matId === "acrylic"
+        ? calcAcrylicPrice(cs.w, cs.h)
+        : matId === "metal-designer"
+          ? calcMetalPrice(cs.w, cs.h, metalOptions[0])
+          : calcMetalPrice(cs.w, cs.h, metalOptions[2]);
+      return sum + price;
+    }, 0);
+  };
+
+  // Build shelf slots: main print + companions + empty slots (up to 6 total)
+  const totalSlots = isDesk ? Math.max(4, companionPrints.length + 2) : 0;
+  const emptySlots = isDesk ? Math.max(0, totalSlots - 1 - companionPrints.length) : 0;
 
   return (
     <div className="space-y-4">
@@ -128,105 +144,146 @@ const StepSize = ({ imageUrl, sizeIdx, material, companionPrint, onSelect, onSel
           Choose Your Size
         </h2>
         <p className="text-muted-foreground font-body mt-1 tracking-wide text-sm">
-          Drag to reposition your image within the frame.
+          {isDesk ? "Tap empty slots to add matching prints for your display." : "Drag to reposition your image within the frame."}
         </p>
       </div>
 
-      {/* Hidden file input for companion */}
-      <input ref={companionFileRef} type="file" accept="image/*" className="hidden" onChange={handleCompanionUpload} />
+      {/* Hidden file inputs */}
+      {Array.from({ length: MAX_COMPANIONS + 1 }).map((_, i) => (
+        <input
+          key={`file-${i}`}
+          ref={(el) => { companionFileRefs.current[i] = el; }}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => handleCompanionUpload(e, i)}
+        />
+      ))}
 
       {/* Wall/shelf backdrop with print(s) */}
       <div className="flex justify-center">
         {(() => {
-          const backdropImg = isDesk ? shelfBackdrop : couchWall;
-          const WALL_W = isDesk ? 24 : 96;
-          const containerAspect = isDesk ? "3/4" : "16/9";
+          if (isDesk) {
+            const WALL_W = 24;
+            const containerAspect = "3/4";
+            const mainSize = standardSizes[sizeIdx];
+            const mainW = orientation === "portrait" ? Math.min(mainSize.w, mainSize.h) : Math.max(mainSize.w, mainSize.h);
+            const mainH = orientation === "portrait" ? Math.max(mainSize.w, mainSize.h) : Math.min(mainSize.w, mainSize.h);
 
-          // Calculate main print dimensions
-          const printWPct = Math.max((displayW / WALL_W) * 100, 10);
-          const printAspect = displayW / displayH;
-          const printBottom = isDesk ? "38%" : undefined;
-          const printTop = isDesk ? undefined : "35%";
+            // All prints (main + companions) arranged on shelf
+            const allPrints: { w: number; h: number; imgSrc: string | null; isMain: boolean; companionIdx: number }[] = [
+              { w: mainW, h: mainH, imgSrc: imageUrl, isMain: true, companionIdx: -1 },
+            ];
+            companionPrints.forEach((cp, i) => {
+              const cs = standardSizes[cp.sizeIdx];
+              const cpW = cp.orientation === "portrait" ? Math.min(cs.w, cs.h) : Math.max(cs.w, cs.h);
+              const cpH = cp.orientation === "portrait" ? Math.max(cs.w, cs.h) : Math.min(cs.w, cs.h);
+              allPrints.push({ w: cpW, h: cpH, imgSrc: cp.uploadedFile || cp.image?.url || null, isMain: false, companionIdx: i });
+            });
+            // Add empty slots
+            for (let i = 0; i < emptySlots; i++) {
+              const defaultSize = standardSizes[sizeIdx];
+              const ew = orientation === "portrait" ? Math.min(defaultSize.w, defaultSize.h) : Math.max(defaultSize.w, defaultSize.h);
+              const eh = orientation === "portrait" ? Math.max(defaultSize.w, defaultSize.h) : Math.min(defaultSize.w, defaultSize.h);
+              allPrints.push({ w: ew, h: eh, imgSrc: null, isMain: false, companionIdx: companionPrints.length + i });
+            }
 
-          // If companion exists and desk size, show side-by-side
-          if (isDesk && hasCompanion) {
-            const gap = 2; // inches
-            const totalW = displayW + companionDisplayW + gap;
-            const sceneW = Math.max(WALL_W, totalW * 1.5);
+            const gap = 1.5;
+            const totalW = allPrints.reduce((s, p) => s + p.w, 0) + (allPrints.length - 1) * gap;
+            const sceneW = Math.max(WALL_W, totalW * 1.3);
 
             return (
               <div className="relative w-full overflow-hidden rounded-lg border border-border" style={{ maxWidth: 720, aspectRatio: containerAspect }}>
-                <img src={backdropImg} alt="Room backdrop" className="absolute inset-0 w-full h-full object-cover" />
+                <img src={shelfBackdrop} alt="Shelf backdrop" className="absolute inset-0 w-full h-full object-cover" />
                 <div
-                  className="absolute left-1/2 -translate-x-1/2 flex items-end gap-[2%]"
-                  style={{ bottom: "38%" }}
+                  className="absolute left-1/2 -translate-x-1/2 flex items-end"
+                  style={{ bottom: "38%", gap: `${(gap / sceneW) * 100}%` }}
                 >
-                  {/* Main print */}
-                  <div
-                    className="shadow-[0_4px_20px_rgba(0,0,0,0.3)] overflow-hidden shrink-0"
-                    style={{
-                      width: `${Math.max((displayW / sceneW) * 100, 8)}vw`,
-                      maxWidth: `${(displayW / sceneW) * 720}px`,
-                      aspectRatio: `${printAspect}`,
-                    }}
-                  >
-                    <img
-                      src={imageUrl}
-                      alt="Main print"
-                      className="w-full h-full object-cover"
-                      style={{
-                        transform: `scale(${zoom}) translate(${pan.x / zoom}px, ${pan.y / zoom}px)`,
-                        transformOrigin: "center center",
-                      }}
-                    />
-                  </div>
-                  {/* Companion print */}
-                  <div
-                    className="shadow-[0_4px_20px_rgba(0,0,0,0.3)] overflow-hidden shrink-0 bg-muted/50"
-                    style={{
-                      width: `${Math.max((companionDisplayW / sceneW) * 100, 8)}vw`,
-                      maxWidth: `${(companionDisplayW / sceneW) * 720}px`,
-                      aspectRatio: `${companionDisplayW / companionDisplayH}`,
-                    }}
-                  >
-                    {companionImgSrc ? (
-                      <img src={companionImgSrc} alt="Companion print" className="w-full h-full object-cover" />
-                    ) : (
+                  {allPrints.map((print, i) => {
+                    const widthPct = Math.max((print.w / sceneW) * 720, 40);
+                    const aspect = print.w / print.h;
+                    const isEmptySlot = !print.isMain && !print.imgSrc && print.companionIdx >= companionPrints.length;
+
+                    return (
                       <div
-                        className="w-full h-full flex flex-col items-center justify-center gap-1 cursor-pointer hover:bg-muted/70 transition-colors"
-                        onClick={() => companionFileRef.current?.click()}
+                        key={i}
+                        className={`shrink-0 overflow-hidden transition-all duration-300 ${
+                          print.isMain
+                            ? "shadow-[0_4px_20px_rgba(0,0,0,0.3)]"
+                            : print.imgSrc
+                              ? "shadow-[0_4px_20px_rgba(0,0,0,0.3)]"
+                              : "shadow-[0_2px_10px_rgba(0,0,0,0.1)] border border-dashed border-primary/30 rounded-sm"
+                        }`}
+                        style={{
+                          width: `${widthPct}px`,
+                          aspectRatio: `${aspect}`,
+                        }}
                       >
-                        <Upload className="w-5 h-5 text-muted-foreground" />
-                        <span className="text-[9px] text-muted-foreground font-body">Add image</span>
+                        {print.isMain ? (
+                          <img
+                            src={imageUrl}
+                            alt="Main print"
+                            className="w-full h-full object-cover"
+                            style={{
+                              transform: `scale(${zoom}) translate(${pan.x / zoom}px, ${pan.y / zoom}px)`,
+                              transformOrigin: "center center",
+                            }}
+                          />
+                        ) : print.imgSrc ? (
+                          <div className="relative w-full h-full group">
+                            <img src={print.imgSrc} alt="Companion" className="w-full h-full object-cover" />
+                            <button
+                              className="absolute top-0.5 right-0.5 w-4 h-4 bg-destructive rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={() => removeCompanion(print.companionIdx)}
+                            >
+                              <X className="w-2.5 h-2.5 text-destructive-foreground" />
+                            </button>
+                          </div>
+                        ) : (
+                          <div
+                            className="w-full h-full flex flex-col items-center justify-center gap-0.5 cursor-pointer bg-card/30 hover:bg-card/50 transition-colors"
+                            onClick={() => {
+                              setActiveUploadIdx(companionPrints.length);
+                              companionFileRefs.current[companionPrints.length]?.click();
+                            }}
+                          >
+                            <Plus className="w-4 h-4 text-primary/50" />
+                            <span className="text-[8px] text-primary/50 font-body">Add</span>
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
+                    );
+                  })}
                 </div>
-                {/* Labels */}
+                {/* Label */}
                 <div className="absolute bottom-2 left-2 bg-card/80 backdrop-blur-sm border border-border rounded px-2.5 py-1">
                   <span className="text-sm font-body text-primary font-semibold">{displayLabel}</span>
-                  <span className="text-[10px] text-muted-foreground font-body mx-1">+</span>
-                  <span className="text-sm font-body text-primary font-semibold">
-                    {companionSize && (companionPrint?.orientation === "portrait"
-                      ? `${Math.min(companionSize.w, companionSize.h)}"×${Math.max(companionSize.w, companionSize.h)}"`
-                      : companionSize?.label)}
-                  </span>
+                  {companionPrints.length > 0 && (
+                    <span className="text-[10px] text-muted-foreground font-body ml-1.5">
+                      + {companionPrints.length} more
+                    </span>
+                  )}
                 </div>
               </div>
             );
           }
 
-          // Single print preview
+          // Wall art — single print preview (unchanged)
+          const WALL_W = 96;
+          const printWPct = Math.max((displayW / WALL_W) * 100, 10);
+          const printAspect = displayW / displayH;
+          const printTop = "35%";
+
           return (
-            <div className="relative w-full overflow-hidden rounded-lg border border-border" style={{ maxWidth: 720, aspectRatio: containerAspect }}>
-              <img src={backdropImg} alt="Room backdrop" className="absolute inset-0 w-full h-full object-cover" />
+            <div className="relative w-full overflow-hidden rounded-lg border border-border" style={{ maxWidth: 720, aspectRatio: "16/9" }}>
+              <img src={couchWall} alt="Room backdrop" className="absolute inset-0 w-full h-full object-cover" />
               <div
-                className={`absolute left-1/2 -translate-x-1/2 shadow-[0_4px_30px_rgba(0,0,0,0.3)] transition-all duration-500 ease-out overflow-hidden cursor-grab active:cursor-grabbing ${printTop ? '-translate-y-1/2' : ''}`}
+                className={`absolute left-1/2 -translate-x-1/2 shadow-[0_4px_30px_rgba(0,0,0,0.3)] transition-all duration-500 ease-out overflow-hidden cursor-grab active:cursor-grabbing -translate-y-1/2`}
                 style={{
                   width: `${printWPct}%`,
                   paddingBottom: `${printWPct / printAspect}%`,
                   height: 0,
-                  ...(printTop ? { top: printTop } : { bottom: printBottom }),
+                  top: printTop,
                 }}
                 onPointerDown={handlePointerDown}
                 onPointerMove={handlePointerMove}
@@ -279,6 +336,71 @@ const StepSize = ({ imageUrl, sizeIdx, material, companionPrint, onSelect, onSel
         })()}
       </div>
 
+      {/* Companion prints management — desk sizes only */}
+      {isDesk && companionPrints.length > 0 && (
+        <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-body font-semibold tracking-[0.2em] uppercase text-primary">
+              Your Display ({1 + companionPrints.length} prints)
+            </span>
+          </div>
+          {companionPrints.map((cp, i) => {
+            const cpSize = standardSizes[cp.sizeIdx];
+            const cpImgSrc = cp.uploadedFile || cp.image?.url;
+            return (
+              <div key={i} className="flex items-center gap-2 bg-card/50 rounded p-2">
+                {cpImgSrc ? (
+                  <div className="relative w-10 h-10 rounded border border-border overflow-hidden shrink-0">
+                    <img src={cpImgSrc} alt="Companion" className="w-full h-full object-cover" />
+                  </div>
+                ) : (
+                  <button
+                    className="w-10 h-10 rounded border border-dashed border-primary/30 flex items-center justify-center shrink-0 hover:bg-primary/5 transition-colors"
+                    onClick={() => companionFileRefs.current[i]?.click()}
+                  >
+                    <Upload className="w-3 h-3 text-primary/50" />
+                  </button>
+                )}
+                {/* Size pills */}
+                <div className="flex gap-1 flex-wrap flex-1">
+                  {standardSizes.slice(0, DESK_SHELF_MAX_IDX).map((size, si) => (
+                    <button
+                      key={si}
+                      className={`px-2 py-0.5 text-[10px] font-display font-bold rounded transition-colors ${
+                        cp.sizeIdx === si
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-secondary text-muted-foreground hover:bg-primary/10"
+                      }`}
+                      onClick={() => {
+                        const updated = [...companionPrints];
+                        updated[i] = { ...updated[i], sizeIdx: si };
+                        onCompanionPrintsChange(updated);
+                      }}
+                    >
+                      {size.label}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  onClick={() => removeCompanion(i)}
+                  className="text-muted-foreground hover:text-destructive transition-colors shrink-0"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            );
+          })}
+          {companionPrints.length < MAX_COMPANIONS && (
+            <button
+              onClick={addCompanion}
+              className="w-full flex items-center justify-center gap-1.5 py-1.5 text-primary/70 hover:text-primary transition-colors text-[10px] font-body font-semibold tracking-wider uppercase"
+            >
+              <Plus className="w-3 h-3" /> Add another print
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Size selection */}
       {sizeGroups.map((group) => {
         const items = standardSizes.slice(group.range[0], group.range[1]);
@@ -302,9 +424,9 @@ const StepSize = ({ imageUrl, sizeIdx, material, companionPrint, onSelect, onSel
                     }`}
                     onClick={() => {
                       onSelect(idx);
-                      // Clear companion if moving to non-desk size
-                      if (idx >= DESK_SHELF_MAX_IDX && companionPrint) {
-                        onCompanionChange(null);
+                      // Clear companions if moving to non-desk size
+                      if (idx >= DESK_SHELF_MAX_IDX && companionPrints.length > 0) {
+                        onCompanionPrintsChange([]);
                       }
                     }}
                   >
@@ -316,78 +438,6 @@ const StepSize = ({ imageUrl, sizeIdx, material, companionPrint, onSelect, onSel
           </div>
         );
       })}
-
-      {/* Add companion print — only for desk & shelf sizes */}
-      {isDesk && (
-        <div className="bg-primary/5 border border-primary/20 rounded-lg p-3">
-          {!hasCompanion ? (
-            <button
-              onClick={addCompanion}
-              className="w-full flex items-center justify-center gap-2 py-2 text-primary hover:text-primary/80 transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-              <span className="text-xs font-body font-semibold tracking-wider uppercase">
-                Add a matching print to display alongside
-              </span>
-            </button>
-          ) : (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-body font-semibold tracking-[0.2em] uppercase text-primary">
-                  Companion Print
-                </span>
-                <button
-                  onClick={removeCompanion}
-                  className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-destructive font-body transition-colors"
-                >
-                  <X className="w-3 h-3" /> Remove
-                </button>
-              </div>
-              {/* Companion size selection — desk sizes only */}
-              <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-                {standardSizes.slice(0, DESK_SHELF_MAX_IDX).map((size, i) => {
-                  const isSelected = companionPrint.sizeIdx === i;
-                  return (
-                    <Card
-                      key={i}
-                      className={`px-2.5 py-1.5 text-center cursor-pointer transition-all duration-200 shrink-0 ${
-                        isSelected
-                          ? "ring-2 ring-primary border-primary bg-primary/5"
-                          : "border-border hover:border-primary/40"
-                      }`}
-                      onClick={() => onCompanionChange({ ...companionPrint, sizeIdx: i })}
-                    >
-                      <p className="text-[11px] font-display font-bold text-foreground leading-tight whitespace-nowrap">{size.label}</p>
-                    </Card>
-                  );
-                })}
-              </div>
-              {/* Companion image upload */}
-              <div className="flex items-center gap-2">
-                {companionImgSrc ? (
-                  <div className="relative w-16 h-16 rounded border border-border overflow-hidden">
-                    <img src={companionImgSrc} alt="Companion" className="w-full h-full object-cover" />
-                    <button
-                      className="absolute top-0.5 right-0.5 w-4 h-4 bg-destructive rounded-full flex items-center justify-center"
-                      onClick={() => onCompanionChange({ ...companionPrint, image: null, uploadedFile: null })}
-                    >
-                      <X className="w-2.5 h-2.5 text-destructive-foreground" />
-                    </button>
-                  </div>
-                ) : null}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="font-body text-[10px] h-7 gap-1"
-                  onClick={() => companionFileRef.current?.click()}
-                >
-                  <Upload className="w-3 h-3" /> {companionImgSrc ? "Change Image" : "Upload Image"}
-                </Button>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
 
       {/* Material selection */}
       <div>
@@ -404,16 +454,9 @@ const StepSize = ({ imageUrl, sizeIdx, material, companionPrint, onSelect, onSel
                 ? calcMetalPrice(size.w, size.h, metalOptions[0])
                 : calcMetalPrice(size.w, size.h, metalOptions[2]);
 
-            // If companion, calculate companion price too
-            const companionPrice = hasCompanion && companionSize
-              ? (mat.id === "acrylic"
-                ? calcAcrylicPrice(companionSize.w, companionSize.h)
-                : mat.id === "metal-designer"
-                  ? calcMetalPrice(companionSize.w, companionSize.h, metalOptions[0])
-                  : calcMetalPrice(companionSize.w, companionSize.h, metalOptions[2]))
-              : 0;
-
-            const totalPrice = price + companionPrice;
+            const companionTotalPrice = calcCompanionTotalPrice(mat.id);
+            const totalPrice = price + companionTotalPrice;
+            const totalPrintCount = 1 + companionPrints.length;
 
             return (
               <Card
@@ -451,7 +494,7 @@ const StepSize = ({ imageUrl, sizeIdx, material, companionPrint, onSelect, onSel
                   <p className="text-[9px] text-muted-foreground font-body">{mat.subtitle}</p>
                   <p className="text-sm font-display font-bold text-gradient-gold mt-0.5">
                     ${totalPrice}
-                    {hasCompanion && <span className="text-[9px] text-muted-foreground font-body ml-1">(2 prints)</span>}
+                    {companionPrints.length > 0 && <span className="text-[9px] text-muted-foreground font-body ml-1">({totalPrintCount} prints)</span>}
                   </p>
                 </div>
               </Card>

@@ -95,7 +95,7 @@ const StepSize = ({ imageUrl, sizeIdx, material, onSelect, onSelectMaterial, onN
             const printHPct = Math.max((displayH / WALL_H) * 100, 10);
             return (
               <div
-                className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 shadow-[0_4px_30px_rgba(0,0,0,0.5)] transition-all duration-500 ease-out overflow-hidden cursor-grab active:cursor-grabbing border border-white/10"
+                className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 shadow-[0_4px_30px_rgba(0,0,0,0.3)] transition-all duration-500 ease-out overflow-hidden cursor-grab active:cursor-grabbing"
                 style={{
                   width: `${printWPct}%`,
                   height: `${printHPct}%`,

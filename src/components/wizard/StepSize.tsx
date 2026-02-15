@@ -97,7 +97,7 @@ const StepSize = ({ imageUrl, sizeIdx, material, onSelect, onSelectMaterial, onN
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => {
-      onUpdateSlot(uploadSlotIdx, { image: null, uploadedFile: reader.result as string });
+      onUpdateSlot(uploadSlotIdx, { ...bundleSlots[uploadSlotIdx], image: null, uploadedFile: reader.result as string });
     };
     reader.readAsDataURL(file);
     e.target.value = "";
@@ -137,12 +137,13 @@ const StepSize = ({ imageUrl, sizeIdx, material, onSelect, onSelectMaterial, onN
             // Multi-print bundle preview
             const prints = selectedBundle.prints;
             // Calculate total arrangement width
-            const allPrints: { w: number; h: number; imgSrc: string }[] = [];
+            const allPrints: { w: number; h: number; imgSrc: string; orientation: "landscape" | "portrait" }[] = [];
             let slotI = 0;
             for (const p of prints) {
               for (let q = 0; q < p.qty; q++) {
                 const imgSrc = bundleImages[slotI] || "";
-                allPrints.push({ w: p.w, h: p.h, imgSrc });
+                const orient = bundleSlots[slotI]?.orientation || "landscape";
+                allPrints.push({ w: p.w, h: p.h, imgSrc, orientation: orient });
                 slotI++;
               }
             }
@@ -159,8 +160,11 @@ const StepSize = ({ imageUrl, sizeIdx, material, onSelect, onSelectMaterial, onN
                   style={{ top: isDesk ? undefined : "35%", bottom: isDesk ? "38%" : undefined, transform: `translateX(-50%)${!isDesk ? ' translateY(-50%)' : ''}` }}
                 >
                   {allPrints.map((p, i) => {
-                    const pW = (p.w / sceneW) * 100;
-                    const pAspect = p.w / p.h;
+                    const isPortrait = p.orientation === "portrait";
+                    const dW = isPortrait && p.w !== p.h ? Math.min(p.w, p.h) : Math.max(p.w, p.h);
+                    const dH = isPortrait && p.w !== p.h ? Math.max(p.w, p.h) : Math.min(p.w, p.h);
+                    const pW = (dW / sceneW) * 100;
+                    const pAspect = dW / dH;
                     return (
                       <div
                         key={i}
@@ -275,40 +279,62 @@ const StepSize = ({ imageUrl, sizeIdx, material, onSelect, onSelectMaterial, onN
           </div>
           <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
             {(() => {
-              const slots: { label: string; idx: number }[] = [];
+              const slotData: { label: string; idx: number; w: number; h: number }[] = [];
               let i = 0;
               for (const p of selectedBundle.prints) {
                 for (let q = 0; q < p.qty; q++) {
-                  slots.push({ label: `${p.w}"×${p.h}"`, idx: i });
+                  slotData.push({ label: `${p.w}"×${p.h}"`, idx: i, w: p.w, h: p.h });
                   i++;
                 }
               }
-              return slots.map(({ label, idx }) => {
+              return slotData.map(({ label, idx, w, h }) => {
                 const slot = bundleSlots[idx];
                 const imgSrc = slot?.uploadedFile || slot?.image?.url;
                 const hasImage = !!imgSrc;
+                const isSquareSlot = w === h;
+                const orient = slot?.orientation || "landscape";
                 return (
-                  <div
-                    key={idx}
-                    className={`shrink-0 w-20 h-20 rounded-lg border-2 overflow-hidden cursor-pointer transition-all relative ${
-                      hasImage ? "border-primary/40" : "border-dashed border-border hover:border-primary/40"
-                    }`}
-                    onClick={() => !hasImage && triggerUpload(idx)}
-                  >
-                    {hasImage ? (
-                      <>
-                        <img src={imgSrc} alt={`Print ${idx + 1}`} className="w-full h-full object-cover" />
+                  <div key={idx} className="shrink-0 flex flex-col items-center gap-1">
+                    <div
+                      className={`w-20 h-20 rounded-lg border-2 overflow-hidden cursor-pointer transition-all relative ${
+                        hasImage ? "border-primary/40" : "border-dashed border-border hover:border-primary/40"
+                      }`}
+                      onClick={() => !hasImage && triggerUpload(idx)}
+                    >
+                      {hasImage ? (
+                        <>
+                          <img src={imgSrc} alt={`Print ${idx + 1}`} className="w-full h-full object-cover" />
+                          <button
+                            className="absolute top-0.5 right-0.5 w-4 h-4 bg-destructive rounded-full flex items-center justify-center"
+                            onClick={(e) => { e.stopPropagation(); onUpdateSlot(idx, { image: null, uploadedFile: null, orientation: "landscape" }); }}
+                          >
+                            <X className="w-2.5 h-2.5 text-destructive-foreground" />
+                          </button>
+                        </>
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center gap-0.5">
+                          <Upload className="w-4 h-4 text-muted-foreground" />
+                          <span className="text-[8px] text-muted-foreground font-body">{label}</span>
+                        </div>
+                      )}
+                    </div>
+                    {/* Orientation toggle per slot */}
+                    {!isSquareSlot && (
+                      <div className="flex bg-card border border-border rounded overflow-hidden">
                         <button
-                          className="absolute top-0.5 right-0.5 w-4 h-4 bg-destructive rounded-full flex items-center justify-center"
-                          onClick={(e) => { e.stopPropagation(); onUpdateSlot(idx, { image: null, uploadedFile: null }); }}
+                          onClick={() => onUpdateSlot(idx, { ...slot, orientation: "landscape" })}
+                          className={`p-1 transition-colors ${orient === "landscape" ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"}`}
+                          title="Landscape"
                         >
-                          <X className="w-2.5 h-2.5 text-destructive-foreground" />
+                          <RectangleHorizontal className="w-3 h-3" />
                         </button>
-                      </>
-                    ) : (
-                      <div className="w-full h-full flex flex-col items-center justify-center gap-0.5">
-                        <Upload className="w-4 h-4 text-muted-foreground" />
-                        <span className="text-[8px] text-muted-foreground font-body">{label}</span>
+                        <button
+                          onClick={() => onUpdateSlot(idx, { ...slot, orientation: "portrait" })}
+                          className={`p-1 transition-colors ${orient === "portrait" ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"}`}
+                          title="Portrait"
+                        >
+                          <RectangleVertical className="w-3 h-3" />
+                        </button>
                       </div>
                     )}
                   </div>

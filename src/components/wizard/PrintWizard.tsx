@@ -58,7 +58,7 @@ const PrintWizard = ({ onStepChange }: Props) => {
   const handleSelectBundle = (bundle: Bundle) => {
     const totalPrints = bundle.prints.reduce((sum, p) => sum + p.qty, 0);
     const slots: BundleSlot[] = Array.from({ length: totalPrints }, (_, i) =>
-      i === 0 ? { image: state.image, uploadedFile: state.uploadedFile } : { image: null, uploadedFile: null }
+      i === 0 ? { image: state.image, uploadedFile: state.uploadedFile, orientation: "landscape" as const } : { image: null, uploadedFile: null, orientation: "landscape" as const }
     );
     update({ selectedBundle: bundle, bundleSlots: slots });
   };

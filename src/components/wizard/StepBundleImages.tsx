@@ -52,7 +52,7 @@ const StepBundleImages = ({ bundle, slots, onUpdateSlot, onNext, onBack }: Props
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => {
-      onUpdateSlot(activeSlot, { image: null, uploadedFile: reader.result as string });
+      onUpdateSlot(activeSlot, { ...slots[activeSlot], image: null, uploadedFile: reader.result as string });
       // Auto-advance to next empty slot
       const nextEmpty = slots.findIndex((s, i) => i > activeSlot && !s.image && !s.uploadedFile);
       if (nextEmpty !== -1) setActiveSlot(nextEmpty);
@@ -62,6 +62,7 @@ const StepBundleImages = ({ bundle, slots, onUpdateSlot, onNext, onBack }: Props
 
   const handleSelectPhoto = (photo: PexelsPhoto) => {
     onUpdateSlot(activeSlot, {
+      ...slots[activeSlot],
       image: { url: photo.src.large, photographer: photo.photographer, alt: photo.alt },
       uploadedFile: null,
     });
@@ -118,7 +119,7 @@ const StepBundleImages = ({ bundle, slots, onUpdateSlot, onNext, onBack }: Props
                   </div>
                   <button
                     className="absolute top-1 left-1 w-4 h-4 bg-destructive rounded-full flex items-center justify-center"
-                    onClick={(e) => { e.stopPropagation(); onUpdateSlot(slotIdx, { image: null, uploadedFile: null }); }}
+                    onClick={(e) => { e.stopPropagation(); onUpdateSlot(slotIdx, { image: null, uploadedFile: null, orientation: "landscape" }); }}
                   >
                     <X className="w-2.5 h-2.5 text-destructive-foreground" />
                   </button>

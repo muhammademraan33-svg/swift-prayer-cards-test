@@ -12,6 +12,7 @@ export type StandOffChoice = "none" | "silver" | "black";
 export interface BundleSlot {
   image: SelectedImage | null;
   uploadedFile: string | null;
+  orientation: "landscape" | "portrait";
 }
 
 export interface WizardState {

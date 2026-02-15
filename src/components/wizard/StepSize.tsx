@@ -96,7 +96,7 @@ const StepSize = ({ imageUrl, sizeIdx, material, onSelect, onSelectMaterial, onN
           const printWPct = Math.max((displayW / WALL_W) * 100, 10);
           const printHPct = Math.max((displayH / WALL_H) * 100, 10);
           // Desk prints sit just above credenza surface
-          const printTop = isDesk ? "38%" : "50%";
+          const printTop = isDesk ? "30%" : "50%";
           return (
         <div className="relative w-full overflow-hidden rounded-lg border border-border" style={{ maxWidth: 720, aspectRatio }}>
           <img src={backdropImg} alt="Room backdrop" className="absolute inset-0 w-full h-full object-cover" />

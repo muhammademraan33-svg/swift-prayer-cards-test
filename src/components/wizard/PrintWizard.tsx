@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
-import { initialWizardState, TOTAL_STEPS, type WizardState, type MaterialChoice, type StandOffChoice, type SelectedImage, type BundleSlot } from "./types";
-import { recommendStandOffs, standardSizes, type Bundle } from "@/lib/pricing";
+import { initialWizardState, TOTAL_STEPS, type WizardState } from "./types";
+import { recommendStandOffs, standardSizes } from "@/lib/pricing";
 import StepArt from "./StepArt";
 import StepSize from "./StepSize";
 import StepUpsell from "./StepUpsell";
@@ -8,7 +8,6 @@ import StepMounting from "./StepMounting";
 import StepReview from "./StepReview";
 
 const stepLabels = ["Artwork", "Size & Material", "Personalize", "Finishing", "Review"];
-const bundleStepLabels = ["Artwork", "Size & Bundle", "—", "Finishing", "Review"];
 
 interface Props {
   onStepChange?: (step: number) => void;
@@ -20,8 +19,6 @@ const PrintWizard = ({ onStepChange }: Props) => {
   const update = useCallback((patch: Partial<WizardState>) => {
     setState((prev) => {
       const next = { ...prev, ...patch };
-      if (patch.step !== undefined && onStepChange) onStepChange(next.step);
-      // Scroll wizard into view on step change
       if (patch.step !== undefined) {
         setTimeout(() => {
           document.getElementById("wizard")?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -29,23 +26,16 @@ const PrintWizard = ({ onStepChange }: Props) => {
       }
       return next;
     });
-  }, [onStepChange]);
+  }, []);
 
   const goTo = (step: number) => update({ step });
 
   const imageUrl = state.uploadedFile || state.image?.url || "";
   const isMetal = state.material.startsWith("metal");
-  const isBundle = !!state.selectedBundle;
 
-  // Step navigation
   const nextStep = () => {
     let next = state.step + 1;
-    if (isBundle) {
-      // Bundle: skip Personalize for acrylic, allow for metal
-      if (!isMetal && next === 3) next = 4;
-    } else {
-      if (!isMetal && next === 3) next = 4; // skip upsell for acrylic
-    }
+    if (!isMetal && next === 3) next = 4; // skip upsell for acrylic
     if (next > TOTAL_STEPS) next = TOTAL_STEPS;
     update({ step: next });
   };
@@ -57,37 +47,17 @@ const PrintWizard = ({ onStepChange }: Props) => {
     update({ step: prev });
   };
 
-  const handleSelectBundle = (bundle: Bundle) => {
-    const totalPrints = bundle.prints.reduce((sum, p) => sum + p.qty, 0);
-    const slots: BundleSlot[] = Array.from({ length: totalPrints }, (_, i) =>
-      i === 0 ? { image: state.image, uploadedFile: state.uploadedFile, orientation: "landscape" as const } : { image: null, uploadedFile: null, orientation: "landscape" as const }
-    );
-    update({ selectedBundle: bundle, bundleSlots: slots });
-  };
-
-  const handleClearBundle = () => {
-    update({ selectedBundle: null, bundleSlots: [] });
-  };
-
-  const handleUpdateSlot = (index: number, slot: BundleSlot) => {
-    const newSlots = [...state.bundleSlots];
-    newSlots[index] = slot;
-    update({ bundleSlots: newSlots });
-  };
-
-  const activeLabels = isBundle ? bundleStepLabels : stepLabels;
-
   return (
     <section id="wizard" className="py-20 px-6">
       <div className="max-w-4xl mx-auto">
         {/* Progress bar */}
         <div className="mb-8">
           <div className="flex items-center gap-1 mb-2">
-            {activeLabels.map((label, i) => {
+            {stepLabels.map((label, i) => {
               const stepNum = i + 1;
               const isActive = state.step === stepNum;
               const isDone = state.step > stepNum;
-              const isSkipped = (isBundle && stepNum === 3) || (!isBundle && !isMetal && stepNum === 3);
+              const isSkipped = !isMetal && stepNum === 3;
 
               if (isSkipped) return null;
 
@@ -115,7 +85,7 @@ const PrintWizard = ({ onStepChange }: Props) => {
           <div className="h-0.5 bg-secondary rounded-full overflow-hidden">
             <div
               className="h-full bg-gradient-gold transition-all duration-500"
-              style={{ width: `${((state.step - 1) / (isMetal && !isBundle ? TOTAL_STEPS - 1 : TOTAL_STEPS - 2)) * 100}%` }}
+              style={{ width: `${((state.step - 1) / (isMetal ? TOTAL_STEPS - 1 : TOTAL_STEPS - 2)) * 100}%` }}
             />
           </div>
         </div>
@@ -136,19 +106,16 @@ const PrintWizard = ({ onStepChange }: Props) => {
             imageUrl={imageUrl}
             sizeIdx={state.sizeIdx}
             material={state.material}
+            companionPrint={state.companionPrint}
             onSelect={(idx) => update({ sizeIdx: idx })}
             onSelectMaterial={(m) => update({ material: m, doubleSided: false, backImage: null, backUploadedFile: null })}
+            onCompanionChange={(cp) => update({ companionPrint: cp })}
             onNext={nextStep}
             onBack={prevStep}
-            onSelectBundle={handleSelectBundle}
-            selectedBundle={state.selectedBundle}
-            bundleSlots={state.bundleSlots}
-            onUpdateSlot={handleUpdateSlot}
-            onClearBundle={handleClearBundle}
           />
         )}
 
-        {state.step === 3 && !isBundle && isMetal && (
+        {state.step === 3 && isMetal && (
           <StepUpsell
             frontImage={imageUrl}
             backImage={state.backImage}

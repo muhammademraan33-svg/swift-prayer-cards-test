@@ -1,5 +1,3 @@
-import type { Bundle } from "@/lib/pricing";
-
 export interface SelectedImage {
   url: string;
   photographer: string;
@@ -9,9 +7,10 @@ export interface SelectedImage {
 export type MaterialChoice = "acrylic" | "metal-designer" | "metal-museum";
 export type StandOffChoice = "none" | "silver" | "black";
 
-export interface BundleSlot {
+export interface CompanionPrint {
   image: SelectedImage | null;
   uploadedFile: string | null;
+  sizeIdx: number;
   orientation: "landscape" | "portrait";
 }
 
@@ -27,9 +26,8 @@ export interface WizardState {
   standOff: StandOffChoice;
   standOffQty: number;
   roundedCorners: boolean;
-  // Bundle mode
-  selectedBundle: Bundle | null;
-  bundleSlots: BundleSlot[];
+  // Companion print for desk & shelf sizes
+  companionPrint: CompanionPrint | null;
 }
 
 export const TOTAL_STEPS = 5;
@@ -46,6 +44,5 @@ export const initialWizardState: WizardState = {
   standOff: "none",
   standOffQty: 4,
   roundedCorners: false,
-  selectedBundle: null,
-  bundleSlots: [],
+  companionPrint: null,
 };

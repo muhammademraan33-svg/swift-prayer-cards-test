@@ -198,9 +198,6 @@ const StepUpsell = ({ frontImage, backImage, backUploadedFile, doubleSided, mate
 
         {/* Price CTA */}
         <div className="text-center mt-4">
-          <Badge className="bg-gradient-gold text-primary-foreground border-0 text-xs font-body px-3 py-1 mb-2">
-            Only +${upsellCost} more
-          </Badge>
           <p className="text-sm text-muted-foreground font-body">
             Two prints for <span className="text-primary font-bold">${doublePrice}</span> total.
           </p>

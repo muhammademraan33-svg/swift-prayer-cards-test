@@ -6,10 +6,9 @@ import StepSize from "./StepSize";
 import StepUpsell from "./StepUpsell";
 import StepMounting from "./StepMounting";
 import StepReview from "./StepReview";
-import StepBundleImages from "./StepBundleImages";
 
 const stepLabels = ["Artwork", "Size & Material", "Personalize", "Finishing", "Review"];
-const bundleStepLabels = ["First Image", "Size & Bundle", "Bundle Images", "Finishing", "Review"];
+const bundleStepLabels = ["Artwork", "Size & Bundle", "—", "Finishing", "Review"];
 
 interface Props {
   onStepChange?: (step: number) => void;
@@ -36,8 +35,8 @@ const PrintWizard = ({ onStepChange }: Props) => {
   const nextStep = () => {
     let next = state.step + 1;
     if (isBundle) {
-      // Bundle flow: 1 (art) → 2 (size/bundle select) → 3 (bundle images) → 4 (finishing) → 5 (review)
-      // Skip upsell (step 3 is bundle images instead)
+      // Bundle flow: 1 (art) → 2 (size+bundle+images) → skip 3 → 4 (finishing) → 5 (review)
+      if (next === 3) next = 4;
     } else {
       if (!isMetal && next === 3) next = 4; // skip upsell for acrylic
     }
@@ -48,7 +47,7 @@ const PrintWizard = ({ onStepChange }: Props) => {
   const prevStep = () => {
     let prev = state.step - 1;
     if (isBundle) {
-      // Bundle flow going back
+      if (prev === 3) prev = 2;
     } else {
       if (!isMetal && prev === 3) prev = 2;
     }
@@ -58,22 +57,20 @@ const PrintWizard = ({ onStepChange }: Props) => {
 
   const handleSelectBundle = (bundle: Bundle) => {
     const totalPrints = bundle.prints.reduce((sum, p) => sum + p.qty, 0);
-    // Pre-fill first slot with the already-selected image
-    const slots: BundleSlot[] = Array.from({ length: totalPrints }, (_, i) => 
+    const slots: BundleSlot[] = Array.from({ length: totalPrints }, (_, i) =>
       i === 0 ? { image: state.image, uploadedFile: state.uploadedFile } : { image: null, uploadedFile: null }
     );
-    update({ selectedBundle: bundle, bundleSlots: slots, step: 3 });
+    update({ selectedBundle: bundle, bundleSlots: slots });
+  };
+
+  const handleClearBundle = () => {
+    update({ selectedBundle: null, bundleSlots: [] });
   };
 
   const handleUpdateSlot = (index: number, slot: BundleSlot) => {
     const newSlots = [...state.bundleSlots];
     newSlots[index] = slot;
     update({ bundleSlots: newSlots });
-  };
-
-  const handleBundleBack = () => {
-    // Going back from bundle images returns to size step, clearing bundle
-    update({ selectedBundle: null, bundleSlots: [], step: 2 });
   };
 
   const activeLabels = isBundle ? bundleStepLabels : stepLabels;
@@ -88,13 +85,13 @@ const PrintWizard = ({ onStepChange }: Props) => {
               const stepNum = i + 1;
               const isActive = state.step === stepNum;
               const isDone = state.step > stepNum;
-              const isSkipped = !isBundle && !isMetal && stepNum === 3;
+              const isSkipped = (isBundle && stepNum === 3) || (!isBundle && !isMetal && stepNum === 3);
 
               if (isSkipped) return null;
 
               return (
                 <button
-                  key={label}
+                  key={label + i}
                   onClick={() => stepNum <= state.step && goTo(stepNum)}
                   className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-body tracking-wider uppercase transition-all whitespace-nowrap ${
                     isActive
@@ -116,7 +113,7 @@ const PrintWizard = ({ onStepChange }: Props) => {
           <div className="h-0.5 bg-secondary rounded-full overflow-hidden">
             <div
               className="h-full bg-gradient-gold transition-all duration-500"
-              style={{ width: `${((state.step - 1) / (isMetal || isBundle ? TOTAL_STEPS - 1 : TOTAL_STEPS - 2)) * 100}%` }}
+              style={{ width: `${((state.step - 1) / (isMetal && !isBundle ? TOTAL_STEPS - 1 : TOTAL_STEPS - 2)) * 100}%` }}
             />
           </div>
         </div>
@@ -142,16 +139,10 @@ const PrintWizard = ({ onStepChange }: Props) => {
             onNext={nextStep}
             onBack={prevStep}
             onSelectBundle={handleSelectBundle}
-          />
-        )}
-
-        {state.step === 3 && isBundle && state.selectedBundle && (
-          <StepBundleImages
-            bundle={state.selectedBundle}
-            slots={state.bundleSlots}
+            selectedBundle={state.selectedBundle}
+            bundleSlots={state.bundleSlots}
             onUpdateSlot={handleUpdateSlot}
-            onNext={() => update({ step: 4 })}
-            onBack={handleBundleBack}
+            onClearBundle={handleClearBundle}
           />
         )}
 
@@ -184,10 +175,7 @@ const PrintWizard = ({ onStepChange }: Props) => {
             onStandOffQty={(v) => update({ standOffQty: v })}
             onRoundedCorners={(v) => update({ roundedCorners: v })}
             onNext={nextStep}
-            onBack={() => {
-              if (isBundle) update({ step: 3 });
-              else prevStep();
-            }}
+            onBack={prevStep}
           />
         )}
 

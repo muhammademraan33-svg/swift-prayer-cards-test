@@ -93,21 +93,25 @@ const StepSize = ({ imageUrl, sizeIdx, material, onSelect, onSelectMaterial, onN
           const backdropImg = isDesk ? credenzaBackdrop : luxuryWall;
           // Credenza is ~60" wide in real life; wall scene ~120"
           const WALL_W = isDesk ? 42 : 120;
-          const aspectRatio = isDesk ? "1/1" : "16/9";
-          const WALL_H = isDesk ? WALL_W : WALL_W * (9 / 16);
+          const containerAspect = isDesk ? "1/1" : "16/9";
+          const containerRatio = isDesk ? 1 : 16 / 9;
+          // Scale print width relative to wall width
           const printWPct = Math.max((displayW / WALL_W) * 100, 10);
-          const printHPct = Math.max((displayH / WALL_H) * 100, 10);
+          // Derive height from width using print's true aspect ratio, adjusted for container shape
+          const printAspect = displayW / displayH;
+          const printHPct = (printWPct / printAspect) * containerRatio;
           // Desk prints sit just above credenza surface
           const printTop = isDesk ? "30%" : "50%";
           return (
-        <div className="relative w-full overflow-hidden rounded-lg border border-border" style={{ maxWidth: 720, aspectRatio }}>
+        <div className="relative w-full overflow-hidden rounded-lg border border-border" style={{ maxWidth: 720, aspectRatio: containerAspect }}>
           <img src={backdropImg} alt="Room backdrop" className="absolute inset-0 w-full h-full object-cover" />
-          {/* Print — sized proportionally */}
+          {/* Print — sized proportionally with correct aspect ratio */}
               <div
                 className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 shadow-[0_4px_30px_rgba(0,0,0,0.3)] transition-all duration-500 ease-out overflow-hidden cursor-grab active:cursor-grabbing"
                 style={{
                   width: `${printWPct}%`,
-                  height: `${printHPct}%`,
+                  paddingBottom: `${printWPct / printAspect}%`,
+                  height: 0,
                   top: printTop,
                 }}
                 onPointerDown={handlePointerDown}
@@ -117,7 +121,7 @@ const StepSize = ({ imageUrl, sizeIdx, material, onSelect, onSelectMaterial, onN
                 <img
                   src={imageUrl}
                   alt="Print preview"
-                  className="w-full h-full object-cover select-none pointer-events-none"
+                  className="absolute inset-0 w-full h-full object-cover select-none pointer-events-none"
                   draggable={false}
                   style={{
                     transform: `scale(${zoom}) translate(${pan.x / zoom}px, ${pan.y / zoom}px)`,

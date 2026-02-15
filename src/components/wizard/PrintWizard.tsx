@@ -129,6 +129,8 @@ const PrintWizard = () => {
             backImage={state.backImage}
             backUploadedFile={state.backUploadedFile}
             doubleSided={state.doubleSided}
+            material={state.material}
+            sizeIdx={state.sizeIdx}
             onToggleDouble={(v) => update({ doubleSided: v })}
             onSelectBack={(img) => update({ backImage: img, backUploadedFile: null })}
             onUploadBack={(dataUrl) => update({ backUploadedFile: dataUrl, backImage: null })}

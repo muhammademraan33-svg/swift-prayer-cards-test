@@ -4,60 +4,60 @@ import { Card, CardContent } from "@/components/ui/card";
 const reviews = [
   {
     name: "Rose B.",
-    location: "Phoenix, AZ",
-    text: "Stunning quality! My grandkids' photo came out amazing. The metal gives it depth you can't get with regular prints.",
+    location: "Scottsdale, AZ",
+    text: "The depth and luminosity on metal is unlike anything I've seen. It's become the centerpiece of our great room.",
     rating: 5,
   },
   {
     name: "James A.",
-    location: "Fort Worth, TX",
-    text: "You have to see this in person to appreciate the color. The vibrancy on metal is unreal. Highly recommend!",
+    location: "Highland Park, TX",
+    text: "We commissioned a 48×72 piece for our foyer. The color fidelity and finish rival gallery installations we've collected.",
     rating: 5,
   },
   {
     name: "Steven G.",
-    location: "San Diego, CA",
-    text: "I sent in a phone photo of our wedding day. They enhanced it and it turned out incredible. Museum quality.",
+    location: "La Jolla, CA",
+    text: "I sent a photo from our estate in Tuscany. They enhanced the tonal range beautifully — true museum quality.",
     rating: 5,
   },
   {
     name: "Maria L.",
-    location: "Austin, TX",
-    text: "Ordered a 3-pack bundle for my living room. The prints arrived perfectly packaged and look absolutely stunning.",
+    location: "West Lake Hills, TX",
+    text: "Ordered a curated three-piece set for our living room. The presentation and packaging were impeccable.",
     rating: 5,
   },
   {
     name: "David K.",
-    location: "Denver, CO",
-    text: "Fast shipping, incredible quality. I've ordered from several print companies and this is by far the best.",
+    location: "Cherry Hills, CO",
+    text: "After working with several high-end print studios, this is the finest quality and service I've experienced.",
     rating: 5,
   },
   {
     name: "Sarah M.",
-    location: "Miami, FL",
-    text: "The acrylic print has this incredible luminous quality. Everyone who visits asks where I got it.",
+    location: "Coral Gables, FL",
+    text: "The acrylic has an ethereal luminous quality that transforms in different light. Every guest asks about it.",
     rating: 5,
   },
 ];
 
 const Testimonials = () => {
   return (
-    <section id="reviews" className="py-24 md:py-32 px-6 bg-secondary/30">
+    <section id="reviews" className="py-28 md:py-36 px-6 bg-secondary/30">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-16">
-          <p className="text-xs tracking-[0.3em] uppercase text-primary font-body mb-4">
-            Customer Reviews
+          <p className="text-[10px] tracking-[0.4em] uppercase text-primary font-body mb-4">
+            Client Testimonials
           </p>
           <h2 className="text-3xl md:text-5xl font-display font-bold text-foreground mb-4">
-            Loved by Thousands
+            Trusted by Collectors
           </h2>
           <div className="flex items-center justify-center gap-1.5 mb-2">
             {[...Array(5)].map((_, i) => (
               <Star key={i} className="w-5 h-5 fill-primary text-primary" />
             ))}
           </div>
-          <p className="text-sm text-muted-foreground font-body">
-            4.8 out of 5 based on 2,000+ reviews
+          <p className="text-sm text-muted-foreground font-body tracking-wide">
+            4.8 out of 5 — based on 2,000+ commissions
           </p>
         </div>
 

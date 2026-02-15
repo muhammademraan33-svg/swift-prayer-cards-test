@@ -40,19 +40,14 @@ const PriceCalculator = () => {
   const [shippingSpeed, setShippingSpeed] = useState<ShippingSpeed>("standard");
   const [selectedImage, setSelectedImage] = useState<{ url: string; photographer: string; alt: string } | null>(null);
 
-  // Listen for size selection from ShopBySize
   useEffect(() => {
     const sizeHandler = (e: Event) => {
       const detail = (e as CustomEvent).detail;
-      if (detail?.sizeIdx !== undefined) {
-        setSizeIdx(detail.sizeIdx);
-      }
+      if (detail?.sizeIdx !== undefined) setSizeIdx(detail.sizeIdx);
     };
     const imageHandler = (e: Event) => {
       const detail = (e as CustomEvent).detail;
-      if (detail?.url) {
-        setSelectedImage({ url: detail.url, photographer: detail.photographer, alt: detail.alt });
-      }
+      if (detail?.url) setSelectedImage({ url: detail.url, photographer: detail.photographer, alt: detail.alt });
     };
     window.addEventListener("select-size", sizeHandler);
     window.addEventListener("select-image", imageHandler);
@@ -111,17 +106,17 @@ const PriceCalculator = () => {
   const total = printPrice + shippingCost + addOnTotal + metalSurcharge;
 
   return (
-    <section id="calculator" className="py-24 px-6">
+    <section id="calculator" className="py-28 px-6">
       <div className="max-w-3xl mx-auto">
         <div className="text-center mb-12">
-          <span className="text-sm tracking-[0.3em] uppercase text-primary font-body">
-            Instant Pricing
-          </span>
-          <h2 className="text-4xl md:text-5xl font-display font-bold mt-3 text-foreground">
-            Price Calculator
+          <p className="text-[10px] tracking-[0.4em] uppercase text-primary font-body mb-4">
+            Bespoke Pricing
+          </p>
+          <h2 className="text-4xl md:text-5xl font-display font-bold text-foreground">
+            Commission Your Piece
           </h2>
-          <p className="text-muted-foreground font-body mt-4">
-            Configure your custom print and see pricing instantly.
+          <p className="text-muted-foreground font-body mt-4 tracking-wide">
+            Configure every detail and receive instant transparent pricing.
           </p>
         </div>
 
@@ -163,14 +158,12 @@ const PriceCalculator = () => {
           <CardContent className="p-8 space-y-8">
             {/* Material */}
             <div>
-              <Label className="text-foreground font-body font-semibold tracking-wider uppercase text-xs mb-3 block">
+              <Label className="text-foreground font-body font-semibold tracking-[0.15em] uppercase text-xs mb-3 block">
                 Material
               </Label>
               <RadioGroup
                 value={material}
-                onValueChange={(v) => {
-                  setMaterial(v as "metal" | "acrylic");
-                }}
+                onValueChange={(v) => setMaterial(v as "metal" | "acrylic")}
                 className="flex gap-6"
               >
                 <div className="flex items-center gap-2">
@@ -187,21 +180,16 @@ const PriceCalculator = () => {
             {/* Metal type */}
             {material === "metal" && (
               <div>
-                <Label className="text-foreground font-body font-semibold tracking-wider uppercase text-xs mb-3 block">
+                <Label className="text-foreground font-body font-semibold tracking-[0.15em] uppercase text-xs mb-3 block">
                   Metal Type
                 </Label>
-                <Select
-                  value={String(metalIdx)}
-                  onValueChange={(v) => setMetalIdx(Number(v))}
-                >
+                <Select value={String(metalIdx)} onValueChange={(v) => setMetalIdx(Number(v))}>
                   <SelectTrigger className="bg-secondary border-border text-foreground font-body">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     {metalOptions.map((opt, i) => (
-                      <SelectItem key={i} value={String(i)}>
-                        {opt.label}
-                      </SelectItem>
+                      <SelectItem key={i} value={String(i)}>{opt.label}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -210,23 +198,18 @@ const PriceCalculator = () => {
 
             {/* Size */}
             <div>
-              <Label className="text-foreground font-body font-semibold tracking-wider uppercase text-xs mb-3 block">
-                Size
+              <Label className="text-foreground font-body font-semibold tracking-[0.15em] uppercase text-xs mb-3 block">
+                Dimensions
               </Label>
-              <Select
-                value={String(sizeIdx)}
-                onValueChange={(v) => setSizeIdx(v === "custom" ? "custom" : Number(v))}
-              >
+              <Select value={String(sizeIdx)} onValueChange={(v) => setSizeIdx(v === "custom" ? "custom" : Number(v))}>
                 <SelectTrigger className="bg-secondary border-border text-foreground font-body">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   {standardSizes.map((s, i) => (
-                    <SelectItem key={i} value={String(i)}>
-                      {s.label}
-                    </SelectItem>
+                    <SelectItem key={i} value={String(i)}>{s.label}</SelectItem>
                   ))}
-                  <SelectItem value="custom">Custom Size</SelectItem>
+                  <SelectItem value="custom">Custom Dimensions</SelectItem>
                 </SelectContent>
               </Select>
 
@@ -234,26 +217,12 @@ const PriceCalculator = () => {
                 <div className="flex gap-3 mt-3 items-center">
                   <div className="flex-1">
                     <Label className="text-xs text-muted-foreground font-body mb-1 block">Width (in)</Label>
-                    <Input
-                      type="number"
-                      min={4}
-                      max={96}
-                      value={customW}
-                      onChange={(e) => setCustomW(Math.max(4, Math.min(96, Number(e.target.value))))}
-                      className="bg-secondary border-border text-foreground font-body"
-                    />
+                    <Input type="number" min={4} max={96} value={customW} onChange={(e) => setCustomW(Math.max(4, Math.min(96, Number(e.target.value))))} className="bg-secondary border-border text-foreground font-body" />
                   </div>
                   <span className="text-muted-foreground font-body mt-5">×</span>
                   <div className="flex-1">
                     <Label className="text-xs text-muted-foreground font-body mb-1 block">Height (in)</Label>
-                    <Input
-                      type="number"
-                      min={4}
-                      max={96}
-                      value={customH}
-                      onChange={(e) => setCustomH(Math.max(4, Math.min(96, Number(e.target.value))))}
-                      className="bg-secondary border-border text-foreground font-body"
-                    />
+                    <Input type="number" min={4} max={96} value={customH} onChange={(e) => setCustomH(Math.max(4, Math.min(96, Number(e.target.value))))} className="bg-secondary border-border text-foreground font-body" />
                   </div>
                 </div>
               )}
@@ -261,49 +230,29 @@ const PriceCalculator = () => {
 
             {/* Add-ons */}
             <div className="space-y-4">
-              <Label className="text-foreground font-body font-semibold tracking-wider uppercase text-xs block">
-                Add-Ons
+              <Label className="text-foreground font-body font-semibold tracking-[0.15em] uppercase text-xs block">
+                Finishing Options
               </Label>
 
               <div className="flex items-center gap-3">
-                <Checkbox
-                  id="rounded"
-                  checked={roundedCorners}
-                  onCheckedChange={(v) => setRoundedCorners(!!v)}
-                />
-                <Label htmlFor="rounded" className="font-body text-foreground cursor-pointer">
-                  Rounded Corners (+$5.00)
-                </Label>
+                <Checkbox id="rounded" checked={roundedCorners} onCheckedChange={(v) => setRoundedCorners(!!v)} />
+                <Label htmlFor="rounded" className="font-body text-foreground cursor-pointer">Rounded Corners (+$5.00)</Label>
               </div>
 
               <div>
-                <Label className="text-foreground font-body text-sm mb-2 block">
-                  Stand-Off Mounting
-                </Label>
-                <RadioGroup
-                  value={standOff}
-                  onValueChange={(v) => {
-                    const val = v as "none" | "silver" | "black";
-                    setStandOff(val);
-                    if (val !== "none") setStandOffQty(recommended);
-                  }}
-                  className="flex flex-wrap gap-4"
-                >
+                <Label className="text-foreground font-body text-sm mb-2 block">Stand-Off Mounting</Label>
+                <RadioGroup value={standOff} onValueChange={(v) => { const val = v as "none" | "silver" | "black"; setStandOff(val); if (val !== "none") setStandOffQty(recommended); }} className="flex flex-wrap gap-4">
                   <div className="flex items-center gap-2">
                     <RadioGroupItem value="none" id="so-none" />
                     <Label htmlFor="so-none" className="font-body text-foreground cursor-pointer">None</Label>
                   </div>
                   <div className="flex items-center gap-2">
                     <RadioGroupItem value="silver" id="so-silver" />
-                    <Label htmlFor="so-silver" className="font-body text-foreground cursor-pointer">
-                      Silver ($2.50 ea)
-                    </Label>
+                    <Label htmlFor="so-silver" className="font-body text-foreground cursor-pointer">Silver ($2.50 ea)</Label>
                   </div>
                   <div className="flex items-center gap-2">
                     <RadioGroupItem value="black" id="so-black" />
-                    <Label htmlFor="so-black" className="font-body text-foreground cursor-pointer">
-                      Black ($3.50 ea)
-                    </Label>
+                    <Label htmlFor="so-black" className="font-body text-foreground cursor-pointer">Black ($3.50 ea)</Label>
                   </div>
                 </RadioGroup>
 
@@ -315,14 +264,7 @@ const PriceCalculator = () => {
                     </div>
                     <div className="flex items-center gap-3">
                       <Label className="text-foreground font-body text-sm">Qty:</Label>
-                      <Input
-                        type="number"
-                        min={4}
-                        max={20}
-                        value={standOffQty}
-                        onChange={(e) => setStandOffQty(Math.max(4, Number(e.target.value)))}
-                        className="bg-secondary border-border text-foreground font-body w-20"
-                      />
+                      <Input type="number" min={4} max={20} value={standOffQty} onChange={(e) => setStandOffQty(Math.max(4, Number(e.target.value)))} className="bg-secondary border-border text-foreground font-body w-20" />
                     </div>
                     {material === "metal" && (
                       <p className="text-xs text-primary font-body flex items-center gap-1">
@@ -337,31 +279,21 @@ const PriceCalculator = () => {
 
             {/* Shipping Speed */}
             <div>
-              <Label className="text-foreground font-body font-semibold tracking-wider uppercase text-xs mb-3 block">
-                Shipping Speed
+              <Label className="text-foreground font-body font-semibold tracking-[0.15em] uppercase text-xs mb-3 block">
+                Delivery
               </Label>
-              <RadioGroup
-                value={shippingSpeed}
-                onValueChange={(v) => setShippingSpeed(v as ShippingSpeed)}
-                className="flex flex-wrap gap-4"
-              >
+              <RadioGroup value={shippingSpeed} onValueChange={(v) => setShippingSpeed(v as ShippingSpeed)} className="flex flex-wrap gap-4">
                 <div className="flex items-center gap-2">
                   <RadioGroupItem value="standard" id="ship-standard" />
-                  <Label htmlFor="ship-standard" className="font-body text-foreground cursor-pointer">
-                    Standard (72h)
-                  </Label>
+                  <Label htmlFor="ship-standard" className="font-body text-foreground cursor-pointer">Standard (72h)</Label>
                 </div>
                 <div className="flex items-center gap-2">
                   <RadioGroupItem value="luxpress" id="ship-luxpress" />
-                  <Label htmlFor="ship-luxpress" className="font-body text-foreground cursor-pointer">
-                    LuXpress (47h)
-                  </Label>
+                  <Label htmlFor="ship-luxpress" className="font-body text-foreground cursor-pointer">LuXpress (47h)</Label>
                 </div>
                 <div className="flex items-center gap-2">
                   <RadioGroupItem value="overnight" id="ship-overnight" />
-                  <Label htmlFor="ship-overnight" className="font-body text-foreground cursor-pointer">
-                    Overnight (24h)
-                  </Label>
+                  <Label htmlFor="ship-overnight" className="font-body text-foreground cursor-pointer">Overnight (24h)</Label>
                 </div>
               </RadioGroup>
             </div>
@@ -369,9 +301,7 @@ const PriceCalculator = () => {
             {/* Price breakdown */}
             <div className="border-t border-border pt-6 space-y-3">
               <div className="flex justify-between font-body text-sm text-muted-foreground">
-                <span>
-                  {material === "metal" ? metalOptions[metalIdx].label : "Acrylic"} — {sizeLabel}
-                </span>
+                <span>{material === "metal" ? metalOptions[metalIdx].label : "Acrylic"} — {sizeLabel}</span>
                 <span>${printPrice.toFixed(2)}</span>
               </div>
               {roundedCorners && (
@@ -388,16 +318,12 @@ const PriceCalculator = () => {
               )}
               {standOff !== "none" && (
                 <div className="flex justify-between font-body text-sm text-muted-foreground">
-                  <span>
-                    Stand-offs ({standOff}) × {standOffQty}
-                  </span>
-                  <span>
-                    ${((standOff === "silver" ? addOns.standOffSilver : addOns.standOffBlack) * standOffQty).toFixed(2)}
-                  </span>
+                  <span>Stand-offs ({standOff}) × {standOffQty}</span>
+                  <span>${((standOff === "silver" ? addOns.standOffSilver : addOns.standOffBlack) * standOffQty).toFixed(2)}</span>
                 </div>
               )}
               <div className="flex justify-between font-body text-sm text-muted-foreground">
-                <span>Shipping — {shippingLabel}</span>
+                <span>Delivery — {shippingLabel}</span>
                 <span>${shippingCost.toFixed(2)}</span>
               </div>
               <div className="flex justify-between font-body text-lg font-bold text-foreground border-t border-border pt-3">
@@ -406,8 +332,8 @@ const PriceCalculator = () => {
               </div>
             </div>
 
-            <Button className="w-full bg-gradient-gold text-primary-foreground font-body font-semibold tracking-wide hover:opacity-90">
-              Order Now
+            <Button className="w-full bg-gradient-gold text-primary-foreground font-body font-semibold tracking-[0.2em] hover:opacity-90 h-14 text-xs">
+              PLACE ORDER
             </Button>
           </CardContent>
         </Card>

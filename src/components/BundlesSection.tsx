@@ -11,7 +11,7 @@ const BundleCard = ({ bundle }: { bundle: Bundle }) => {
     .join(" + ");
 
   return (
-    <Card className="bg-card border-border hover:border-primary/40 transition-all group overflow-hidden">
+    <Card className="bg-card border-border hover:border-primary/40 transition-all duration-300 group overflow-hidden">
       <CardContent className="p-6 flex flex-col h-full">
         <div className="flex items-start justify-between mb-4">
           <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
@@ -21,14 +21,14 @@ const BundleCard = ({ bundle }: { bundle: Bundle }) => {
             {bundle.tag && (
               <Badge
                 variant="secondary"
-                className="bg-primary/15 text-primary border-primary/20 text-[10px] uppercase tracking-wider"
+                className="bg-primary/15 text-primary border-primary/20 text-[10px] uppercase tracking-[0.15em]"
               >
                 {bundle.tag}
               </Badge>
             )}
             <Badge
               variant="outline"
-              className="border-primary/30 text-primary text-[10px] uppercase tracking-wider"
+              className="border-primary/30 text-primary text-[10px] uppercase tracking-[0.15em]"
             >
               <Percent className="w-3 h-3 mr-1" />
               {bundle.discount} off
@@ -43,7 +43,7 @@ const BundleCard = ({ bundle }: { bundle: Bundle }) => {
           {bundle.description}
         </p>
         <p className="text-xs text-muted-foreground/70 font-body mb-4">
-          {totalPrints} print{totalPrints > 1 ? "s" : ""} — {sizeSummary}
+          {totalPrints} piece{totalPrints > 1 ? "s" : ""} — {sizeSummary}
         </p>
 
         <div className="mt-auto flex items-end justify-between">
@@ -57,9 +57,9 @@ const BundleCard = ({ bundle }: { bundle: Bundle }) => {
           </div>
           <Button
             size="sm"
-            className="bg-gradient-gold text-primary-foreground font-body font-semibold hover:opacity-90"
+            className="bg-gradient-gold text-primary-foreground font-body font-semibold hover:opacity-90 tracking-wider text-[10px]"
           >
-            Order
+            Order Now
           </Button>
         </div>
       </CardContent>
@@ -69,18 +69,18 @@ const BundleCard = ({ bundle }: { bundle: Bundle }) => {
 
 const BundlesSection = () => {
   return (
-    <section id="bundles" className="py-24 px-6 bg-secondary/20">
+    <section id="bundles" className="py-28 px-6 bg-secondary/20">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-16">
-          <span className="text-sm tracking-[0.3em] uppercase text-primary font-body">
-            Shop by Bundle
-          </span>
-          <h2 className="text-4xl md:text-5xl font-display font-bold mt-3 text-foreground">
-            Wall-Ready Bundles
+          <p className="text-[10px] tracking-[0.4em] uppercase text-primary font-body mb-4">
+            Curated Collections
+          </p>
+          <h2 className="text-4xl md:text-5xl font-display font-bold text-foreground">
+            Gallery-Ready Sets
           </h2>
-          <p className="text-muted-foreground font-body mt-4 max-w-xl mx-auto">
-            Save up to 31% with curated multi-print bundles. Each set ships
-            ready to hang with free shipping on orders over $150.
+          <p className="text-muted-foreground font-body mt-4 max-w-lg mx-auto tracking-wide">
+            Expertly curated multi-piece collections designed for cohesive
+            impact. Save up to 31% with complimentary shipping.
           </p>
         </div>
 

@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Star, Shield, Truck } from "lucide-react";
+import { Star, Shield, Truck, Award } from "lucide-react";
 import heroImg from "@/assets/hero-lifestyle.jpg";
 
 const Hero = () => {
@@ -9,76 +9,75 @@ const Hero = () => {
       <div className="absolute inset-0">
         <img
           src={heroImg}
-          alt="Luxury metal print displayed in modern living room"
+          alt="Museum-grade metal print displayed in luxury penthouse interior"
           className="w-full h-full object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/70 to-background/30" />
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
       </div>
 
-      <div className="relative z-10 max-w-7xl mx-auto px-6 w-full">
+      <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-10 w-full">
         <div className="max-w-2xl">
-          {/* Trust badge */}
-          <div className="flex items-center gap-1.5 mb-6">
+          {/* Exclusivity badge */}
+          <div className="flex items-center gap-1.5 mb-8">
             {[...Array(5)].map((_, i) => (
-              <Star key={i} className="w-4 h-4 fill-primary text-primary" />
+              <Star key={i} className="w-3.5 h-3.5 fill-primary text-primary" />
             ))}
-            <span className="text-sm font-body text-foreground/80 ml-2">
-              Rated 4.8 by 2,000+ customers
+            <span className="text-xs font-body text-foreground/60 ml-2 tracking-wider">
+              Trusted by 2,000+ collectors nationwide
             </span>
           </div>
 
-          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-display font-bold leading-[1.05] mb-6">
-            <span className="text-foreground">Your Photos,</span>
+          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-display font-bold leading-[1.02] mb-6 tracking-tight">
+            <span className="text-foreground">Where Photography</span>
             <br />
-            <span className="text-gradient-gold italic">Immortalized</span>
-            <br />
-            <span className="text-foreground">in Metal</span>
+            <span className="text-foreground">Becomes</span>{" "}
+            <span className="text-gradient-gold italic">Legacy</span>
           </h1>
 
-          <p className="text-base md:text-lg text-foreground/60 font-body font-light max-w-lg mb-8 leading-relaxed">
-            Museum-grade metal & acrylic prints that transform your cherished
-            memories into stunning wall art. Handcrafted in the USA.
+          <p className="text-base md:text-lg text-foreground/50 font-body font-light max-w-lg mb-10 leading-relaxed tracking-wide">
+            Bespoke museum-grade metal & acrylic prints for America's most
+            discerning homes. Each piece handcrafted to order.
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-3 mb-12">
+          <div className="flex flex-col sm:flex-row gap-3 mb-14">
             <Button
               size="lg"
-              className="bg-gradient-gold text-primary-foreground font-body font-semibold tracking-wider hover:opacity-90 px-10 h-14 text-sm"
+              className="bg-gradient-gold text-primary-foreground font-body font-semibold tracking-[0.2em] hover:opacity-90 px-12 h-14 text-xs"
               onClick={() =>
                 document
                   .getElementById("shop-by-size")
                   ?.scrollIntoView({ behavior: "smooth" })
               }
             >
-              SHOP NOW
+              EXPLORE COLLECTION
             </Button>
             <Button
               size="lg"
               variant="outline"
-              className="border-foreground/20 text-foreground font-body tracking-wider hover:bg-foreground/5 px-10 h-14 text-sm"
+              className="border-foreground/15 text-foreground font-body tracking-[0.2em] hover:bg-foreground/5 px-12 h-14 text-xs"
               onClick={() =>
                 document
                   .getElementById("calculator")
                   ?.scrollIntoView({ behavior: "smooth" })
               }
             >
-              CUSTOM QUOTE
+              COMMISSION A PIECE
             </Button>
           </div>
 
           {/* Value props */}
-          <div className="flex flex-wrap gap-6 text-xs font-body text-foreground/50 uppercase tracking-wider">
+          <div className="flex flex-wrap gap-8 text-[10px] font-body text-foreground/40 uppercase tracking-[0.2em]">
             <span className="flex items-center gap-2">
-              <Truck className="w-4 h-4 text-primary" />
-              Free Shipping $150+
+              <Truck className="w-3.5 h-3.5 text-primary" />
+              White-Glove Delivery
             </span>
             <span className="flex items-center gap-2">
-              <Shield className="w-4 h-4 text-primary" />
+              <Shield className="w-3.5 h-3.5 text-primary" />
               Lifetime Guarantee
             </span>
             <span className="flex items-center gap-2">
-              <Star className="w-4 h-4 text-primary" />
-              Made in USA
+              <Award className="w-3.5 h-3.5 text-primary" />
+              Handcrafted in USA
             </span>
           </div>
         </div>

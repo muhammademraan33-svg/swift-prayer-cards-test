@@ -29,16 +29,16 @@ interface PexelsPhoto {
 }
 
 const curatedQueries = [
-  "Nature",
+  "Fine Art",
   "Architecture",
-  "Family",
-  "Travel",
+  "Landscape",
+  "Portrait",
   "Abstract",
-  "Animals",
-  "Flowers",
-  "Sunset",
+  "Wildlife",
+  "Botanical",
+  "Aerial",
   "Ocean",
-  "Mountains",
+  "Cityscape",
 ];
 
 const ShopByImage = () => {
@@ -81,7 +81,6 @@ const ShopByImage = () => {
 
   const selectAndGoToCalculator = (photo: PexelsPhoto) => {
     setSelectedPhoto(photo);
-    // Pass photo to calculator
     window.dispatchEvent(
       new CustomEvent("select-image", {
         detail: { url: photo.src.large2x, photographer: photo.photographer, alt: photo.alt },
@@ -92,18 +91,18 @@ const ShopByImage = () => {
   };
 
   return (
-    <section id="shop-by-image" className="py-24 px-6">
+    <section id="shop-by-image" className="py-28 px-6">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-12">
-          <span className="text-sm tracking-[0.3em] uppercase text-primary font-body">
-            Shop by Image
-          </span>
-          <h2 className="text-4xl md:text-5xl font-display font-bold mt-3 text-foreground">
-            Browse & Print Stunning Photos
+          <p className="text-[10px] tracking-[0.4em] uppercase text-primary font-body mb-4">
+            Curated Gallery
+          </p>
+          <h2 className="text-4xl md:text-5xl font-display font-bold text-foreground">
+            Discover Your Next Masterpiece
           </h2>
-          <p className="text-muted-foreground font-body mt-4 max-w-xl mx-auto">
-            Explore millions of high-resolution photos from Pexels. Pick one and
-            we'll print it on metal or acrylic for you.
+          <p className="text-muted-foreground font-body mt-4 max-w-lg mx-auto tracking-wide">
+            Browse millions of museum-worthy photographs. Select any image and
+            we'll render it on your chosen medium.
           </p>
         </div>
 
@@ -117,7 +116,7 @@ const ShopByImage = () => {
             <Input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search photos... (e.g. sunset, mountains, wedding)"
+              placeholder="Search by subject... (e.g. alpine, venetian, botanical)"
               className="pl-10 bg-secondary border-border text-foreground font-body"
             />
           </div>
@@ -140,7 +139,7 @@ const ShopByImage = () => {
             <Badge
               key={tag}
               variant="outline"
-              className="border-border text-muted-foreground hover:border-primary hover:text-primary cursor-pointer transition-colors font-body"
+              className="border-border text-muted-foreground hover:border-primary hover:text-primary cursor-pointer transition-colors duration-300 font-body tracking-wider text-[10px]"
               onClick={() => {
                 setQuery(tag);
                 searchPhotos(tag);
@@ -157,8 +156,8 @@ const ShopByImage = () => {
             <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
               <Camera className="w-8 h-8 text-primary" />
             </div>
-            <p className="text-muted-foreground font-body">
-              Search or pick a category above to browse photos
+            <p className="text-muted-foreground font-body tracking-wide">
+              Search or select a genre above to explore
             </p>
           </div>
         )}
@@ -168,7 +167,7 @@ const ShopByImage = () => {
           <div className="text-center py-16">
             <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-4" />
             <p className="text-muted-foreground font-body">
-              Searching photos...
+              Curating results...
             </p>
           </div>
         )}
@@ -179,7 +178,7 @@ const ShopByImage = () => {
             {photos.map((photo) => (
               <Card
                 key={photo.id}
-                className={`overflow-hidden cursor-pointer transition-all group ${
+                className={`overflow-hidden cursor-pointer transition-all duration-300 group ${
                   selectedPhoto?.id === photo.id
                     ? "ring-2 ring-primary border-primary"
                     : "border-border hover:border-primary/40"
@@ -190,7 +189,7 @@ const ShopByImage = () => {
                   <img
                     src={photo.src.medium}
                     alt={photo.alt || "Photo"}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                     loading="lazy"
                   />
                 </div>
@@ -227,11 +226,11 @@ const ShopByImage = () => {
             />
             <div className="flex-1 text-center sm:text-left">
               <p className="text-foreground font-display font-semibold text-lg">
-                Print this photo on metal or acrylic
+                Commission this as a bespoke print
               </p>
               <p className="text-sm text-muted-foreground font-body">
                 By {selectedPhoto.photographer} •{" "}
-                {selectedPhoto.width}×{selectedPhoto.height}px — high
+                {selectedPhoto.width}×{selectedPhoto.height}px — archival
                 resolution
               </p>
             </div>
@@ -239,7 +238,7 @@ const ShopByImage = () => {
               onClick={() => selectAndGoToCalculator(selectedPhoto)}
               className="bg-gradient-gold text-primary-foreground font-body font-semibold hover:opacity-90 gap-2"
             >
-              Configure & Price <ArrowRight className="w-4 h-4" />
+              Configure <ArrowRight className="w-4 h-4" />
             </Button>
           </div>
         )}

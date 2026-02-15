@@ -14,10 +14,10 @@ import Footer from "@/components/Footer";
 const jsonLd = {
   "@context": "https://schema.org",
   "@type": "Store",
-  name: "Portrilux",
+  name: "Luxury Metal Prints",
   description:
-    "Museum-grade metal & acrylic prints. Custom sizes from 8×10 to 48×96. Handcrafted in the USA with 48-72 hour delivery.",
-  url: "https://portrilux.com",
+    "Bespoke museum-grade metal & acrylic prints for America's most discerning homes. Custom sizes from 8×10 to 48×96. Handcrafted in the USA with white-glove delivery.",
+  url: "https://luxurymetalprints.com",
   priceRange: "$18 - $785",
   aggregateRating: {
     "@type": "AggregateRating",

@@ -11,7 +11,7 @@ import {
   Camera,
 } from "lucide-react";
 
-const PEXELS_API_KEY = import.meta.env.VITE_PEXELS_API_KEY || "";
+const PEXELS_API_KEY = "X6x17AZ7r5kg7ViRIiE33JuEwA7RHF17EbdFYNXg5jqn5mNRg2EAvkwl";
 
 interface PexelsPhoto {
   id: number;

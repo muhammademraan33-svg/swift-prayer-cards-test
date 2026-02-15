@@ -1,5 +1,5 @@
 // Markup: 2x for prints, 1.4x for cards
-const PRINT_MARKUP = 2;
+const PRINT_MARKUP = 2.2;
 const CARD_MARKUP = 1.4;
 
 export interface MetalOption {
@@ -22,7 +22,7 @@ export const addOns = {
   roundedCorners: 5.00,
   standOffSilver: 3.00,
   standOffBlack: 4.00,
-  metalStandOffSurcharge: 0.10, // 10% of COGS for mounting holes
+  metalStandOffSurcharge: 0, // absorbed into base markup
 };
 
 export type ShippingTier = { label: string; cost: number; note?: string };

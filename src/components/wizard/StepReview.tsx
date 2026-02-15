@@ -49,8 +49,9 @@ const StepReview = ({ state, onBack }: Props) => {
     addOnTotal += unit * state.standOffQty;
   }
 
+  const cogs = printPrice / 2; // retail is 2x markup on COGS
   const metalSurcharge = isMetal && state.standOff !== "none"
-    ? Math.ceil(printPrice * addOns.metalStandOffSurcharge)
+    ? Math.ceil(cogs * addOns.metalStandOffSurcharge)
     : 0;
 
   const total = printPrice + shipping.cost + addOnTotal + metalSurcharge;

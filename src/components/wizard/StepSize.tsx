@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowRight, ArrowLeft, RectangleHorizontal, RectangleVertical, Sparkles, Shield, Gem, Check, RotateCw, ZoomIn, ZoomOut, Move } from "lucide-react";
+import luxuryWall from "@/assets/luxury-wall.jpg";
 import acrylicImg from "@/assets/acrylic-print.jpg";
 import metalImg from "@/assets/metal-print.jpg";
 import metalMuseumImg from "@/assets/metal-museum-print.jpg";
@@ -82,31 +83,40 @@ const StepSize = ({ imageUrl, sizeIdx, material, onSelect, onSelectMaterial, onN
         </p>
       </div>
 
-      {/* Image preview — scales proportionally to print size */}
+      {/* Wall backdrop with proportionally-sized print */}
       <div className="flex justify-center">
-        {(() => {
-          const maxDim = 96; // largest dimension in catalog
-          const scaleFactor = Math.max(displayW, displayH) / maxDim;
-          // Scale from 40% to 100% of container width
-          const widthPct = 40 + scaleFactor * 60;
-          return (
-        <div
-          className="relative overflow-hidden rounded-lg border-2 border-border bg-secondary cursor-grab active:cursor-grabbing transition-all duration-500 ease-out"
-          style={{ width: `${widthPct}%`, maxWidth: 520, aspectRatio: `${displayW} / ${displayH}` }}
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
-        >
-          <img
-            src={imageUrl}
-            alt="Print preview"
-            className="w-full h-full object-cover select-none pointer-events-none"
-            draggable={false}
-            style={{
-              transform: `scale(${zoom}) translate(${pan.x / zoom}px, ${pan.y / zoom}px)`,
-              transformOrigin: "center center",
-            }}
-          />
+        <div className="relative w-full overflow-hidden rounded-lg border border-border" style={{ maxWidth: 540, aspectRatio: "16/9" }}>
+          <img src={luxuryWall} alt="Gallery wall" className="absolute inset-0 w-full h-full object-cover" />
+          {/* Print — sized proportionally to wall (wall ≈ 120" wide) */}
+          {(() => {
+            const WALL_W = 120;
+            const WALL_H = WALL_W * (9 / 16); // ~67.5"
+            const printWPct = Math.max((displayW / WALL_W) * 100, 10);
+            const printHPct = Math.max((displayH / WALL_H) * 100, 10);
+            return (
+              <div
+                className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 shadow-[0_4px_30px_rgba(0,0,0,0.5)] transition-all duration-500 ease-out overflow-hidden cursor-grab active:cursor-grabbing border border-white/10"
+                style={{
+                  width: `${printWPct}%`,
+                  height: `${printHPct}%`,
+                }}
+                onPointerDown={handlePointerDown}
+                onPointerMove={handlePointerMove}
+                onPointerUp={handlePointerUp}
+              >
+                <img
+                  src={imageUrl}
+                  alt="Print preview"
+                  className="w-full h-full object-cover select-none pointer-events-none"
+                  draggable={false}
+                  style={{
+                    transform: `scale(${zoom}) translate(${pan.x / zoom}px, ${pan.y / zoom}px)`,
+                    transformOrigin: "center center",
+                  }}
+                />
+              </div>
+            );
+          })()}
           {/* Zoom controls */}
           <div className="absolute top-2 right-2 flex flex-col gap-1">
             <button onClick={(e) => { e.stopPropagation(); setZoom((z) => Math.min(z + 0.25, 3)); setPan({ x: 0, y: 0 }); }} className="w-7 h-7 bg-card/80 backdrop-blur-sm border border-border rounded flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors" title="Zoom in">
@@ -139,8 +149,6 @@ const StepSize = ({ imageUrl, sizeIdx, material, onSelect, onSelectMaterial, onN
             )}
           </div>
         </div>
-          );
-        })()}
       </div>
 
       {/* Size selection */}

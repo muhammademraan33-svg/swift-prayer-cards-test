@@ -34,19 +34,19 @@ const StepSize = ({ imageUrl, sizeIdx, onSelect, onNext, onBack }: Props) => {
         </p>
       </div>
 
-      {/* Live preview */}
+      {/* Live preview — larger */}
       <div className="flex justify-center py-4">
-        <div className="relative bg-secondary/30 border border-border rounded-lg p-8 flex items-center justify-center" style={{ width: "100%", maxWidth: 500, minHeight: 300 }}>
-          {/* Scale indicator */}
+        <div className="relative bg-secondary/30 border border-border rounded-lg p-10 flex items-center justify-center" style={{ width: "100%", maxWidth: 640, minHeight: 380 }}>
           <div className="absolute top-3 right-3 bg-card/80 backdrop-blur-sm border border-border rounded px-3 py-1">
-            <span className="text-xs font-body text-primary font-semibold">{selected.label}</span>
+            <span className="text-sm font-body text-primary font-semibold">{selected.label}</span>
+            <span className="text-[10px] text-muted-foreground font-body ml-2">{selected.w * selected.h} sq in</span>
           </div>
           <div
             className="overflow-hidden rounded shadow-2xl transition-all duration-500 ease-out"
             style={{
-              width: `${(selected.w / maxDim) * 100}%`,
+              width: `${Math.max((selected.w / maxDim) * 100, 15)}%`,
               aspectRatio: `${selected.w} / ${selected.h}`,
-              maxHeight: 280,
+              maxHeight: 340,
             }}
           >
             <img src={imageUrl} alt="Print preview" className="w-full h-full object-cover" />
@@ -54,13 +54,13 @@ const StepSize = ({ imageUrl, sizeIdx, onSelect, onNext, onBack }: Props) => {
         </div>
       </div>
 
-      {/* Size grid by category */}
+      {/* Compact size grid */}
       {sizeGroups.map((group) => (
         <div key={group.label}>
-          <h3 className="text-xs font-body font-semibold tracking-[0.2em] uppercase text-primary mb-3">
+          <h3 className="text-[10px] font-body font-semibold tracking-[0.2em] uppercase text-primary mb-2">
             {group.label}
           </h3>
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+          <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-7 gap-1.5">
             {standardSizes.slice(group.range[0], group.range[1]).map((size, i) => {
               const idx = group.range[0] + i;
               const isSelected = idx === sizeIdx;
@@ -68,17 +68,15 @@ const StepSize = ({ imageUrl, sizeIdx, onSelect, onNext, onBack }: Props) => {
               return (
                 <Card
                   key={idx}
-                  className={`p-3 text-center cursor-pointer transition-all duration-200 ${
+                  className={`px-2 py-1.5 text-center cursor-pointer transition-all duration-200 ${
                     isSelected
                       ? "ring-2 ring-primary border-primary bg-primary/5"
                       : "border-border hover:border-primary/40"
                   }`}
                   onClick={() => onSelect(idx)}
                 >
-                  {isSelected && <Check className="w-3 h-3 text-primary mx-auto mb-1" />}
-                  <p className="text-sm font-display font-bold text-foreground">{size.label}</p>
-                  <p className="text-[10px] text-muted-foreground font-body">{size.w * size.h} sq in</p>
-                  <p className="text-sm font-display font-bold text-primary mt-1">from ${price}</p>
+                  <p className="text-xs font-display font-bold text-foreground leading-tight">{size.label}</p>
+                  <p className="text-[10px] font-display font-bold text-primary">${price}</p>
                 </Card>
               );
             })}

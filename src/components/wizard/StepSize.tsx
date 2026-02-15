@@ -85,7 +85,7 @@ const StepSize = ({ imageUrl, sizeIdx, material, onSelect, onSelectMaterial, onN
 
       {/* Wall backdrop with proportionally-sized print */}
       <div className="flex justify-center">
-        <div className="relative w-full overflow-hidden rounded-lg border border-border" style={{ maxWidth: 540, aspectRatio: "16/9" }}>
+        <div className="relative w-full overflow-hidden rounded-lg border border-border" style={{ maxWidth: 720, aspectRatio: "16/9" }}>
           <img src={luxuryWall} alt="Gallery wall" className="absolute inset-0 w-full h-full object-cover" />
           {/* Print — sized proportionally to wall (wall ≈ 120" wide) */}
           {(() => {

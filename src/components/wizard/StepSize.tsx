@@ -90,7 +90,7 @@ const StepSize = ({ imageUrl, sizeIdx, material, onSelect, onSelectMaterial, onN
           const isDesk = sizeIdx < 4;
           const backdropImg = isDesk ? credenzaBackdrop : luxuryWall;
           // Credenza is ~60" wide in real life; wall scene ~120"
-          const WALL_W = isDesk ? 36 : 120;
+          const WALL_W = isDesk ? 56 : 120;
           const aspectRatio = isDesk ? "4/3" : "16/9";
           const WALL_H = isDesk ? WALL_W * (3 / 4) : WALL_W * (9 / 16);
           const printWPct = Math.max((displayW / WALL_W) * 100, 10);

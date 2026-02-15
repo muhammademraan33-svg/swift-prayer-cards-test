@@ -14,6 +14,20 @@ export interface CompanionPrint {
   orientation: "landscape" | "portrait";
 }
 
+export interface CartItem {
+  image: SelectedImage | null;
+  uploadedFile: string | null;
+  sizeIdx: number;
+  material: MaterialChoice;
+  doubleSided: boolean;
+  backImage: SelectedImage | null;
+  backUploadedFile: string | null;
+  standOff: StandOffChoice;
+  standOffQty: number;
+  roundedCorners: boolean;
+  companionPrint: CompanionPrint | null;
+}
+
 export interface WizardState {
   step: number;
   image: SelectedImage | null;
@@ -26,8 +40,8 @@ export interface WizardState {
   standOff: StandOffChoice;
   standOffQty: number;
   roundedCorners: boolean;
-  // Companion print for desk & shelf sizes
   companionPrint: CompanionPrint | null;
+  cart: CartItem[];
 }
 
 export const TOTAL_STEPS = 5;
@@ -45,4 +59,5 @@ export const initialWizardState: WizardState = {
   standOffQty: 4,
   roundedCorners: false,
   companionPrint: null,
+  cart: [],
 };

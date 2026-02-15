@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { initialWizardState, TOTAL_STEPS, type WizardState } from "./types";
+import { initialWizardState, TOTAL_STEPS, type WizardState, type CartItem } from "./types";
 import { recommendStandOffs, standardSizes } from "@/lib/pricing";
 import StepArt from "./StepArt";
 import StepSize from "./StepSize";
@@ -152,7 +152,29 @@ const PrintWizard = ({ onStepChange }: Props) => {
           <StepReview
             state={state}
             onBack={prevStep}
-            onAddAnother={() => setState({ ...initialWizardState, step: 1 })}
+            onAddAnother={() => {
+              const cartItem: CartItem = {
+                image: state.image,
+                uploadedFile: state.uploadedFile,
+                sizeIdx: state.sizeIdx,
+                material: state.material,
+                doubleSided: state.doubleSided,
+                backImage: state.backImage,
+                backUploadedFile: state.backUploadedFile,
+                standOff: state.standOff,
+                standOffQty: state.standOffQty,
+                roundedCorners: state.roundedCorners,
+                companionPrint: state.companionPrint,
+              };
+              setState({
+                ...initialWizardState,
+                step: 1,
+                cart: [...state.cart, cartItem],
+              });
+            }}
+            onCheckout={() => {
+              // Future: integrate real checkout
+            }}
           />
         )}
       </div>

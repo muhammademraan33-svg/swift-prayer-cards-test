@@ -20,8 +20,8 @@ export const acrylicMinCost = 14.40;
 
 export const addOns = {
   roundedCorners: 5.00,
-  standOffSilver: 2.50,
-  standOffBlack: 3.50,
+  standOffSilver: 3.00,
+  standOffBlack: 4.00,
   metalStandOffSurcharge: 0.15, // 15% of base print price
 };
 

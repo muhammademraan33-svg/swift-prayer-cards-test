@@ -21,6 +21,12 @@ const PrintWizard = ({ onStepChange }: Props) => {
     setState((prev) => {
       const next = { ...prev, ...patch };
       if (patch.step !== undefined && onStepChange) onStepChange(next.step);
+      // Scroll wizard into view on step change
+      if (patch.step !== undefined) {
+        setTimeout(() => {
+          document.getElementById("wizard")?.scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 50);
+      }
       return next;
     });
   }, [onStepChange]);

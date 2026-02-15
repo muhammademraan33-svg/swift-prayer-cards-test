@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowRight, ArrowLeft, RectangleHorizontal, RectangleVertical, Sparkles, Shield, Gem, Check, RotateCw, ZoomIn, ZoomOut, Move, Package, Percent } from "lucide-react";
-import luxuryWall from "@/assets/luxury-wall.jpg";
+import couchWall from "@/assets/couch-wall.jpg";
 import shelfBackdrop from "@/assets/shelf-backdrop.jpg";
 import acrylicImg from "@/assets/acrylic-print.jpg";
 import metalImg from "@/assets/metal-print.jpg";
@@ -90,9 +90,9 @@ const StepSize = ({ imageUrl, sizeIdx, material, onSelect, onSelectMaterial, onN
       <div className="flex justify-center">
         {(() => {
           const isDesk = sizeIdx < 4;
-          const backdropImg = isDesk ? shelfBackdrop : luxuryWall;
-          // Shelf scene ~36" wide; wall scene ~120"
-          const WALL_W = isDesk ? 36 : 120;
+          const backdropImg = isDesk ? shelfBackdrop : couchWall;
+          // Shelf scene ~36" wide; couch wall scene ~96"
+          const WALL_W = isDesk ? 36 : 96;
           const containerAspect = isDesk ? "1/1" : "16/9";
           const containerRatio = isDesk ? 1 : 16 / 9;
           // Scale print width relative to scene width
@@ -100,9 +100,9 @@ const StepSize = ({ imageUrl, sizeIdx, material, onSelect, onSelectMaterial, onN
           // Derive height from width using print's true aspect ratio, adjusted for container shape
           const printAspect = displayW / displayH;
           const printHPct = (printWPct / printAspect) * containerRatio;
-          // Desk prints sit just above shelf surface (~63% down); wall prints centered
+          // Desk prints sit above shelf; wall prints centered above couch (~35% from top)
           const printBottom = isDesk ? "38%" : undefined;
-          const printTop = isDesk ? undefined : "50%";
+          const printTop = isDesk ? undefined : "35%";
           return (
         <div className="relative w-full overflow-hidden rounded-lg border border-border" style={{ maxWidth: 720, aspectRatio: containerAspect }}>
           <img src={backdropImg} alt="Room backdrop" className="absolute inset-0 w-full h-full object-cover" />

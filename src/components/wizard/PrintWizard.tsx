@@ -41,8 +41,8 @@ const PrintWizard = ({ onStepChange }: Props) => {
   const nextStep = () => {
     let next = state.step + 1;
     if (isBundle) {
-      // Bundle flow: 1 (art) → 2 (size+bundle+images) → skip 3 → 4 (finishing) → 5 (review)
-      if (next === 3) next = 4;
+      // Bundle: skip Personalize for acrylic, allow for metal
+      if (!isMetal && next === 3) next = 4;
     } else {
       if (!isMetal && next === 3) next = 4; // skip upsell for acrylic
     }
@@ -52,11 +52,7 @@ const PrintWizard = ({ onStepChange }: Props) => {
 
   const prevStep = () => {
     let prev = state.step - 1;
-    if (isBundle) {
-      if (prev === 3) prev = 2;
-    } else {
-      if (!isMetal && prev === 3) prev = 2;
-    }
+    if (!isMetal && prev === 3) prev = 2;
     if (prev < 1) prev = 1;
     update({ step: prev });
   };

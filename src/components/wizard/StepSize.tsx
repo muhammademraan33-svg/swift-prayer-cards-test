@@ -352,8 +352,8 @@ const StepSize = ({ imageUrl, sizeIdx, material, onSelect, onSelectMaterial, onN
         </div>
       )}
 
-      {/* Size selection */}
-      {sizeGroups.map((group) => {
+      {/* Size selection — hidden when bundle is active */}
+      {!isBundle && sizeGroups.map((group) => {
         const items = standardSizes.slice(group.range[0], group.range[1]);
         const groupHasSelected = sizeIdx >= group.range[0] && sizeIdx < group.range[1];
 

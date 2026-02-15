@@ -2,8 +2,10 @@ import { useState } from "react";
 import { standardSizes, calcMetalPrice, metalOptions } from "@/lib/pricing";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, ArrowLeft, RectangleHorizontal, RectangleVertical } from "lucide-react";
+import { ArrowRight, ArrowLeft, RectangleHorizontal, RectangleVertical, Sparkles, Shield } from "lucide-react";
 import roomBackdrop from "@/assets/room-backdrop.jpg";
+import acrylicImg from "@/assets/acrylic-print.jpg";
+import metalImg from "@/assets/metal-print.jpg";
 
 interface Props {
   imageUrl: string;
@@ -108,6 +110,46 @@ const StepSize = ({ imageUrl, sizeIdx, onSelect, onNext, onBack }: Props) => {
               <span className="text-[9px] text-muted-foreground font-body ml-1">{selected.w * selected.h} sq in</span>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Side-by-side material previews */}
+      <div className="grid grid-cols-2 gap-4">
+        {/* Acrylic preview */}
+        <div className="bg-card border border-border rounded-lg overflow-hidden">
+          <div className="aspect-[4/3] relative overflow-hidden">
+            <img src={acrylicImg} alt="Acrylic finish" className="w-full h-full object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+            <div className="absolute bottom-2 left-2 right-2">
+              <div className="flex items-center gap-1.5 text-white">
+                <Sparkles className="w-4 h-4 shrink-0" />
+                <span className="font-display font-bold text-sm">Acrylic</span>
+              </div>
+            </div>
+          </div>
+          <ul className="p-3 space-y-1">
+            <li className="text-[10px] font-body text-muted-foreground">✦ Face-mounted to ¼″ acrylic</li>
+            <li className="text-[10px] font-body text-muted-foreground">✦ Extraordinary depth & vibrancy</li>
+            <li className="text-[10px] font-body text-muted-foreground">✦ UV-resistant archival inks</li>
+          </ul>
+        </div>
+        {/* Metal preview */}
+        <div className="bg-card border border-border rounded-lg overflow-hidden">
+          <div className="aspect-[4/3] relative overflow-hidden">
+            <img src={metalImg} alt="Metal finish" className="w-full h-full object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+            <div className="absolute bottom-2 left-2 right-2">
+              <div className="flex items-center gap-1.5 text-white">
+                <Shield className="w-4 h-4 shrink-0" />
+                <span className="font-display font-bold text-sm">Metal</span>
+              </div>
+            </div>
+          </div>
+          <ul className="p-3 space-y-1">
+            <li className="text-[10px] font-body text-muted-foreground">✦ Dye-sublimation on aluminum</li>
+            <li className="text-[10px] font-body text-muted-foreground">✦ Scratch & fade resistant</li>
+            <li className="text-[10px] font-body text-muted-foreground">✦ Double-sided — flip for 2 looks</li>
+          </ul>
         </div>
       </div>
 

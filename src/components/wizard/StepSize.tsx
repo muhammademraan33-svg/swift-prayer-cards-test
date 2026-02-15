@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { standardSizes, calcMetalPrice, calcAcrylicPrice, metalOptions } from "@/lib/pricing";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowRight, ArrowLeft, RectangleHorizontal, RectangleVertical, Sparkles, Shield, Gem, Check, RotateCw } from "lucide-react";
+import { ArrowRight, ArrowLeft, RectangleHorizontal, RectangleVertical, Sparkles, Shield, Gem, Check, RotateCw, ZoomIn, ZoomOut, Move } from "lucide-react";
 import roomBackdrop from "@/assets/room-backdrop.jpg";
 import acrylicImg from "@/assets/acrylic-print.jpg";
 import metalImg from "@/assets/metal-print.jpg";
@@ -41,6 +41,31 @@ const WALL_WIDTH_IN = 120;
 const StepSize = ({ imageUrl, sizeIdx, material, onSelect, onSelectMaterial, onNext, onBack }: Props) => {
   const selected = standardSizes[sizeIdx];
   const [orientation, setOrientation] = useState<"landscape" | "portrait">("landscape");
+  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const isDragging = useRef(false);
+  const dragStart = useRef({ x: 0, y: 0, panX: 0, panY: 0 });
+
+  const handlePointerDown = useCallback((e: React.PointerEvent) => {
+    isDragging.current = true;
+    dragStart.current = { x: e.clientX, y: e.clientY, panX: pan.x, panY: pan.y };
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+  }, [pan]);
+
+  const handlePointerMove = useCallback((e: React.PointerEvent) => {
+    if (!isDragging.current) return;
+    const dx = e.clientX - dragStart.current.x;
+    const dy = e.clientY - dragStart.current.y;
+    const maxPan = (zoom - 1) * 50;
+    setPan({
+      x: Math.max(-maxPan, Math.min(maxPan, dragStart.current.panX + dx)),
+      y: Math.max(-maxPan, Math.min(maxPan, dragStart.current.panY + dy)),
+    });
+  }, [zoom]);
+
+  const handlePointerUp = useCallback(() => {
+    isDragging.current = false;
+  }, []);
 
   // Apply orientation: swap w/h for portrait when w > h (or vice versa)
   const isSquare = selected.w === selected.h;
@@ -85,18 +110,55 @@ const StepSize = ({ imageUrl, sizeIdx, material, onSelect, onSelectMaterial, onN
             alt="Room scene"
             className="absolute inset-0 w-full h-full object-cover"
           />
-          {/* Print overlay — centered on wall above couch */}
-          <div
-            className="absolute left-1/2 -translate-x-1/2 shadow-2xl transition-all duration-500 ease-out overflow-hidden"
-            style={{
-              width: `${printWidthPct}%`,
-              aspectRatio: `${displayW} / ${displayH}`,
-              maxHeight: `${maxBottomPct - 4}%`,
-              top: `${topPct}%`,
-            }}
-          >
-            <img src={imageUrl} alt="Print preview" className="w-full h-full object-cover" />
-          </div>
+           <div
+              className="absolute left-1/2 -translate-x-1/2 shadow-2xl transition-all duration-500 ease-out overflow-hidden cursor-grab active:cursor-grabbing"
+              style={{
+                width: `${printWidthPct}%`,
+                aspectRatio: `${displayW} / ${displayH}`,
+                maxHeight: `${maxBottomPct - 4}%`,
+                top: `${topPct}%`,
+              }}
+              onPointerDown={handlePointerDown}
+              onPointerMove={handlePointerMove}
+              onPointerUp={handlePointerUp}
+            >
+              <img
+                src={imageUrl}
+                alt="Print preview"
+                className="w-full h-full object-cover select-none pointer-events-none"
+                draggable={false}
+                style={{
+                  transform: `scale(${zoom}) translate(${pan.x / zoom}px, ${pan.y / zoom}px)`,
+                  transformOrigin: "center center",
+                }}
+              />
+            </div>
+            {/* Zoom controls */}
+            <div className="absolute top-2 right-2 flex flex-col gap-1">
+              <button
+                onClick={() => { setZoom((z) => Math.min(z + 0.25, 3)); setPan({ x: 0, y: 0 }); }}
+                className="w-6 h-6 bg-card/80 backdrop-blur-sm border border-border rounded flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                title="Zoom in"
+              >
+                <ZoomIn className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={() => { setZoom((z) => Math.max(z - 0.25, 1)); setPan({ x: 0, y: 0 }); }}
+                className="w-6 h-6 bg-card/80 backdrop-blur-sm border border-border rounded flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                title="Zoom out"
+              >
+                <ZoomOut className="w-3.5 h-3.5" />
+              </button>
+              {zoom > 1 && (
+                <button
+                  onClick={() => { setZoom(1); setPan({ x: 0, y: 0 }); }}
+                  className="w-6 h-6 bg-card/80 backdrop-blur-sm border border-border rounded flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                  title="Reset"
+                >
+                  <Move className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
           {/* Size label + orientation toggle */}
           <div className="absolute bottom-2 right-2 flex items-center gap-1.5">
             {!isSquare && (

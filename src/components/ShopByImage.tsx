@@ -79,7 +79,14 @@ const ShopByImage = () => {
     searchPhotos(query);
   };
 
-  const scrollToCalculator = () => {
+  const selectAndGoToCalculator = (photo: PexelsPhoto) => {
+    setSelectedPhoto(photo);
+    // Pass photo to calculator
+    window.dispatchEvent(
+      new CustomEvent("select-image", {
+        detail: { url: photo.src.large2x, photographer: photo.photographer, alt: photo.alt },
+      })
+    );
     const el = document.querySelector("#calculator");
     el?.scrollIntoView({ behavior: "smooth" });
   };
@@ -177,7 +184,7 @@ const ShopByImage = () => {
                     ? "ring-2 ring-primary border-primary"
                     : "border-border hover:border-primary/40"
                 }`}
-                onClick={() => setSelectedPhoto(photo)}
+                onClick={() => selectAndGoToCalculator(photo)}
               >
                 <div className="aspect-[4/3] overflow-hidden">
                   <img
@@ -229,7 +236,7 @@ const ShopByImage = () => {
               </p>
             </div>
             <Button
-              onClick={scrollToCalculator}
+              onClick={() => selectAndGoToCalculator(selectedPhoto)}
               className="bg-gradient-gold text-primary-foreground font-body font-semibold hover:opacity-90 gap-2"
             >
               Configure & Price <ArrowRight className="w-4 h-4" />

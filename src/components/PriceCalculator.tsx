@@ -38,17 +38,28 @@ const PriceCalculator = () => {
   const [standOff, setStandOff] = useState<"none" | "silver" | "black">("none");
   const [standOffQty, setStandOffQty] = useState(4);
   const [shippingSpeed, setShippingSpeed] = useState<ShippingSpeed>("standard");
+  const [selectedImage, setSelectedImage] = useState<{ url: string; photographer: string; alt: string } | null>(null);
 
   // Listen for size selection from ShopBySize
   useEffect(() => {
-    const handler = (e: Event) => {
+    const sizeHandler = (e: Event) => {
       const detail = (e as CustomEvent).detail;
       if (detail?.sizeIdx !== undefined) {
         setSizeIdx(detail.sizeIdx);
       }
     };
-    window.addEventListener("select-size", handler);
-    return () => window.removeEventListener("select-size", handler);
+    const imageHandler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail?.url) {
+        setSelectedImage({ url: detail.url, photographer: detail.photographer, alt: detail.alt });
+      }
+    };
+    window.addEventListener("select-size", sizeHandler);
+    window.addEventListener("select-image", imageHandler);
+    return () => {
+      window.removeEventListener("select-size", sizeHandler);
+      window.removeEventListener("select-image", imageHandler);
+    };
   }, []);
 
   const isCustom = sizeIdx === "custom";
@@ -113,6 +124,40 @@ const PriceCalculator = () => {
             Configure your custom print and see pricing instantly.
           </p>
         </div>
+
+        {/* Image Preview */}
+        {selectedImage && (
+          <div className="mb-8">
+            <div
+              className="relative mx-auto bg-secondary/50 border border-border rounded overflow-hidden"
+              style={{
+                width: `${Math.min(w * 8, 600)}px`,
+                aspectRatio: `${w} / ${h}`,
+                maxWidth: "100%",
+              }}
+            >
+              <img
+                src={selectedImage.url}
+                alt={selectedImage.alt || "Selected print"}
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute bottom-0 left-0 right-0 bg-background/80 backdrop-blur-sm px-3 py-2 flex justify-between items-center">
+                <span className="text-xs text-muted-foreground font-body">
+                  📷 {selectedImage.photographer}
+                </span>
+                <span className="text-xs font-body font-semibold text-primary">
+                  {sizeLabel}
+                </span>
+              </div>
+            </div>
+            <button
+              onClick={() => setSelectedImage(null)}
+              className="text-xs text-muted-foreground hover:text-primary font-body mt-2 block mx-auto"
+            >
+              Remove image
+            </button>
+          </div>
+        )}
 
         <Card className="bg-card border-border">
           <CardContent className="p-8 space-y-8">

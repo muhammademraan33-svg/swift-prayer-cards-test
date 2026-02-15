@@ -1,7 +1,8 @@
+import { useState } from "react";
 import { standardSizes, calcMetalPrice, metalOptions } from "@/lib/pricing";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, ArrowLeft } from "lucide-react";
+import { ArrowRight, ArrowLeft, RectangleHorizontal, RectangleVertical } from "lucide-react";
 import roomBackdrop from "@/assets/room-backdrop.jpg";
 
 interface Props {
@@ -20,16 +21,36 @@ const sizeGroups = [
   { label: "Grand Scale", range: [16, 21] as const },
 ];
 
-// The backdrop represents roughly a 120" wide × 80" tall wall view
+// The backdrop represents roughly a 120" wide wall.
+// The couch sits at ~62% from top in the image, so prints must stay above that.
 const WALL_WIDTH_IN = 120;
-const WALL_HEIGHT_IN = 80;
 
 const StepSize = ({ imageUrl, sizeIdx, onSelect, onNext, onBack }: Props) => {
   const selected = standardSizes[sizeIdx];
+  const [orientation, setOrientation] = useState<"landscape" | "portrait">("landscape");
 
-  // Calculate print size as percentage of the wall
-  const printWidthPct = (selected.w / WALL_WIDTH_IN) * 100;
-  const printHeightPct = (selected.h / WALL_HEIGHT_IN) * 100;
+  // Apply orientation: swap w/h for portrait when w > h (or vice versa)
+  const isSquare = selected.w === selected.h;
+  const displayW = orientation === "portrait" ? Math.min(selected.w, selected.h) : Math.max(selected.w, selected.h);
+  const displayH = orientation === "portrait" ? Math.max(selected.w, selected.h) : Math.min(selected.w, selected.h);
+
+  // Print width as % of wall; height derived from aspect ratio
+  const printWidthPct = Math.max((displayW / WALL_WIDTH_IN) * 100, 8);
+  // The couch top is at ~60% of the image. Keep print bottom above 58%.
+  const maxBottomPct = 58;
+  // Center print vertically in the wall area (top 0% to 58%)
+  const wallAreaPct = maxBottomPct;
+  // Print height as % of container (approximate: container is 16:9 so height = width * 9/16 of container)
+  // Use aspect ratio to calculate height from width
+  const printHeightPct = printWidthPct * (displayH / displayW) * (16 / 9);
+  const clampedHeightPct = Math.min(printHeightPct, wallAreaPct - 4);
+  const topPct = Math.max(2, (wallAreaPct - clampedHeightPct) / 2);
+
+  const displayLabel = isSquare
+    ? selected.label
+    : orientation === "portrait"
+      ? `${Math.min(selected.w, selected.h)}"×${Math.max(selected.w, selected.h)}"`
+      : `${Math.max(selected.w, selected.h)}"×${Math.min(selected.w, selected.h)}"`;
 
   return (
     <div className="space-y-5">
@@ -54,17 +75,38 @@ const StepSize = ({ imageUrl, sizeIdx, onSelect, onNext, onBack }: Props) => {
           <div
             className="absolute left-1/2 -translate-x-1/2 shadow-2xl transition-all duration-500 ease-out overflow-hidden"
             style={{
-              width: `${Math.max(printWidthPct, 8)}%`,
-              height: `${Math.max(printHeightPct, 8)}%`,
-              top: `${Math.max(5, 35 - printHeightPct / 2)}%`,
+              width: `${printWidthPct}%`,
+              aspectRatio: `${displayW} / ${displayH}`,
+              maxHeight: `${maxBottomPct - 4}%`,
+              top: `${topPct}%`,
             }}
           >
             <img src={imageUrl} alt="Print preview" className="w-full h-full object-cover" />
           </div>
-          {/* Size label badge */}
-          <div className="absolute bottom-2 right-2 bg-card/80 backdrop-blur-sm border border-border rounded px-2 py-0.5">
-            <span className="text-xs font-body text-primary font-semibold">{selected.label}</span>
-            <span className="text-[9px] text-muted-foreground font-body ml-1">{selected.w * selected.h} sq in</span>
+          {/* Size label + orientation toggle */}
+          <div className="absolute bottom-2 right-2 flex items-center gap-1.5">
+            {!isSquare && (
+              <div className="flex bg-card/80 backdrop-blur-sm border border-border rounded overflow-hidden">
+                <button
+                  onClick={() => setOrientation("landscape")}
+                  className={`p-1 transition-colors ${orientation === "landscape" ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"}`}
+                  title="Landscape"
+                >
+                  <RectangleHorizontal className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => setOrientation("portrait")}
+                  className={`p-1 transition-colors ${orientation === "portrait" ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"}`}
+                  title="Portrait"
+                >
+                  <RectangleVertical className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
+            <div className="bg-card/80 backdrop-blur-sm border border-border rounded px-2 py-0.5">
+              <span className="text-xs font-body text-primary font-semibold">{displayLabel}</span>
+              <span className="text-[9px] text-muted-foreground font-body ml-1">{selected.w * selected.h} sq in</span>
+            </div>
           </div>
         </div>
       </div>

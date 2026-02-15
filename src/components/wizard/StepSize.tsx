@@ -10,6 +10,7 @@ import acrylicImg from "@/assets/acrylic-print.jpg";
 import metalImg from "@/assets/metal-print.jpg";
 import metalMuseumImg from "@/assets/metal-museum-print.jpg";
 import type { MaterialChoice } from "./types";
+import type { Bundle } from "@/lib/pricing";
 
 interface Props {
   imageUrl: string;
@@ -19,6 +20,7 @@ interface Props {
   onSelectMaterial: (m: MaterialChoice) => void;
   onNext: () => void;
   onBack: () => void;
+  onSelectBundle: (bundle: Bundle) => void;
 }
 
 const materialOpts: { id: MaterialChoice; label: string; subtitle: string; img: string; icon: React.ReactNode }[] = [
@@ -34,7 +36,7 @@ const sizeGroups = [
   { label: "Grand Scale", range: [16, 21] as const },
 ];
 
-const StepSize = ({ imageUrl, sizeIdx, material, onSelect, onSelectMaterial, onNext, onBack }: Props) => {
+const StepSize = ({ imageUrl, sizeIdx, material, onSelect, onSelectMaterial, onNext, onBack, onSelectBundle }: Props) => {
   const selected = standardSizes[sizeIdx];
   const [orientation, setOrientation] = useState<"landscape" | "portrait">("landscape");
   const [zoom, setZoom] = useState(1);
@@ -208,7 +210,7 @@ const StepSize = ({ imageUrl, sizeIdx, material, onSelect, onSelectMaterial, onN
               {matchingBundles.map((bundle) => (
                 <div
                   key={bundle.id}
-                  className="shrink-0 bg-card border border-border rounded-lg p-3 min-w-[200px] max-w-[240px]"
+                  className="shrink-0 bg-card border border-border rounded-lg p-3 min-w-[200px] max-w-[240px] flex flex-col"
                 >
                   <p className="text-xs font-display font-bold text-foreground">{bundle.name}</p>
                   <p className="text-[9px] text-muted-foreground font-body mt-0.5">{bundle.description}</p>
@@ -219,6 +221,13 @@ const StepSize = ({ imageUrl, sizeIdx, material, onSelect, onSelectMaterial, onN
                       <Percent className="w-2.5 h-2.5 mr-0.5" />{bundle.discount} off
                     </Badge>
                   </div>
+                  <Button
+                    size="sm"
+                    className="bg-gradient-gold text-primary-foreground font-body font-semibold hover:opacity-90 tracking-wider text-[9px] mt-2 h-7"
+                    onClick={() => onSelectBundle(bundle)}
+                  >
+                    Order Bundle
+                  </Button>
                 </div>
               ))}
             </div>

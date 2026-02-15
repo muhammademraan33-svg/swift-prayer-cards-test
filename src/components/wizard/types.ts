@@ -1,3 +1,5 @@
+import type { Bundle } from "@/lib/pricing";
+
 export interface SelectedImage {
   url: string;
   photographer: string;
@@ -6,6 +8,11 @@ export interface SelectedImage {
 
 export type MaterialChoice = "acrylic" | "metal-designer" | "metal-museum";
 export type StandOffChoice = "none" | "silver" | "black";
+
+export interface BundleSlot {
+  image: SelectedImage | null;
+  uploadedFile: string | null;
+}
 
 export interface WizardState {
   step: number;
@@ -19,6 +26,9 @@ export interface WizardState {
   standOff: StandOffChoice;
   standOffQty: number;
   roundedCorners: boolean;
+  // Bundle mode
+  selectedBundle: Bundle | null;
+  bundleSlots: BundleSlot[];
 }
 
 export const TOTAL_STEPS = 5;
@@ -35,4 +45,6 @@ export const initialWizardState: WizardState = {
   standOff: "none",
   standOffQty: 4,
   roundedCorners: false,
+  selectedBundle: null,
+  bundleSlots: [],
 };

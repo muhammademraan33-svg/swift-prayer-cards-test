@@ -392,11 +392,11 @@ const PrintDesigner = () => {
                           </div>
                           <div className="flex items-center gap-2">
                             <RadioGroupItem value="silver" id="flow-so-silver" />
-                            <Label htmlFor="flow-so-silver" className="font-body text-foreground cursor-pointer text-sm">Silver ($2.50 ea)</Label>
+                            <Label htmlFor="flow-so-silver" className="font-body text-foreground cursor-pointer text-sm">Silver</Label>
                           </div>
                           <div className="flex items-center gap-2">
                             <RadioGroupItem value="black" id="flow-so-black" />
-                            <Label htmlFor="flow-so-black" className="font-body text-foreground cursor-pointer text-sm">Black ($3.50 ea)</Label>
+                            <Label htmlFor="flow-so-black" className="font-body text-foreground cursor-pointer text-sm">Black</Label>
                           </div>
                         </RadioGroup>
                         {standOff !== "none" && (

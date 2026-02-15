@@ -248,11 +248,11 @@ const PriceCalculator = () => {
                   </div>
                   <div className="flex items-center gap-2">
                     <RadioGroupItem value="silver" id="so-silver" />
-                    <Label htmlFor="so-silver" className="font-body text-foreground cursor-pointer">Silver ($2.50 ea)</Label>
+                    <Label htmlFor="so-silver" className="font-body text-foreground cursor-pointer">Silver</Label>
                   </div>
                   <div className="flex items-center gap-2">
                     <RadioGroupItem value="black" id="so-black" />
-                    <Label htmlFor="so-black" className="font-body text-foreground cursor-pointer">Black ($3.50 ea)</Label>
+                    <Label htmlFor="so-black" className="font-body text-foreground cursor-pointer">Black</Label>
                   </div>
                 </RadioGroup>
 

@@ -15,11 +15,12 @@ interface Props {
   onToggleDouble: (v: boolean) => void;
   onSelectBack: (img: SelectedImage) => void;
   onUploadBack: (dataUrl: string) => void;
+  onAdditionalPrints: (ap: AdditionalPrint[]) => void;
   onNext: () => void;
   onBack: () => void;
 }
 
-const StepUpsell = ({ frontImage, backImage, backUploadedFile, doubleSided, material, sizeIdx, quantity, additionalPrints, onToggleDouble, onUploadBack, onNext, onBack }: Props) => {
+const StepUpsell = ({ frontImage, backImage, backUploadedFile, doubleSided, material, sizeIdx, quantity, additionalPrints, onToggleDouble, onUploadBack, onAdditionalPrints, onNext, onBack }: Props) => {
   const backUrl = backUploadedFile || backImage?.url;
 
   const size = standardSizes[sizeIdx];
@@ -36,6 +37,30 @@ const StepUpsell = ({ frontImage, backImage, backUploadedFile, doubleSided, mate
     reader.onload = () => { onUploadBack(reader.result as string); onToggleDouble(true); };
     reader.readAsDataURL(file);
   };
+
+  const handleAdditionalPrintBackUpload = (idx: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const updated = [...additionalPrints];
+      if (!updated[idx]) return;
+      updated[idx] = { ...updated[idx], backUploadedFile: reader.result as string, backImage: null };
+      onAdditionalPrints(updated);
+      onToggleDouble(true);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Check if all prints have back images when doubleSided is enabled
+  const allPrintsHaveBackImages = doubleSided && (
+    backUrl && 
+    additionalPrints.every((ap, idx) => {
+      const apImg = ap.uploadedFile || ap.image?.url;
+      if (!apImg) return true; // Skip if print doesn't have front image yet
+      return ap.backUploadedFile || ap.backImage?.url;
+    })
+  );
 
   return (
     <div className="space-y-5">
@@ -83,19 +108,34 @@ const StepUpsell = ({ frontImage, backImage, backUploadedFile, doubleSided, mate
         {quantity > 1 && additionalPrints.map((ap, idx) => {
           const apImg = ap.uploadedFile || ap.image?.url;
           if (!apImg) return null;
+          const apBackUrl = ap.backUploadedFile || ap.backImage?.url;
           return (
             <div key={idx} className="flex items-center gap-4 p-3 rounded-xl border border-border bg-card">
               <div className="w-20 h-16 sm:w-24 sm:h-20 rounded-lg overflow-hidden border border-border shadow-md shrink-0">
-                <img src={apImg} alt={`Print ${idx + 2}`} className="w-full h-full object-cover" />
+                <img src={apImg} alt={`Print ${idx + 2} front`} className="w-full h-full object-cover" />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-display font-bold text-foreground">Print {idx + 2}</p>
-                <p className="text-xs text-muted-foreground font-body font-semibold uppercase tracking-wider">Front</p>
+                <p className="text-xs text-primary font-body font-semibold uppercase tracking-wider">Front</p>
               </div>
-              <RotateCw className="w-4 h-4 text-muted-foreground/40 shrink-0" />
-              <div className="w-16 h-12 sm:w-20 sm:h-16 rounded-lg border border-dashed border-border flex items-center justify-center bg-secondary/30 shrink-0">
-                <p className="text-[9px] text-muted-foreground/50 font-body text-center leading-tight">Same back</p>
-              </div>
+              <RotateCw className="w-4 h-4 text-primary shrink-0" />
+              {apBackUrl ? (
+                <div className="flex items-center gap-2 shrink-0">
+                  <div className="w-16 h-12 sm:w-20 sm:h-16 rounded-lg overflow-hidden border border-primary/30 shadow-md">
+                    <img src={apBackUrl} alt={`Print ${idx + 2} back`} className="w-full h-full object-cover" />
+                  </div>
+                  <label className="cursor-pointer text-primary hover:text-primary/80 transition-colors">
+                    <Upload className="w-4 h-4" />
+                    <input type="file" accept="image/*" className="hidden" onChange={(e) => handleAdditionalPrintBackUpload(idx, e)} />
+                  </label>
+                </div>
+              ) : (
+                <label className="flex items-center gap-2 px-3 py-2 border border-dashed border-primary/40 hover:border-primary rounded-lg cursor-pointer transition-all bg-primary/5 hover:bg-primary/10 shrink-0">
+                  <Upload className="w-4 h-4 text-primary" />
+                  <span className="font-body text-xs font-semibold text-foreground">Upload Back</span>
+                  <input type="file" accept="image/*" className="hidden" onChange={(e) => handleAdditionalPrintBackUpload(idx, e)} />
+                </label>
+              )}
             </div>
           );
         })}
@@ -131,7 +171,7 @@ const StepUpsell = ({ frontImage, backImage, backUploadedFile, doubleSided, mate
         </Button>
         <Button
           onClick={onNext}
-          disabled={doubleSided && !backUrl}
+          disabled={doubleSided && !allPrintsHaveBackImages}
           className="bg-gradient-gold text-primary-foreground font-body font-semibold hover:opacity-90 gap-2"
         >
           Finishing Options <ArrowRight className="w-4 h-4" />

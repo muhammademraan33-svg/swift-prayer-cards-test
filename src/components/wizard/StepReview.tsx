@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, ShoppingBag, Plus } from "lucide-react";
 import type { WizardState, MaterialChoice, CartItem } from "./types";
 import { useToast } from "@/hooks/use-toast";
+import { getImageTransformStyle } from "@/lib/imageTransform";
 
 interface Props {
   state: WizardState;
@@ -94,17 +95,25 @@ function getLineItems(item: CartItem | WizardState): LineItem[] {
   return lines;
 }
 
-function ItemBreakdown({ item, title, imageUrl }: { item: CartItem | WizardState; title: string; imageUrl: string }) {
+function ItemBreakdown({ item, title, imageUrl, transform }: { item: CartItem | WizardState; title: string; imageUrl: string; transform?: { rotation: number; zoom: number; panX: number; panY: number } }) {
   const lines = getLineItems(item);
   const subtotal = lines.reduce((s, l) => s + l.amount, 0);
+  const transformStyle = transform ? getImageTransformStyle(transform) : undefined;
 
   return (
     <div className="space-y-2">
       {/* Header with image */}
       <div className="flex items-center gap-3">
         {imageUrl && (
-          <div className="w-10 h-10 rounded overflow-hidden border border-border shrink-0">
-            <img src={imageUrl} alt="Print" className="w-full h-full object-cover" />
+          <div className="w-10 h-10 rounded overflow-hidden border border-border shrink-0 relative">
+            <div className="absolute inset-0 overflow-hidden">
+              <img 
+                src={imageUrl} 
+                alt="Print" 
+                className="w-full h-full object-cover"
+                style={transformStyle}
+              />
+            </div>
           </div>
         )}
         <p className="text-sm font-display font-bold text-foreground">{title}</p>
@@ -172,10 +181,22 @@ const StepReview = ({ state, onBack, onAddAnother, onCheckout }: Props) => {
       </div>
 
       {/* Visual preview of current print */}
-      <div className="flex justify-center gap-4">
+      <div className="flex justify-center gap-4 flex-wrap">
         <div className="text-center">
-          <div className="w-36 h-28 rounded-lg overflow-hidden border border-primary/30 shadow-xl">
-            <img src={imageUrl} alt="Front" className="w-full h-full object-cover" />
+          <div className="w-36 h-28 rounded-lg overflow-hidden border border-primary/30 shadow-xl relative">
+            <div className="absolute inset-0 overflow-hidden">
+              <img 
+                src={imageUrl} 
+                alt="Front" 
+                className="w-full h-full object-cover"
+                style={getImageTransformStyle({ 
+                  rotation: state.rotation, 
+                  zoom: state.zoom, 
+                  panX: state.panX, 
+                  panY: state.panY 
+                })}
+              />
+            </div>
           </div>
           {state.doubleSided && <p className="text-xs text-primary font-body mt-1 font-semibold">FRONT</p>}
         </div>
@@ -192,8 +213,20 @@ const StepReview = ({ state, onBack, onAddAnother, onCheckout }: Props) => {
           if (!apImg) return null;
           return (
             <div key={idx} className="text-center">
-              <div className="w-36 h-28 rounded-lg overflow-hidden border border-border shadow-xl">
-                <img src={apImg} alt={`Print ${idx + 2}`} className="w-full h-full object-cover" />
+              <div className="w-36 h-28 rounded-lg overflow-hidden border border-border shadow-xl relative">
+                <div className="absolute inset-0 overflow-hidden">
+                  <img 
+                    src={apImg} 
+                    alt={`Print ${idx + 2}`} 
+                    className="w-full h-full object-cover"
+                    style={getImageTransformStyle({ 
+                      rotation: ap.rotation || 0, 
+                      zoom: ap.zoom || 1, 
+                      panX: ap.panX || 0, 
+                      panY: ap.panY || 0 
+                    })}
+                  />
+                </div>
               </div>
               <p className="text-xs text-muted-foreground font-body mt-1 font-semibold">Print {idx + 2}</p>
             </div>
@@ -204,12 +237,21 @@ const StepReview = ({ state, onBack, onAddAnother, onCheckout }: Props) => {
       {/* Order summary with line items */}
       <Card className="bg-card border-border">
         <div className="p-5 space-y-4">
-          {allItems.map(({ item, title, imageUrl: img }, i) => (
-            <div key={i}>
-              <ItemBreakdown item={item} title={title} imageUrl={img} />
-              {i < allItems.length - 1 && <div className="border-t border-border mt-4" />}
-            </div>
-          ))}
+          {allItems.map(({ item, title, imageUrl: img }, i) => {
+            // Get transform for current item
+            const transform = 'rotation' in item ? {
+              rotation: item.rotation || 0,
+              zoom: item.zoom || 1,
+              panX: item.panX || 0,
+              panY: item.panY || 0,
+            } : undefined;
+            return (
+              <div key={i}>
+                <ItemBreakdown item={item} title={title} imageUrl={img} transform={transform} />
+                {i < allItems.length - 1 && <div className="border-t border-border mt-4" />}
+              </div>
+            );
+          })}
 
           <div className="flex justify-between font-body text-xl font-bold text-foreground border-t border-border pt-4 mt-2">
             <span>Total ({allItems.length} {allItems.length === 1 ? "print" : "prints"})</span>

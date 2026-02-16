@@ -14,6 +14,12 @@ export interface AdditionalPrint {
   image: SelectedImage | null;
   uploadedFile: string | null;
   orientation: "landscape" | "portrait";
+  backImage: SelectedImage | null;
+  backUploadedFile: string | null;
+  rotation: number;
+  zoom: number;
+  panX: number;
+  panY: number;
 }
 
 export interface CartItem {
@@ -90,3 +96,18 @@ export const initialWizardState: WizardState = {
   panX: 0,
   panY: 0,
 };
+
+/** Helper to create a new AdditionalPrint with default values */
+export function createAdditionalPrint(): AdditionalPrint {
+  return {
+    image: null,
+    uploadedFile: null,
+    orientation: "landscape",
+    backImage: null,
+    backUploadedFile: null,
+    rotation: 0,
+    zoom: 1,
+    panX: 0,
+    panY: 0,
+  };
+}

@@ -12,9 +12,11 @@ import cornerLuxMetal from "@/assets/corner-lux-metal.jpg";
 import cornerDesignerMetal from "@/assets/corner-designer-metal.jpg";
 import cornerAcrylic from "@/assets/corner-acrylic.jpg";
 import type { MaterialChoice, AdditionalPrint, SelectedImage } from "./types";
-import { CUSTOM_SIZE_IDX } from "./types";
+import { CUSTOM_SIZE_IDX, createAdditionalPrint } from "./types";
 import { Input } from "@/components/ui/input";
 import ImagePickerModal from "./ImagePickerModal";
+import { getImageTransformStyle, calculateDPI } from "@/lib/imageTransform";
+import { Badge } from "@/components/ui/badge";
 
 interface Props {
   imageUrl: string;
@@ -93,8 +95,8 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
   const requiredPxW = displayW * 300;
   const requiredPxH = displayH * 300;
   const hasImageDimensions = imageNaturalWidth > 0 && imageNaturalHeight > 0;
-  const isLowQuality = hasImageDimensions && (imageNaturalWidth < requiredPxW * 0.75 || imageNaturalHeight < requiredPxH * 0.75);
-  const effectiveDpi = hasImageDimensions ? Math.min(Math.round(imageNaturalWidth / displayW), Math.round(imageNaturalHeight / displayH)) : 0;
+  const effectiveDpi = hasImageDimensions ? calculateDPI(imageNaturalWidth, imageNaturalHeight, displayW, displayH) : 0;
+  const isLowQuality = hasImageDimensions && effectiveDpi < 300;
 
   const displayLabel = isSquare
     ? selected.label
@@ -112,14 +114,14 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
 
   const handleSlotSelect = (slotIndex: number, image: SelectedImage) => {
     const updated = [...additionalPrints];
-    while (updated.length <= slotIndex) updated.push({ image: null, uploadedFile: null, orientation: "landscape" });
+    while (updated.length <= slotIndex) updated.push(createAdditionalPrint());
     updated[slotIndex] = { ...updated[slotIndex], image, uploadedFile: null };
     onAdditionalPrints(updated);
   };
 
   const handleSlotUpload = (slotIndex: number, dataUrl: string) => {
     const updated = [...additionalPrints];
-    while (updated.length <= slotIndex) updated.push({ image: null, uploadedFile: null, orientation: "landscape" });
+    while (updated.length <= slotIndex) updated.push(createAdditionalPrint());
     updated[slotIndex] = { ...updated[slotIndex], image: null, uploadedFile: dataUrl };
     onAdditionalPrints(updated);
   };
@@ -151,7 +153,7 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* LEFT: Preview */}
-        <div className="flex justify-center md:sticky md:top-4 md:self-start max-h-[400px]">
+        <div className="flex justify-center md:sticky md:top-4 md:self-start w-full">
           {(() => {
             const backdropImg = isDesk ? shelfBackdrop : couchWall;
             const WALL_W = isDesk ? 48 : 60;
@@ -206,32 +208,113 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
             }
 
             return (
-              <div className="relative w-full overflow-hidden rounded-lg border border-border" style={{ aspectRatio: containerAspect }}>
-                <img src={backdropImg} alt="Room backdrop" className="absolute inset-0 w-full h-full object-cover" />
-                <div
-                  className={`absolute left-1/2 -translate-x-1/2 shadow-[0_4px_30px_rgba(0,0,0,0.3)] transition-all duration-500 ease-out overflow-hidden cursor-grab active:cursor-grabbing ${printTop ? '-translate-y-1/2' : ''}`}
-                  style={{ width: `${printWPct}%`, paddingBottom: `${printWPct / printAspect}%`, height: 0, ...(printTop ? { top: printTop } : { bottom: printBottom }) }}
-                  onPointerDown={handlePointerDown}
-                  onPointerMove={handlePointerMove}
-                  onPointerUp={handlePointerUp}
+              <div className="space-y-3 w-full">
+                {/* WYSIWYG Crop Preview */}
+                <div 
+                  className="relative w-full bg-secondary/30 rounded-lg border-2 border-primary/30 overflow-hidden"
+                  style={{ 
+                    aspectRatio: `${printAspect}`,
+                    maxWidth: "100%",
+                    maxHeight: "600px",
+                    minHeight: "200px",
+                    width: "100%"
+                  }}
                 >
-                  <img src={imageUrl} alt="Print preview" className="absolute inset-0 w-full h-full object-cover select-none pointer-events-none" draggable={false} style={{ transform: `scale(${zoom}) translate(${panX / zoom}px, ${panY / zoom}px) rotate(${rotation}deg)`, transformOrigin: "center center" }} />
-                </div>
-                <div className="absolute top-2 right-2 flex flex-col gap-1">
-                  <button onClick={(e) => { e.stopPropagation(); onZoom(Math.min(zoom + 0.25, 3)); onPan(0, 0); }} className="w-7 h-7 bg-card/80 backdrop-blur-sm border border-border rounded flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors" title="Zoom in"><ZoomIn className="w-4 h-4" /></button>
-                  <button onClick={(e) => { e.stopPropagation(); onZoom(Math.max(zoom - 0.25, 1)); onPan(0, 0); }} className="w-7 h-7 bg-card/80 backdrop-blur-sm border border-border rounded flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors" title="Zoom out"><ZoomOut className="w-4 h-4" /></button>
-                  <button onClick={(e) => { e.stopPropagation(); onRotate((rotation + 90) % 360); }} className="w-7 h-7 bg-card/80 backdrop-blur-sm border border-border rounded flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors" title="Rotate 90°"><RotateCw className="w-4 h-4" /></button>
-                  {(zoom > 1 || panX !== 0 || panY !== 0) && (
-                    <button onClick={(e) => { e.stopPropagation(); onZoom(1); onPan(0, 0); }} className="w-7 h-7 bg-card/80 backdrop-blur-sm border border-border rounded flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors" title="Reset"><Move className="w-4 h-4" /></button>
+                  {/* Full background image (dimmed/blurred to show crop boundaries) - shows full image extent */}
+                  <div className="absolute inset-0 overflow-hidden">
+                    <img 
+                      src={imageUrl} 
+                      alt="Print preview background" 
+                      className="absolute inset-0 w-full h-full object-cover"
+                      draggable={false}
+                      style={{ 
+                        filter: "blur(8px) brightness(0.4)",
+                        transform: "scale(1.1)" // Slightly larger to show extent
+                      }}
+                    />
+                  </div>
+                  
+                  {/* Dimmed overlay to darken the background (shows what's outside) */}
+                  <div className="absolute inset-0 bg-black/40 pointer-events-none z-10"></div>
+                  
+                  {/* Crop boundary container - this is the actual printable area */}
+                  <div
+                    className="relative w-full h-full cursor-grab active:cursor-grabbing z-20"
+                    onPointerDown={handlePointerDown}
+                    onPointerMove={handlePointerMove}
+                    onPointerUp={handlePointerUp}
+                  >
+                    {/* Crop boundary border - clearly marks the printable area */}
+                    <div className="absolute inset-0 border-2 border-primary shadow-[0_0_0_2px_rgba(0,0,0,0.3)] pointer-events-none z-30"></div>
+                    
+                    {/* Transformed image inside crop boundary - this is what will be printed */}
+                    <div className="absolute inset-0 overflow-hidden">
+                      <img 
+                        src={imageUrl} 
+                        alt="Print preview" 
+                        className="absolute inset-0 w-full h-full object-cover select-none pointer-events-none" 
+                        draggable={false}
+                        style={getImageTransformStyle({ rotation, zoom, panX, panY })}
+                      />
+                    </div>
+                  </div>
+                  
+                  {/* Resolution warning badge */}
+                  {isLowQuality && (
+                    <div className="absolute top-2 right-2 z-10">
+                      <Badge variant="destructive" className="text-xs font-body">
+                        <AlertTriangle className="w-3 h-3 mr-1" />
+                        {Math.round(effectiveDpi)} DPI
+                      </Badge>
+                    </div>
                   )}
-                </div>
-                <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between">
-                  <div className="bg-card/80 backdrop-blur-sm border border-border rounded px-2.5 py-1">
+                  
+                  {/* Transform controls */}
+                  <div className="absolute bottom-2 right-2 flex flex-col gap-1 z-10">
+                    <button onClick={(e) => { e.stopPropagation(); onZoom(Math.min(zoom + 0.25, 3)); onPan(0, 0); }} className="w-7 h-7 bg-card/90 backdrop-blur-sm border border-border rounded flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors shadow-sm" title="Zoom in"><ZoomIn className="w-4 h-4" /></button>
+                    <button onClick={(e) => { e.stopPropagation(); onZoom(Math.max(zoom - 0.25, 1)); onPan(0, 0); }} className="w-7 h-7 bg-card/90 backdrop-blur-sm border border-border rounded flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors shadow-sm" title="Zoom out"><ZoomOut className="w-4 h-4" /></button>
+                    <button onClick={(e) => { e.stopPropagation(); onRotate((rotation + 90) % 360); }} className="w-7 h-7 bg-card/90 backdrop-blur-sm border border-border rounded flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors shadow-sm" title="Rotate 90°"><RotateCw className="w-4 h-4" /></button>
+                    {(zoom > 1 || panX !== 0 || panY !== 0 || rotation !== 0) && (
+                      <button onClick={(e) => { e.stopPropagation(); onZoom(1); onPan(0, 0); onRotate(0); }} className="w-7 h-7 bg-card/90 backdrop-blur-sm border border-border rounded flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors shadow-sm" title="Reset"><Move className="w-4 h-4" /></button>
+                    )}
+                  </div>
+                  
+                  {/* Size label */}
+                  <div className="absolute bottom-2 left-2 bg-card/90 backdrop-blur-sm border border-border rounded px-2.5 py-1 z-10">
                     <span className="text-sm font-body text-primary font-semibold">{displayLabel}</span>
-                    <span className="text-[10px] text-muted-foreground font-body ml-1.5">{selected.w * selected.h} sq in</span>
+                    {effectiveDpi > 0 && (
+                      <span className="text-[10px] text-muted-foreground font-body ml-1.5">
+                        {Math.round(effectiveDpi)} DPI
+                      </span>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Room backdrop preview (optional visual context) */}
+                <div 
+                  className="relative w-full overflow-hidden rounded-lg border border-border" 
+                  style={{ 
+                    aspectRatio: containerAspect,
+                    maxHeight: "300px"
+                  }}
+                >
+                  <img src={backdropImg} alt="Room backdrop" className="absolute inset-0 w-full h-full object-cover" />
+                  <div
+                    className={`absolute left-1/2 -translate-x-1/2 shadow-[0_4px_30px_rgba(0,0,0,0.3)] transition-all duration-500 ease-out overflow-hidden ${printTop ? '-translate-y-1/2' : ''}`}
+                    style={{ width: `${printWPct}%`, paddingBottom: `${printWPct / printAspect}%`, height: 0, ...(printTop ? { top: printTop } : { bottom: printBottom }) }}
+                  >
+                    <div className="absolute inset-0 overflow-hidden">
+                      <img 
+                        src={imageUrl} 
+                        alt="Print preview" 
+                        className="absolute inset-0 w-full h-full object-cover select-none pointer-events-none" 
+                        draggable={false}
+                        style={getImageTransformStyle({ rotation, zoom, panX, panY })}
+                      />
+                    </div>
                   </div>
                   {!isSquare && (
-                    <div className="flex bg-card/80 backdrop-blur-sm border border-border rounded overflow-hidden">
+                    <div className="absolute bottom-2 right-2 flex bg-card/80 backdrop-blur-sm border border-border rounded overflow-hidden">
                       <button onClick={() => setOrientation("landscape")} className={`p-1.5 transition-colors ${orientation === "landscape" ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"}`} title="Landscape"><RectangleHorizontal className="w-4 h-4" /></button>
                       <button onClick={() => setOrientation("portrait")} className={`p-1.5 transition-colors ${orientation === "portrait" ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"}`} title="Portrait"><RectangleVertical className="w-4 h-4" /></button>
                     </div>
@@ -285,7 +368,7 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
                             onQuantity(q);
                             if (q >= 2) {
                               const current = [...additionalPrints];
-                              while (current.length < q - 1) current.push({ image: null, uploadedFile: null, orientation: "landscape" });
+                              while (current.length < q - 1) current.push(createAdditionalPrint());
                               onAdditionalPrints(current.slice(0, q - 1));
                             } else {
                               onAdditionalPrints([]);

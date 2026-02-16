@@ -153,6 +153,7 @@ const PrintWizard = ({ onStepChange }: Props) => {
             onToggleDouble={(v) => update({ doubleSided: v })}
             onSelectBack={(img) => update({ backImage: img, backUploadedFile: null })}
             onUploadBack={(dataUrl) => update({ backUploadedFile: dataUrl, backImage: null })}
+            onAdditionalPrints={(ap) => update({ additionalPrints: ap })}
             onNext={nextStep}
             onBack={prevStep}
           />

@@ -3,7 +3,7 @@ import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
 import HowItWorks from "@/components/HowItWorks";
 import LuxuryShowcase from "@/components/LuxuryShowcase";
-import PrintWizard from "@/components/wizard/PrintWizard";
+
 
 import Testimonials from "@/components/Testimonials";
 import FAQ from "@/components/FAQ";
@@ -40,7 +40,7 @@ const Index = () => {
         <Hero />
         <HowItWorks />
         <LuxuryShowcase />
-        <PrintWizard />
+        
         
         <Testimonials />
         <FAQ />

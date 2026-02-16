@@ -1,7 +1,9 @@
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 
 const FinalCTA = () => {
+  const navigate = useNavigate();
   return (
     <section className="py-28 md:py-36 px-6 bg-secondary/30">
       <div className="max-w-3xl mx-auto text-center">
@@ -20,23 +22,15 @@ const FinalCTA = () => {
           <Button
             size="lg"
             className="bg-gradient-gold text-primary-foreground font-body font-semibold tracking-[0.2em] hover:opacity-90 px-12 h-14 text-xs gap-2"
-            onClick={() =>
-              document
-                .getElementById("shop-by-size")
-                ?.scrollIntoView({ behavior: "smooth" })
-            }
+            onClick={() => navigate("/create")}
           >
-            EXPLORE COLLECTION <ArrowRight className="w-4 h-4" />
+            START YOUR PRINT <ArrowRight className="w-4 h-4" />
           </Button>
           <Button
             size="lg"
             variant="outline"
             className="border-foreground/15 text-foreground font-body tracking-[0.2em] hover:bg-foreground/5 px-12 h-14 text-xs"
-            onClick={() =>
-              document
-                .getElementById("calculator")
-                ?.scrollIntoView({ behavior: "smooth" })
-            }
+            onClick={() => navigate("/create")}
           >
             COMMISSION A PIECE
           </Button>

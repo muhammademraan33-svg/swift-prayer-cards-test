@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Star, Shield, Truck, Award, Clock } from "lucide-react";
 import heroImg from "@/assets/hero-lifestyle.jpg";
@@ -19,6 +20,7 @@ const Hero = () => {
     }, 3000);
     return () => clearInterval(interval);
   }, []);
+  const navigate = useNavigate();
   return (
     <section className="relative min-h-screen flex items-end pb-20 md:pb-28 overflow-hidden">
       {/* Background */}
@@ -71,11 +73,7 @@ const Hero = () => {
             <Button
               size="lg"
               className="bg-gradient-gold text-primary-foreground font-body font-semibold tracking-[0.2em] hover:opacity-90 px-12 h-14 text-xs"
-              onClick={() =>
-                document
-                  .getElementById("wizard")
-                  ?.scrollIntoView({ behavior: "smooth" })
-              }
+              onClick={() => navigate("/create")}
             >
               CREATE YOUR PRINT
             </Button>

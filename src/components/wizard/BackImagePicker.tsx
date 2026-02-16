@@ -20,6 +20,9 @@ const BackImagePicker = ({ backImage, backUploadedFile, upsellCost, onUploadBack
     const reader = new FileReader();
     reader.onload = () => onUploadBack(reader.result as string);
     reader.readAsDataURL(file);
+    
+    // Reset the input value so the same file can be selected again
+    e.target.value = '';
   };
 
   return (

@@ -205,11 +205,21 @@ const PrintWizard = ({ onStepChange }: Props) => {
                 panX: state.panX,
                 panY: state.panY,
               };
+              
+              // Reset to step 1 with cart preserved
               setState({
                 ...initialWizardState,
                 step: 1,
                 cart: [...state.cart, cartItem],
               });
+              
+              // Scroll to top of wizard
+              setTimeout(() => {
+                document.getElementById("wizard")?.scrollIntoView({ 
+                  behavior: "smooth", 
+                  block: "start" 
+                });
+              }, 100);
             }}
             onCheckout={() => {
               // Future: integrate real checkout

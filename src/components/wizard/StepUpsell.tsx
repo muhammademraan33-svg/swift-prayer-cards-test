@@ -36,6 +36,9 @@ const StepUpsell = ({ frontImage, backImage, backUploadedFile, doubleSided, mate
     const reader = new FileReader();
     reader.onload = () => { onUploadBack(reader.result as string); onToggleDouble(true); };
     reader.readAsDataURL(file);
+    
+    // Reset the input value so the same file can be selected again
+    e.target.value = '';
   };
 
   const handleAdditionalPrintBackUpload = (idx: number, e: React.ChangeEvent<HTMLInputElement>) => {
@@ -50,6 +53,9 @@ const StepUpsell = ({ frontImage, backImage, backUploadedFile, doubleSided, mate
       onToggleDouble(true);
     };
     reader.readAsDataURL(file);
+    
+    // Reset the input value so the same file can be selected again
+    e.target.value = '';
   };
 
   // Check if all prints have back images when doubleSided is enabled

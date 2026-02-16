@@ -22,6 +22,9 @@ const StepArt = ({ image, uploadedFile, onUpload, onNext }: Props) => {
       img.src = dataUrl;
     };
     reader.readAsDataURL(file);
+    
+    // Reset the input value so the same file can be selected again
+    e.target.value = '';
   };
 
   const hasSelection = !!image || !!uploadedFile;

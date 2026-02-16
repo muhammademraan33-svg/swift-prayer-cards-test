@@ -117,7 +117,7 @@ const PrintWizard = ({ onStepChange }: Props) => {
             imageUrl={imageUrl}
             sizeIdx={state.sizeIdx}
             material={state.material}
-            companionPrint={state.companionPrint}
+            additionalPrints={state.additionalPrints}
             imageNaturalWidth={state.imageNaturalWidth}
             imageNaturalHeight={state.imageNaturalHeight}
             rotation={state.rotation}
@@ -130,8 +130,8 @@ const PrintWizard = ({ onStepChange }: Props) => {
             onSelect={(idx) => update({ sizeIdx: idx })}
             onCustomSize={(w, h) => update({ customWidth: w, customHeight: h })}
             onQuantity={(q) => update({ quantity: q })}
+            onAdditionalPrints={(ap) => update({ additionalPrints: ap })}
             onSelectMaterial={(m) => update({ material: m, doubleSided: false, backImage: null, backUploadedFile: null })}
-            onCompanionChange={(cp) => update({ companionPrint: cp })}
             onRotate={(r) => update({ rotation: r })}
             onZoom={(z) => update({ zoom: z })}
             onPan={(x, y) => update({ panX: x, panY: y })}
@@ -189,6 +189,7 @@ const PrintWizard = ({ onStepChange }: Props) => {
                 customWidth: state.customWidth,
                 customHeight: state.customHeight,
                 quantity: state.quantity,
+                additionalPrints: state.additionalPrints,
                 material: state.material,
                 doubleSided: state.doubleSided,
                 backImage: state.backImage,
@@ -196,7 +197,6 @@ const PrintWizard = ({ onStepChange }: Props) => {
                 standOff: state.standOff,
                 standOffQty: state.standOffQty,
                 roundedCorners: state.roundedCorners,
-                companionPrint: state.companionPrint,
                 rotation: state.rotation,
                 zoom: state.zoom,
                 panX: state.panX,

@@ -7,14 +7,13 @@ export interface SelectedImage {
 export type MaterialChoice = "acrylic" | "metal-designer" | "metal-museum";
 export type StandOffChoice = "none" | "silver" | "black";
 
-export interface CompanionPrint {
+export const CUSTOM_SIZE_IDX = -1;
+
+/** An additional print in a multi-print set */
+export interface AdditionalPrint {
   image: SelectedImage | null;
   uploadedFile: string | null;
-  sizeIdx: number;
-  orientation: "landscape" | "portrait";
 }
-
-export const CUSTOM_SIZE_IDX = -1;
 
 export interface CartItem {
   image: SelectedImage | null;
@@ -25,6 +24,7 @@ export interface CartItem {
   customWidth: number;
   customHeight: number;
   quantity: number;
+  additionalPrints: AdditionalPrint[];
   material: MaterialChoice;
   doubleSided: boolean;
   backImage: SelectedImage | null;
@@ -32,7 +32,6 @@ export interface CartItem {
   standOff: StandOffChoice;
   standOffQty: number;
   roundedCorners: boolean;
-  companionPrint: CompanionPrint | null;
   rotation: number;
   zoom: number;
   panX: number;
@@ -49,6 +48,7 @@ export interface WizardState {
   customWidth: number;
   customHeight: number;
   quantity: number;
+  additionalPrints: AdditionalPrint[];
   material: MaterialChoice;
   doubleSided: boolean;
   backImage: SelectedImage | null;
@@ -56,7 +56,6 @@ export interface WizardState {
   standOff: StandOffChoice;
   standOffQty: number;
   roundedCorners: boolean;
-  companionPrint: CompanionPrint | null;
   cart: CartItem[];
   rotation: number;
   zoom: number;
@@ -76,6 +75,7 @@ export const initialWizardState: WizardState = {
   customWidth: 12,
   customHeight: 16,
   quantity: 1,
+  additionalPrints: [],
   material: "metal-designer",
   doubleSided: false,
   backImage: null,
@@ -83,7 +83,6 @@ export const initialWizardState: WizardState = {
   standOff: "none",
   standOffQty: 4,
   roundedCorners: false,
-  companionPrint: null,
   cart: [],
   rotation: 0,
   zoom: 1,

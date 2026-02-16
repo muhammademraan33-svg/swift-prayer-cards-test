@@ -55,18 +55,7 @@ function getLineItems(item: CartItem | WizardState): LineItem[] {
     detail: `${size.label}${item.doubleSided ? " — Double-Sided" : ""}${qty > 1 ? ` × ${qty}` : ""}`,
     amount: printPrice * qty,
   });
-
-  // Companion print
-  const companion = item.companionPrint;
-  if (companion) {
-    const companionSize = standardSizes[companion.sizeIdx];
-    const companionPrice = calcPrintPrice(item.material, companionSize.w, companionSize.h, false);
-    lines.push({
-      label: "Companion Print",
-      detail: `${getMaterialLabel(item.material)} — ${companionSize.label}`,
-      amount: companionPrice,
-    });
-  }
+  // Additional prints in set are already accounted for by quantity multiplier above
 
   // Rounded corners
   if (item.roundedCorners) {
@@ -169,9 +158,7 @@ const StepReview = ({ state, onBack, onAddAnother, onCheckout }: Props) => {
 
   const imageUrl = state.uploadedFile || state.image?.url || "";
   const backUrl = state.backUploadedFile || state.backImage?.url;
-  const companion = state.companionPrint;
-  const companionImgSrc = companion?.uploadedFile || companion?.image?.url;
-  const companionSize = companion ? standardSizes[companion.sizeIdx] : null;
+  const additionalPrints = state.additionalPrints || [];
 
   return (
     <div className="space-y-6">
@@ -180,7 +167,7 @@ const StepReview = ({ state, onBack, onAddAnother, onCheckout }: Props) => {
           Your Order
         </h2>
         <p className="text-muted-foreground font-body mt-1 tracking-wide text-sm">
-          Review your print{allItems.length > 1 || companion ? "s" : ""} before checkout.
+          Review your print{allItems.length > 1 || state.quantity > 1 ? "s" : ""} before checkout.
         </p>
       </div>
 
@@ -200,14 +187,18 @@ const StepReview = ({ state, onBack, onAddAnother, onCheckout }: Props) => {
             <p className="text-xs text-muted-foreground font-body mt-1 font-semibold">BACK</p>
           </div>
         )}
-        {companion && companionImgSrc && companionSize && (
-          <div className="text-center">
-            <div className="w-36 h-28 rounded-lg overflow-hidden border border-border shadow-xl">
-              <img src={companionImgSrc} alt="Companion" className="w-full h-full object-cover" />
+        {additionalPrints.map((ap, idx) => {
+          const apImg = ap.uploadedFile || ap.image?.url;
+          if (!apImg) return null;
+          return (
+            <div key={idx} className="text-center">
+              <div className="w-36 h-28 rounded-lg overflow-hidden border border-border shadow-xl">
+                <img src={apImg} alt={`Print ${idx + 2}`} className="w-full h-full object-cover" />
+              </div>
+              <p className="text-xs text-muted-foreground font-body mt-1 font-semibold">Print {idx + 2}</p>
             </div>
-            <p className="text-xs text-muted-foreground font-body mt-1 font-semibold">{companionSize.label}</p>
-          </div>
-        )}
+          );
+        })}
       </div>
 
       {/* Order summary with line items */}

@@ -11,8 +11,8 @@ import metalOffice from "@/assets/carousel-metal-office.jpg";
 const slides = [
   {
     image: metalLiving,
-    label: "Metal Print",
-    caption: "A dramatic landscape metal print commands the living room above a minimalist sectional.",
+    label: "Grand Scale",
+    caption: "A grand luxury wall awaiting your vision — imagine your art at monumental scale.",
   },
   {
     image: acrylicDining,

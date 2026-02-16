@@ -4,15 +4,7 @@ import { Input } from "@/components/ui/input";
 import { ArrowRight, ArrowLeft, Search, Loader2, Upload, RotateCw } from "lucide-react";
 import { standardSizes, calcMetalPrice, metalOptions } from "@/lib/pricing";
 import type { SelectedImage, MaterialChoice } from "./types";
-
-const PEXELS_API_KEY = "X6x17AZ7r5kg7ViRIiE33JuEwA7RHF17EbdFYNXg5jqn5mNRg2EAvkwl";
-
-interface PexelsPhoto {
-  id: number;
-  photographer: string;
-  alt: string;
-  src: { large2x: string; medium: string };
-}
+import { searchArt, getCuratedArt, type NormalizedPhoto } from "@/lib/artApi";
 
 interface Props {
   frontImage: string;
@@ -30,7 +22,7 @@ interface Props {
 
 const StepUpsell = ({ frontImage, backImage, backUploadedFile, doubleSided, material, sizeIdx, onToggleDouble, onSelectBack, onUploadBack, onNext, onBack }: Props) => {
   const [query, setQuery] = useState("");
-  const [photos, setPhotos] = useState<PexelsPhoto[]>([]);
+  const [photos, setPhotos] = useState<NormalizedPhoto[]>([]);
   const [loading, setLoading] = useState(false);
 
   const backUrl = backUploadedFile || backImage?.url;
@@ -46,22 +38,18 @@ const StepUpsell = ({ frontImage, backImage, backUploadedFile, doubleSided, mate
     const loadCurated = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`https://api.pexels.com/v1/curated?per_page=12`, { headers: { Authorization: PEXELS_API_KEY } });
-        const data = await res.json();
-        setPhotos(data.photos || []);
+        setPhotos(await getCuratedArt(12));
       } catch { setPhotos([]); }
       finally { setLoading(false); }
     };
     loadCurated();
   }, []);
 
-  const searchPhotos = useCallback(async (q: string) => {
+  const doSearch = useCallback(async (q: string) => {
     if (!q.trim()) return;
     setLoading(true);
     try {
-      const res = await fetch(`https://api.pexels.com/v1/search?query=${encodeURIComponent(q)}&per_page=12&orientation=landscape`, { headers: { Authorization: PEXELS_API_KEY } });
-      const data = await res.json();
-      setPhotos(data.photos || []);
+      setPhotos(await searchArt(q, 12));
     } catch { setPhotos([]); }
     finally { setLoading(false); }
   }, []);
@@ -141,13 +129,13 @@ const StepUpsell = ({ frontImage, backImage, backUploadedFile, doubleSided, mate
               <span className="font-body text-foreground">Upload Photo</span>
               <input type="file" accept="image/*" className="hidden" onChange={handleUpload} />
             </label>
-            <form onSubmit={(e) => { e.preventDefault(); searchPhotos(query); }} className="flex gap-1.5 flex-1">
+            <form onSubmit={(e) => { e.preventDefault(); doSearch(query); }} className="flex gap-1.5 flex-1">
               <div className="relative flex-1">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
                 <Input
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Search free photos..."
+                  placeholder="Search art..."
                   className="pl-7 bg-secondary border-border text-foreground font-body text-xs h-8"
                 />
               </div>
@@ -165,11 +153,11 @@ const StepUpsell = ({ frontImage, backImage, backUploadedFile, doubleSided, mate
                 <div
                   key={photo.id}
                   className={`aspect-[4/3] rounded overflow-hidden cursor-pointer border-2 transition-all ${
-                    backImage?.url === photo.src.large2x ? "border-primary ring-1 ring-primary" : "border-transparent hover:border-primary/40"
+                    backImage?.url === photo.large ? "border-primary ring-1 ring-primary" : "border-transparent hover:border-primary/40"
                   }`}
-                  onClick={() => { onSelectBack({ url: photo.src.large2x, photographer: photo.photographer, alt: photo.alt }); onToggleDouble(true); }}
+                  onClick={() => { onSelectBack({ url: photo.large, photographer: photo.artist, alt: photo.alt }); onToggleDouble(true); }}
                 >
-                  <img src={photo.src.medium} alt={photo.alt} className="w-full h-full object-cover" loading="lazy" />
+                  <img src={photo.medium} alt={photo.alt} className="w-full h-full object-cover" loading="lazy" />
                 </div>
               ))}
             </div>

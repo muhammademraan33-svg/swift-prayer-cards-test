@@ -4,15 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Search, Loader2, Upload, ImagePlus, X } from "lucide-react";
 import type { SelectedImage } from "./types";
-
-const PEXELS_API_KEY = "X6x17AZ7r5kg7ViRIiE33JuEwA7RHF17EbdFYNXg5jqn5mNRg2EAvkwl";
-
-interface PexelsPhoto {
-  id: number;
-  photographer: string;
-  alt: string;
-  src: { large2x: string; medium: string };
-}
+import { searchArt, getCuratedArt, type NormalizedPhoto } from "@/lib/artApi";
 
 interface Props {
   backImage: SelectedImage | null;
@@ -25,29 +17,25 @@ interface Props {
 
 const BackImagePicker = ({ backImage, backUploadedFile, upsellCost, onSelectBack, onUploadBack, onRemoveBack }: Props) => {
   const [query, setQuery] = useState("");
-  const [photos, setPhotos] = useState<PexelsPhoto[]>([]);
+  const [photos, setPhotos] = useState<NormalizedPhoto[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const loadCurated = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`https://api.pexels.com/v1/curated?per_page=8`, { headers: { Authorization: PEXELS_API_KEY } });
-        const data = await res.json();
-        setPhotos(data.photos || []);
+        setPhotos(await getCuratedArt(8));
       } catch { setPhotos([]); }
       finally { setLoading(false); }
     };
     loadCurated();
   }, []);
 
-  const searchPhotos = useCallback(async (q: string) => {
+  const doSearch = useCallback(async (q: string) => {
     if (!q.trim()) return;
     setLoading(true);
     try {
-      const res = await fetch(`https://api.pexels.com/v1/search?query=${encodeURIComponent(q)}&per_page=8&orientation=landscape`, { headers: { Authorization: PEXELS_API_KEY } });
-      const data = await res.json();
-      setPhotos(data.photos || []);
+      setPhotos(await searchArt(q, 8));
     } catch { setPhotos([]); }
     finally { setLoading(false); }
   }, []);
@@ -98,13 +86,13 @@ const BackImagePicker = ({ backImage, backUploadedFile, upsellCost, onSelectBack
           <span className="font-body text-foreground">Upload</span>
           <input type="file" accept="image/*" className="hidden" onChange={handleUpload} />
         </label>
-        <form onSubmit={(e) => { e.preventDefault(); searchPhotos(query); }} className="flex gap-1.5 flex-1">
+        <form onSubmit={(e) => { e.preventDefault(); doSearch(query); }} className="flex gap-1.5 flex-1">
           <div className="relative flex-1">
             <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
             <Input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search free photos..."
+              placeholder="Search art..."
               className="pl-6 bg-secondary border-border text-foreground font-body text-[11px] h-7"
             />
           </div>
@@ -122,11 +110,11 @@ const BackImagePicker = ({ backImage, backUploadedFile, upsellCost, onSelectBack
             <div
               key={photo.id}
               className={`aspect-[4/3] rounded overflow-hidden cursor-pointer border-2 transition-all ${
-                backImage?.url === photo.src.large2x ? "border-primary ring-1 ring-primary" : "border-transparent hover:border-primary/40"
+                backImage?.url === photo.large ? "border-primary ring-1 ring-primary" : "border-transparent hover:border-primary/40"
               }`}
-              onClick={() => onSelectBack({ url: photo.src.large2x, photographer: photo.photographer, alt: photo.alt })}
+              onClick={() => onSelectBack({ url: photo.large, photographer: photo.artist, alt: photo.alt })}
             >
-              <img src={photo.src.medium} alt={photo.alt} className="w-full h-full object-cover" loading="lazy" />
+              <img src={photo.medium} alt={photo.alt} className="w-full h-full object-cover" loading="lazy" />
             </div>
           ))}
         </div>

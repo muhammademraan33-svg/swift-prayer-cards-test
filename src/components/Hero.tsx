@@ -76,6 +76,10 @@ const Hero = () => {
               <Award className="w-3.5 h-3.5 text-primary" />
               Handcrafted in USA
             </span>
+            <span className="flex items-center gap-2">
+              <Clock className="w-3.5 h-3.5 text-primary" />
+              48–72 Hour Delivery
+            </span>
           </div>
         </div>
       </div>

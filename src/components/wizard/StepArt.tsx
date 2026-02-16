@@ -111,108 +111,120 @@ const StepArt = ({ image, uploadedFile, onSelect, onUpload, onNext }: Props) => 
         <h2 className="text-2xl md:text-3xl font-display font-bold text-foreground">
           Select Your Artwork
         </h2>
-        <p className="text-muted-foreground font-body mt-1 tracking-wide text-xs">
-          Browse millions of photos or upload your own image.
-        </p>
       </div>
 
-      {/* Upload option */}
-      <div className="flex justify-center">
-        <label className="flex items-center gap-2 px-5 py-2.5 border-2 border-dashed border-border hover:border-primary/50 rounded-lg cursor-pointer transition-colors bg-card">
-          <Upload className="w-4 h-4 text-primary" />
-          <span className="font-body text-sm text-foreground">Upload Your Photo</span>
-          <input type="file" accept="image/*" className="hidden" onChange={handleUpload} />
-        </label>
-      </div>
+      <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-4">
+        {/* LEFT: Upload + Search + Tags */}
+        <div className="space-y-3">
+          {/* Upload */}
+          <label className="flex flex-col items-center justify-center gap-2 p-6 border-2 border-dashed border-border hover:border-primary/50 rounded-lg cursor-pointer transition-colors bg-card min-h-[120px]">
+            <Upload className="w-6 h-6 text-primary" />
+            <span className="font-body text-sm text-foreground">Upload Your Photo</span>
+            <span className="font-body text-[10px] text-muted-foreground">or drag & drop</span>
+            <input type="file" accept="image/*" className="hidden" onChange={handleUpload} />
+          </label>
 
-      {/* Divider */}
-      <div className="flex items-center gap-4">
-        <div className="flex-1 h-px bg-border" />
-        <span className="text-[10px] text-muted-foreground font-body tracking-[0.2em] uppercase">or browse gallery</span>
-        <div className="flex-1 h-px bg-border" />
-      </div>
+          {/* Divider */}
+          <div className="flex items-center gap-3">
+            <div className="flex-1 h-px bg-border" />
+            <span className="text-[9px] text-muted-foreground font-body tracking-[0.2em] uppercase">or browse</span>
+            <div className="flex-1 h-px bg-border" />
+          </div>
 
-      {/* Search */}
-      <form onSubmit={(e) => { e.preventDefault(); doSearch(query); }} className="flex gap-2 max-w-xl mx-auto">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search... (e.g. sunset, mountains, flowers)"
-            className="pl-10 bg-secondary border-border text-foreground font-body h-9 text-sm"
-          />
-        </div>
-        <Button type="submit" disabled={loading} className="bg-gradient-gold text-primary-foreground font-body font-semibold hover:opacity-90 h-9 text-sm">
-          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Search"}
-        </Button>
-      </form>
+          {/* Search */}
+          <form onSubmit={(e) => { e.preventDefault(); doSearch(query); }} className="space-y-2">
+            <div className="flex gap-1.5">
+              <div className="relative flex-1">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                <Input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search photos..."
+                  className="pl-8 bg-secondary border-border text-foreground font-body h-8 text-xs"
+                />
+              </div>
+              <Button type="submit" disabled={loading} className="bg-gradient-gold text-primary-foreground font-body font-semibold hover:opacity-90 h-8 text-xs px-3">
+                {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Search className="w-3.5 h-3.5" />}
+              </Button>
+            </div>
+          </form>
 
-      {/* Genre tags */}
-      <div className="flex flex-wrap justify-center gap-1.5">
-        {genres.map((tag) => (
-          <Badge
-            key={tag}
-            variant="outline"
-            className="border-border text-muted-foreground hover:border-primary hover:text-primary cursor-pointer transition-colors font-body tracking-wider text-[10px] py-0.5"
-            onClick={() => { setQuery(tag); doSearch(tag); }}
-          >
-            {tag}
-          </Badge>
-        ))}
-      </div>
-
-      {/* Initial loading */}
-      {loading && photos.length === 0 && (
-        <div className="text-center py-6">
-          <Loader2 className="w-6 h-6 animate-spin text-primary mx-auto mb-2" />
-          <p className="text-muted-foreground font-body text-sm">Curating results...</p>
-        </div>
-      )}
-
-      {/* Results — scrollable container */}
-      {photos.length > 0 && (
-        <div className="max-h-[280px] overflow-y-auto rounded-lg scrollbar-none">
-          <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
-            {photos.map((photo) => (
-              <Card
-                key={photo.id}
-                className={`overflow-hidden cursor-pointer transition-all duration-300 group ${
-                  image?.url === photo.large ? "ring-2 ring-primary border-primary" : "border-border hover:border-primary/40"
-                }`}
-                onClick={() => onSelect({ url: photo.large, photographer: photo.artist, alt: photo.alt })}
+          {/* Genre tags */}
+          <div className="flex flex-wrap gap-1">
+            {genres.map((tag) => (
+              <Badge
+                key={tag}
+                variant="outline"
+                className="border-border text-muted-foreground hover:border-primary hover:text-primary cursor-pointer transition-colors font-body tracking-wider text-[9px] py-0 px-1.5"
+                onClick={() => { setQuery(tag); doSearch(tag); }}
               >
-                <div className="aspect-[4/3] overflow-hidden">
-                  <img src={photo.medium} alt={photo.alt} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" loading="lazy" />
-                </div>
-                <div className="px-1.5 py-1">
-                  <p className="text-[9px] text-muted-foreground font-body truncate">📷 {photo.artist}</p>
-                </div>
-              </Card>
+                {tag}
+              </Badge>
             ))}
           </div>
 
-          {/* Infinite scroll sentinel */}
-          {hasMore && (
-            <div ref={sentinelRef} className="flex justify-center py-3">
-              {loadingMore && <Loader2 className="w-4 h-4 animate-spin text-primary" />}
+          <p className="text-[8px] text-muted-foreground/50 font-body">
+            Photos by <a href="https://www.pexels.com" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">Pexels</a> & <a href="https://pixabay.com" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">Pixabay</a>
+          </p>
+        </div>
+
+        {/* RIGHT: Gallery */}
+        <div className="min-h-0">
+          {/* Initial loading */}
+          {loading && photos.length === 0 && (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center">
+                <Loader2 className="w-6 h-6 animate-spin text-primary mx-auto mb-2" />
+                <p className="text-muted-foreground font-body text-xs">Curating results...</p>
+              </div>
+            </div>
+          )}
+
+          {/* Results — scrollable */}
+          {photos.length > 0 && (
+            <div className="max-h-[420px] overflow-y-auto rounded-lg scrollbar-none">
+              <div className="grid grid-cols-3 lg:grid-cols-4 gap-1.5">
+                {photos.map((photo) => (
+                  <Card
+                    key={photo.id}
+                    className={`overflow-hidden cursor-pointer transition-all duration-300 group ${
+                      image?.url === photo.large ? "ring-2 ring-primary border-primary" : "border-border hover:border-primary/40"
+                    }`}
+                    onClick={() => onSelect({ url: photo.large, photographer: photo.artist, alt: photo.alt })}
+                  >
+                    <div className="aspect-square overflow-hidden">
+                      <img src={photo.medium} alt={photo.alt} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" loading="lazy" />
+                    </div>
+                  </Card>
+                ))}
+              </div>
+
+              {hasMore && (
+                <div ref={sentinelRef} className="flex justify-center py-2">
+                  {loadingMore && <Loader2 className="w-4 h-4 animate-spin text-primary" />}
+                </div>
+              )}
+            </div>
+          )}
+
+          {!loading && !searched && photos.length === 0 && (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-2">
+                  <Camera className="w-5 h-5 text-primary" />
+                </div>
+                <p className="text-muted-foreground font-body text-xs">Loading gallery...</p>
+              </div>
+            </div>
+          )}
+
+          {!loading && searched && photos.length === 0 && (
+            <div className="flex items-center justify-center h-full">
+              <p className="text-muted-foreground font-body text-sm">No results found. Try a different term.</p>
             </div>
           )}
         </div>
-      )}
-
-      {!loading && !searched && photos.length === 0 && (
-        <div className="text-center py-6">
-          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-2">
-            <Camera className="w-5 h-5 text-primary" />
-          </div>
-          <p className="text-muted-foreground font-body text-sm">Loading curated gallery...</p>
-        </div>
-      )}
-
-      {!loading && searched && photos.length === 0 && (
-        <p className="text-center text-muted-foreground font-body py-4 text-sm">No results found. Try a different term.</p>
-      )}
+      </div>
 
       {/* Selected preview + continue */}
       {hasSelection && (
@@ -230,10 +242,6 @@ const StepArt = ({ image, uploadedFile, onSelect, onUpload, onNext }: Props) => 
           </div>
         </div>
       )}
-
-      <p className="text-center text-[9px] text-muted-foreground/50 font-body">
-        Photos by <a href="https://www.pexels.com" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">Pexels</a> & <a href="https://pixabay.com" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">Pixabay</a>
-      </p>
     </div>
   );
 };

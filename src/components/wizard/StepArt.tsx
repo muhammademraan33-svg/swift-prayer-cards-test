@@ -5,19 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Search, Loader2, Camera, Upload, ArrowRight } from "lucide-react";
 import type { SelectedImage } from "./types";
+import { searchArt, getCuratedArt, type NormalizedPhoto } from "@/lib/artApi";
 
-const PEXELS_API_KEY = "X6x17AZ7r5kg7ViRIiE33JuEwA7RHF17EbdFYNXg5jqn5mNRg2EAvkwl";
-
-interface PexelsPhoto {
-  id: number;
-  width: number;
-  height: number;
-  photographer: string;
-  alt: string;
-  src: { large2x: string; medium: string; small: string };
-}
-
-const genres = ["Fine Art", "Landscape", "Architecture", "Abstract", "Wildlife", "Botanical", "Aerial", "Ocean", "Portrait", "Cityscape"];
+const genres = ["Impressionism", "Landscape", "Portrait", "Abstract", "Still Life", "Sculpture", "Japanese", "Renaissance", "Modern Art", "Photography"];
 
 interface Props {
   image: SelectedImage | null;
@@ -29,21 +19,16 @@ interface Props {
 
 const StepArt = ({ image, uploadedFile, onSelect, onUpload, onNext }: Props) => {
   const [query, setQuery] = useState("");
-  const [photos, setPhotos] = useState<PexelsPhoto[]>([]);
+  const [photos, setPhotos] = useState<NormalizedPhoto[]>([]);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
 
-  const searchPhotos = useCallback(async (q: string) => {
+  const doSearch = useCallback(async (q: string) => {
     if (!q.trim()) return;
     setLoading(true);
     setSearched(true);
     try {
-      const res = await fetch(
-        `https://api.pexels.com/v1/search?query=${encodeURIComponent(q)}&per_page=20&orientation=landscape`,
-        { headers: { Authorization: PEXELS_API_KEY } }
-      );
-      const data = await res.json();
-      setPhotos(data.photos || []);
+      setPhotos(await searchArt(q, 20));
     } catch {
       setPhotos([]);
     } finally {
@@ -51,17 +36,11 @@ const StepArt = ({ image, uploadedFile, onSelect, onUpload, onNext }: Props) => 
     }
   }, []);
 
-  // Load curated photos on mount
   useEffect(() => {
     const loadCurated = async () => {
       setLoading(true);
       try {
-        const res = await fetch(
-          `https://api.pexels.com/v1/curated?per_page=20`,
-          { headers: { Authorization: PEXELS_API_KEY } }
-        );
-        const data = await res.json();
-        setPhotos(data.photos || []);
+        setPhotos(await getCuratedArt(20));
       } catch {
         setPhotos([]);
       } finally {
@@ -89,7 +68,7 @@ const StepArt = ({ image, uploadedFile, onSelect, onUpload, onNext }: Props) => 
           Select Your Artwork
         </h2>
         <p className="text-muted-foreground font-body mt-3 tracking-wide">
-          Search our curated gallery or upload your own image.
+          Browse museum-quality public domain art or upload your own image.
         </p>
       </div>
 
@@ -110,13 +89,13 @@ const StepArt = ({ image, uploadedFile, onSelect, onUpload, onNext }: Props) => 
       </div>
 
       {/* Search */}
-      <form onSubmit={(e) => { e.preventDefault(); searchPhotos(query); }} className="flex gap-3 max-w-xl mx-auto">
+      <form onSubmit={(e) => { e.preventDefault(); doSearch(query); }} className="flex gap-3 max-w-xl mx-auto">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search... (e.g. alpine, venetian, botanical)"
+            placeholder="Search... (e.g. monet, starry night, ukiyo-e)"
             className="pl-10 bg-secondary border-border text-foreground font-body"
           />
         </div>
@@ -132,7 +111,7 @@ const StepArt = ({ image, uploadedFile, onSelect, onUpload, onNext }: Props) => 
             key={tag}
             variant="outline"
             className="border-border text-muted-foreground hover:border-primary hover:text-primary cursor-pointer transition-colors font-body tracking-wider text-[10px]"
-            onClick={() => { setQuery(tag); searchPhotos(tag); }}
+            onClick={() => { setQuery(tag); doSearch(tag); }}
           >
             {tag}
           </Badge>
@@ -153,15 +132,16 @@ const StepArt = ({ image, uploadedFile, onSelect, onUpload, onNext }: Props) => 
             <Card
               key={photo.id}
               className={`overflow-hidden cursor-pointer transition-all duration-300 group ${
-                image?.url === photo.src.large2x ? "ring-2 ring-primary border-primary" : "border-border hover:border-primary/40"
+                image?.url === photo.large ? "ring-2 ring-primary border-primary" : "border-border hover:border-primary/40"
               }`}
-              onClick={() => onSelect({ url: photo.src.large2x, photographer: photo.photographer, alt: photo.alt })}
+              onClick={() => onSelect({ url: photo.large, photographer: photo.artist, alt: photo.alt })}
             >
               <div className="aspect-[4/3] overflow-hidden">
-                <img src={photo.src.medium} alt={photo.alt || "Photo"} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" loading="lazy" />
+                <img src={photo.medium} alt={photo.alt} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" loading="lazy" />
               </div>
               <div className="p-2">
-                <p className="text-[10px] text-muted-foreground font-body truncate">📷 {photo.photographer}</p>
+                <p className="text-[10px] text-muted-foreground font-body truncate">🎨 {photo.artist}</p>
+                <p className="text-[10px] text-muted-foreground/60 font-body truncate">{photo.alt}</p>
               </div>
             </Card>
           ))}
@@ -199,7 +179,7 @@ const StepArt = ({ image, uploadedFile, onSelect, onUpload, onNext }: Props) => 
       )}
 
       <p className="text-center text-[10px] text-muted-foreground/50 font-body">
-        Gallery photos by <a href="https://www.pexels.com" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">Pexels</a>
+        Artworks from the <a href="https://www.artic.edu" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">Art Institute of Chicago</a> — public domain
       </p>
     </div>
   );

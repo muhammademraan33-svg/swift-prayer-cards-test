@@ -24,7 +24,7 @@ const faqs = [
   },
   {
     q: "Can I upload any image?",
-    a: "Yes! We accept JPEG, PNG, TIFF, and most standard image formats. You can upload your own photos or browse our curated gallery of millions of high-resolution stock images from Pexels.",
+    a: "Yes! We accept JPEG, PNG, TIFF, and most standard image formats. You can upload your own photos or browse our curated gallery of public domain masterworks from the Art Institute of Chicago.",
   },
   {
     q: "Do you offer bulk or wholesale pricing?",

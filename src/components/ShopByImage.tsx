@@ -10,80 +10,53 @@ import {
   ArrowRight,
   Camera,
 } from "lucide-react";
-
-const PEXELS_API_KEY = "X6x17AZ7r5kg7ViRIiE33JuEwA7RHF17EbdFYNXg5jqn5mNRg2EAvkwl";
-
-interface PexelsPhoto {
-  id: number;
-  width: number;
-  height: number;
-  photographer: string;
-  alt: string;
-  src: {
-    original: string;
-    large2x: string;
-    large: string;
-    medium: string;
-    small: string;
-  };
-}
+import { searchArt, type NormalizedPhoto } from "@/lib/artApi";
 
 const curatedQueries = [
-  "Fine Art",
-  "Architecture",
+  "Impressionism",
   "Landscape",
   "Portrait",
   "Abstract",
-  "Wildlife",
+  "Still Life",
+  "Japanese",
+  "Renaissance",
   "Botanical",
-  "Aerial",
-  "Ocean",
-  "Cityscape",
+  "Sculpture",
+  "Modern Art",
 ];
 
 const ShopByImage = () => {
   const [query, setQuery] = useState("");
-  const [photos, setPhotos] = useState<PexelsPhoto[]>([]);
+  const [photos, setPhotos] = useState<NormalizedPhoto[]>([]);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
-  const [selectedPhoto, setSelectedPhoto] = useState<PexelsPhoto | null>(null);
+  const [selectedPhoto, setSelectedPhoto] = useState<NormalizedPhoto | null>(null);
 
-  const searchPhotos = useCallback(
-    async (searchQuery: string) => {
-      if (!searchQuery.trim()) return;
-      setLoading(true);
-      setSearched(true);
-      setSelectedPhoto(null);
-
-      try {
-        const res = await fetch(
-          `https://api.pexels.com/v1/search?query=${encodeURIComponent(searchQuery)}&per_page=24&orientation=landscape`,
-          {
-            headers: { Authorization: PEXELS_API_KEY },
-          }
-        );
-        const data = await res.json();
-        setPhotos(data.photos || []);
-      } catch (err) {
-        console.error("Pexels search error:", err);
-        setPhotos([]);
-      } finally {
-        setLoading(false);
-      }
-    },
-    []
-  );
+  const doSearch = useCallback(async (searchQuery: string) => {
+    if (!searchQuery.trim()) return;
+    setLoading(true);
+    setSearched(true);
+    setSelectedPhoto(null);
+    try {
+      setPhotos(await searchArt(searchQuery, 24));
+    } catch (err) {
+      console.error("Art search error:", err);
+      setPhotos([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    searchPhotos(query);
+    doSearch(query);
   };
 
-  const selectAndGoToCalculator = (photo: PexelsPhoto) => {
+  const selectAndGoToCalculator = (photo: NormalizedPhoto) => {
     setSelectedPhoto(photo);
     window.dispatchEvent(
       new CustomEvent("select-image", {
-        detail: { url: photo.src.large2x, photographer: photo.photographer, alt: photo.alt },
+        detail: { url: photo.large, photographer: photo.artist, alt: photo.alt },
       })
     );
     const el = document.querySelector("#calculator");
@@ -101,22 +74,19 @@ const ShopByImage = () => {
             Discover Your Next Masterpiece
           </h2>
           <p className="text-muted-foreground font-body mt-4 max-w-lg mx-auto tracking-wide">
-            Browse millions of museum-worthy photographs. Select any image and
+            Browse thousands of museum-quality, public domain artworks. Select any piece and
             we'll render it on your chosen medium.
           </p>
         </div>
 
         {/* Search */}
-        <form
-          onSubmit={handleSubmit}
-          className="flex gap-3 max-w-xl mx-auto mb-6"
-        >
+        <form onSubmit={handleSubmit} className="flex gap-3 max-w-xl mx-auto mb-6">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search by subject... (e.g. alpine, venetian, botanical)"
+              placeholder="Search by subject... (e.g. monet, starry night, ukiyo-e)"
               className="pl-10 bg-secondary border-border text-foreground font-body"
             />
           </div>
@@ -125,11 +95,7 @@ const ShopByImage = () => {
             disabled={loading}
             className="bg-gradient-gold text-primary-foreground font-body font-semibold hover:opacity-90"
           >
-            {loading ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              "Search"
-            )}
+            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Search"}
           </Button>
         </form>
 
@@ -140,10 +106,7 @@ const ShopByImage = () => {
               key={tag}
               variant="outline"
               className="border-border text-muted-foreground hover:border-primary hover:text-primary cursor-pointer transition-colors duration-300 font-body tracking-wider text-[10px]"
-              onClick={() => {
-                setQuery(tag);
-                searchPhotos(tag);
-              }}
+              onClick={() => { setQuery(tag); doSearch(tag); }}
             >
               {tag}
             </Badge>
@@ -166,9 +129,7 @@ const ShopByImage = () => {
         {loading && (
           <div className="text-center py-16">
             <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-4" />
-            <p className="text-muted-foreground font-body">
-              Curating results...
-            </p>
+            <p className="text-muted-foreground font-body">Curating results...</p>
           </div>
         )}
 
@@ -187,18 +148,18 @@ const ShopByImage = () => {
               >
                 <div className="aspect-[4/3] overflow-hidden">
                   <img
-                    src={photo.src.medium}
-                    alt={photo.alt || "Photo"}
+                    src={photo.medium}
+                    alt={photo.alt}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                     loading="lazy"
                   />
                 </div>
                 <div className="p-3">
                   <p className="text-xs text-muted-foreground font-body truncate">
-                    📷 {photo.photographer}
+                    🎨 {photo.artist}
                   </p>
-                  <p className="text-[10px] text-muted-foreground/60 font-body">
-                    {photo.width}×{photo.height}px
+                  <p className="text-[10px] text-muted-foreground/60 font-body truncate">
+                    {photo.alt}
                   </p>
                 </div>
               </Card>
@@ -211,7 +172,7 @@ const ShopByImage = () => {
           <div className="text-center py-16">
             <ImageIcon className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
             <p className="text-muted-foreground font-body">
-              No photos found. Try a different search term.
+              No artworks found. Try a different search term.
             </p>
           </div>
         )}
@@ -220,8 +181,8 @@ const ShopByImage = () => {
         {selectedPhoto && (
           <div className="mt-8 p-6 bg-card border border-primary/30 rounded-lg flex flex-col sm:flex-row items-center gap-6">
             <img
-              src={selectedPhoto.src.medium}
-              alt={selectedPhoto.alt || "Selected photo"}
+              src={selectedPhoto.medium}
+              alt={selectedPhoto.alt}
               className="w-32 h-24 object-cover rounded"
             />
             <div className="flex-1 text-center sm:text-left">
@@ -229,9 +190,7 @@ const ShopByImage = () => {
                 Commission this as a bespoke print
               </p>
               <p className="text-sm text-muted-foreground font-body">
-                By {selectedPhoto.photographer} •{" "}
-                {selectedPhoto.width}×{selectedPhoto.height}px — archival
-                resolution
+                By {selectedPhoto.artist} — public domain, archival resolution
               </p>
             </div>
             <Button
@@ -243,17 +202,18 @@ const ShopByImage = () => {
           </div>
         )}
 
-        {/* Pexels attribution */}
+        {/* Attribution */}
         <p className="text-center text-[10px] text-muted-foreground/50 font-body mt-8">
-          Photos provided by{" "}
+          Artworks from the{" "}
           <a
-            href="https://www.pexels.com"
+            href="https://www.artic.edu"
             target="_blank"
             rel="noopener noreferrer"
             className="underline hover:text-primary"
           >
-            Pexels
-          </a>
+            Art Institute of Chicago
+          </a>{" "}
+          — public domain
         </p>
       </div>
     </section>

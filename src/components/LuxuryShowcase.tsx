@@ -10,7 +10,7 @@ import metalOffice from "@/assets/carousel-metal-office.jpg";
 
 const slides = [
   {
-    image: metalLiving,
+    image: metalOffice,
     label: "Grand Scale",
     caption: "Turn your wedding portrait into a grand-scale metal print — timeless elegance for your forever moment.",
   },
@@ -30,7 +30,7 @@ const slides = [
     caption: "A backlit acrylic masterpiece brings warmth and elegance to a luxury master suite.",
   },
   {
-    image: metalOffice,
+    image: metalLiving,
     label: "Family Gallery Wall",
     caption: "A coordinated family gallery wall — the same family captured across seasons on frameless metal and acrylic prints.",
   },

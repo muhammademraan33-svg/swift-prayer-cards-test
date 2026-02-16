@@ -129,12 +129,12 @@ const StepUpsell = ({ frontImage, backImage, backUploadedFile, doubleSided, mate
                 <div className="flex items-center gap-2 shrink-0">
                   <div className="w-16 h-12 sm:w-20 sm:h-16 rounded-lg overflow-hidden border border-primary/30 shadow-md">
                     <img src={apBackUrl} alt={`Print ${idx + 2} back`} className="w-full h-full object-cover" />
-                  </div>
+              </div>
                   <label className="cursor-pointer text-primary hover:text-primary/80 transition-colors">
                     <Upload className="w-4 h-4" />
                     <input type="file" accept="image/*" className="hidden" onChange={(e) => handleAdditionalPrintBackUpload(idx, e)} />
                   </label>
-                </div>
+              </div>
               ) : (
                 <label className="flex items-center gap-2 px-3 py-2 border border-dashed border-primary/40 hover:border-primary rounded-lg cursor-pointer transition-all bg-primary/5 hover:bg-primary/10 shrink-0">
                   <Upload className="w-4 h-4 text-primary" />

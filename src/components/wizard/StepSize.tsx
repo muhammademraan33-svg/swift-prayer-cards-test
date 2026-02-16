@@ -66,23 +66,28 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
   const isDragging = useRef(false);
   const dragStart = useRef({ x: 0, y: 0, panX: 0, panY: 0 });
   const [pickerSlot, setPickerSlot] = useState<number | null>(null);
+  const [viewingPrintIndex, setViewingPrintIndex] = useState<number>(0); // 0 = main print, 1+ = additional prints
 
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
+    const currentPan = viewingPrintIndex === 0 ? { panX, panY } : { 
+      panX: additionalPrints[viewingPrintIndex - 1]?.panX || 0, 
+      panY: additionalPrints[viewingPrintIndex - 1]?.panY || 0 
+    };
     isDragging.current = true;
-    dragStart.current = { x: e.clientX, y: e.clientY, panX, panY };
+    dragStart.current = { x: e.clientX, y: e.clientY, panX: currentPan.panX, panY: currentPan.panY };
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
-  }, [panX, panY]);
+  }, [panX, panY, viewingPrintIndex, additionalPrints]);
 
   const handlePointerMove = useCallback((e: React.PointerEvent) => {
     if (!isDragging.current) return;
     const dx = e.clientX - dragStart.current.x;
     const dy = e.clientY - dragStart.current.y;
-    const maxPan = (zoom - 1) * 50;
-    onPan(
-      Math.max(-maxPan, Math.min(maxPan, dragStart.current.panX + dx)),
-      Math.max(-maxPan, Math.min(maxPan, dragStart.current.panY + dy)),
-    );
-  }, [zoom, onPan]);
+    const currentZoom = viewingPrintIndex === 0 ? zoom : (additionalPrints[viewingPrintIndex - 1]?.zoom || 1);
+    const maxPan = (currentZoom - 1) * 50;
+    const newPanX = Math.max(-maxPan, Math.min(maxPan, dragStart.current.panX + dx));
+    const newPanY = Math.max(-maxPan, Math.min(maxPan, dragStart.current.panY + dy));
+    handlePanCurrentPrint(newPanX, newPanY);
+  }, [zoom, viewingPrintIndex, additionalPrints, handlePanCurrentPrint]);
 
   const handlePointerUp = useCallback(() => {
     isDragging.current = false;
@@ -117,6 +122,7 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
     while (updated.length <= slotIndex) updated.push(createAdditionalPrint());
     updated[slotIndex] = { ...updated[slotIndex], image, uploadedFile: null };
     onAdditionalPrints(updated);
+    setViewingPrintIndex(slotIndex + 1); // Switch to viewing the newly added print
   };
 
   const handleSlotUpload = (slotIndex: number, dataUrl: string) => {
@@ -124,6 +130,7 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
     while (updated.length <= slotIndex) updated.push(createAdditionalPrint());
     updated[slotIndex] = { ...updated[slotIndex], image: null, uploadedFile: dataUrl };
     onAdditionalPrints(updated);
+    setViewingPrintIndex(slotIndex + 1); // Switch to viewing the newly added print
   };
 
   const handleSlotOrientation = (slotIndex: number, ori: "landscape" | "portrait") => {
@@ -131,6 +138,82 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
     if (updated[slotIndex]) {
       updated[slotIndex] = { ...updated[slotIndex], orientation: ori };
       onAdditionalPrints(updated);
+    }
+  };
+
+  // Get data for the currently viewing print
+  const getCurrentPrintData = (): PrintData => {
+    if (viewingPrintIndex === 0) {
+      return {
+        imageUrl,
+        rotation,
+        zoom,
+        panX,
+        panY,
+        naturalWidth: imageNaturalWidth,
+        naturalHeight: imageNaturalHeight,
+      };
+    } else {
+      const additionalPrint = additionalPrints[viewingPrintIndex - 1];
+      if (!additionalPrint) {
+        return {
+          imageUrl: "",
+          rotation: 0,
+          zoom: 1,
+          panX: 0,
+          panY: 0,
+          naturalWidth: 0,
+          naturalHeight: 0,
+        };
+      }
+      return {
+        imageUrl: additionalPrint.uploadedFile || additionalPrint.image?.url || "",
+        rotation: additionalPrint.rotation,
+        zoom: additionalPrint.zoom,
+        panX: additionalPrint.panX,
+        panY: additionalPrint.panY,
+        naturalWidth: imageNaturalWidth, // Use main image dimensions for now
+        naturalHeight: imageNaturalHeight,
+      };
+    }
+  };
+
+  const currentPrintData = getCurrentPrintData();
+
+  // Update transformations for the currently viewing print
+  const handleRotateCurrentPrint = (deg: number) => {
+    if (viewingPrintIndex === 0) {
+      onRotate(deg);
+    } else {
+      const updated = [...additionalPrints];
+      if (updated[viewingPrintIndex - 1]) {
+        updated[viewingPrintIndex - 1] = { ...updated[viewingPrintIndex - 1], rotation: deg };
+        onAdditionalPrints(updated);
+      }
+    }
+  };
+
+  const handleZoomCurrentPrint = (z: number) => {
+    if (viewingPrintIndex === 0) {
+      onZoom(z);
+    } else {
+      const updated = [...additionalPrints];
+      if (updated[viewingPrintIndex - 1]) {
+        updated[viewingPrintIndex - 1] = { ...updated[viewingPrintIndex - 1], zoom: z };
+        onAdditionalPrints(updated);
+      }
+    }
+  };
+
+  const handlePanCurrentPrint = (x: number, y: number) => {
+    if (viewingPrintIndex === 0) {
+      onPan(x, y);
+    } else {
+      const updated = [...additionalPrints];
+      if (updated[viewingPrintIndex - 1]) {
+        updated[viewingPrintIndex - 1] = { ...updated[viewingPrintIndex - 1], panX: x, panY: y };
+        onAdditionalPrints(updated);
+      }
     }
   };
 
@@ -209,6 +292,43 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
 
             return (
               <div className="space-y-3 w-full">
+                {/* Print Toggle Tabs - Only show when quantity >= 2 */}
+                {quantity >= 2 && (
+                  <div className="flex items-center gap-2 bg-card border border-border rounded-lg p-2">
+                    <p className="text-xs font-body font-semibold text-muted-foreground mr-2">Editing:</p>
+                    <div className="flex gap-1 flex-wrap">
+                      <button
+                        onClick={() => setViewingPrintIndex(0)}
+                        className={`px-3 py-1.5 rounded-md text-xs font-body font-semibold transition-all ${
+                          viewingPrintIndex === 0
+                            ? "bg-gradient-gold text-primary-foreground shadow-sm"
+                            : "bg-secondary text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                        }`}
+                      >
+                        Print 1
+                      </button>
+                      {Array.from({ length: quantity - 1 }).map((_, idx) => {
+                        const hasImage = getSlotImg(idx);
+                        return (
+                          <button
+                            key={idx}
+                            onClick={() => setViewingPrintIndex(idx + 1)}
+                            className={`px-3 py-1.5 rounded-md text-xs font-body font-semibold transition-all ${
+                              viewingPrintIndex === idx + 1
+                                ? "bg-gradient-gold text-primary-foreground shadow-sm"
+                                : hasImage
+                                  ? "bg-secondary text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                                  : "bg-secondary/50 text-muted-foreground/50 hover:bg-primary/5"
+                            }`}
+                          >
+                            Print {idx + 2}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
                 {/* WYSIWYG Crop Preview */}
                 <div 
                   className="relative w-full bg-secondary/30 rounded-lg border-2 border-primary/30 overflow-hidden"
@@ -220,44 +340,65 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
                     width: "100%"
                   }}
                 >
-                  {/* Full background image (dimmed/blurred to show crop boundaries) - shows full image extent */}
-                  <div className="absolute inset-0 overflow-hidden">
-                    <img 
-                      src={imageUrl} 
-                      alt="Print preview background" 
-                      className="absolute inset-0 w-full h-full object-cover"
-                      draggable={false}
-                      style={{ 
-                        filter: "blur(8px) brightness(0.4)",
-                        transform: "scale(1.1)" // Slightly larger to show extent
-                      }}
-                    />
-                  </div>
-                  
-                  {/* Dimmed overlay to darken the background (shows what's outside) */}
-                  <div className="absolute inset-0 bg-black/40 pointer-events-none z-10"></div>
-                  
-                  {/* Crop boundary container - this is the actual printable area */}
-                  <div
-                    className="relative w-full h-full cursor-grab active:cursor-grabbing z-20"
-                  onPointerDown={handlePointerDown}
-                  onPointerMove={handlePointerMove}
-                  onPointerUp={handlePointerUp}
-                >
-                    {/* Crop boundary border - clearly marks the printable area */}
-                    <div className="absolute inset-0 border-2 border-primary shadow-[0_0_0_2px_rgba(0,0,0,0.3)] pointer-events-none z-30"></div>
-                    
-                    {/* Transformed image inside crop boundary - this is what will be printed */}
-                    <div className="absolute inset-0 overflow-hidden">
-                      <img 
-                        src={imageUrl} 
-                        alt="Print preview" 
-                        className="absolute inset-0 w-full h-full object-cover select-none pointer-events-none" 
-                        draggable={false}
-                        style={getImageTransformStyle({ rotation, zoom, panX, panY })}
-                      />
+                  {currentPrintData.imageUrl ? (
+                    <>
+                      {/* Full background image (dimmed/blurred to show crop boundaries) - shows full image extent */}
+                      <div className="absolute inset-0 overflow-hidden">
+                        <img 
+                          src={currentPrintData.imageUrl} 
+                          alt="Print preview background" 
+                          className="absolute inset-0 w-full h-full object-cover"
+                          draggable={false}
+                          style={{ 
+                            filter: "blur(8px) brightness(0.4)",
+                            transform: "scale(1.1)" // Slightly larger to show extent
+                          }}
+                        />
+                      </div>
+                      
+                      {/* Dimmed overlay to darken the background (shows what's outside) */}
+                      <div className="absolute inset-0 bg-black/40 pointer-events-none z-10"></div>
+                      
+                      {/* Crop boundary container - this is the actual printable area */}
+                      <div
+                        className="relative w-full h-full cursor-grab active:cursor-grabbing z-20"
+                        onPointerDown={handlePointerDown}
+                        onPointerMove={handlePointerMove}
+                        onPointerUp={handlePointerUp}
+                      >
+                        {/* Crop boundary border - clearly marks the printable area */}
+                        <div className="absolute inset-0 border-2 border-primary shadow-[0_0_0_2px_rgba(0,0,0,0.3)] pointer-events-none z-30"></div>
+                        
+                        {/* Transformed image inside crop boundary - this is what will be printed */}
+                        <div className="absolute inset-0 overflow-hidden">
+                          <img 
+                            src={currentPrintData.imageUrl} 
+                            alt="Print preview" 
+                            className="absolute inset-0 w-full h-full object-cover select-none pointer-events-none" 
+                            draggable={false}
+                            style={getImageTransformStyle({ 
+                              rotation: currentPrintData.rotation, 
+                              zoom: currentPrintData.zoom, 
+                              panX: currentPrintData.panX, 
+                              panY: currentPrintData.panY 
+                            })}
+                          />
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-secondary/50">
+                      <Upload className="w-12 h-12 text-muted-foreground/50" />
+                      <p className="text-sm font-body text-muted-foreground">No image selected for Print {viewingPrintIndex + 1}</p>
+                      <Button
+                        size="sm"
+                        onClick={() => setPickerSlot(viewingPrintIndex - 1)}
+                        className="bg-gradient-gold text-primary-foreground font-body font-semibold hover:opacity-90"
+                      >
+                        Add Image
+                      </Button>
                     </div>
-                  </div>
+                  )}
                   
                   {/* Resolution warning badge */}
                   {isLowQuality && (
@@ -270,30 +411,48 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
                   )}
                   
                   {/* Transform controls - Made more prominent */}
-                  <div className="absolute bottom-3 right-3 z-50">
-                    <div className="bg-card/95 backdrop-blur-sm border-2 border-primary/30 rounded-xl p-2 shadow-2xl">
-                      <p className="text-[10px] font-body font-semibold text-primary mb-2 text-center flex items-center gap-1 justify-center">
-                        <Move className="w-3 h-3" />
-                        ADJUST IMAGE
-                      </p>
-                      <div className="flex flex-col gap-1.5">
-                        <button onClick={(e) => { e.stopPropagation(); onRotate((rotation + 90) % 360); }} className="w-10 h-10 bg-primary/10 hover:bg-primary/20 border border-primary/30 rounded-lg flex items-center justify-center transition-colors" title="Rotate 90°">
-                          <RotateCw className="w-5 h-5 text-primary" />
-                        </button>
-                        <button onClick={(e) => { e.stopPropagation(); onZoom(Math.min(zoom + 0.25, 3)); onPan(0, 0); }} className="w-10 h-10 bg-primary/10 hover:bg-primary/20 border border-primary/30 rounded-lg flex items-center justify-center transition-colors" title="Zoom In">
-                          <ZoomIn className="w-5 h-5 text-primary" />
-                        </button>
-                        <button onClick={(e) => { e.stopPropagation(); onZoom(Math.max(zoom - 0.25, 1)); onPan(0, 0); }} className="w-10 h-10 bg-primary/10 hover:bg-primary/20 border border-primary/30 rounded-lg flex items-center justify-center transition-colors" title="Zoom Out">
-                          <ZoomOut className="w-5 h-5 text-primary" />
-                        </button>
-                        {(zoom > 1 || panX !== 0 || panY !== 0 || rotation !== 0) && (
-                          <button onClick={(e) => { e.stopPropagation(); onZoom(1); onPan(0, 0); onRotate(0); }} className="w-10 h-10 bg-destructive/10 hover:bg-destructive/20 border border-destructive/30 rounded-lg flex items-center justify-center transition-colors" title="Reset All">
-                            <X className="w-5 h-5 text-destructive" />
+                  {currentPrintData.imageUrl && (
+                    <div className="absolute bottom-3 right-3 z-50">
+                      <div className="bg-card/95 backdrop-blur-sm border-2 border-primary/30 rounded-xl p-2 shadow-2xl">
+                        <p className="text-[10px] font-body font-semibold text-primary mb-2 text-center flex items-center gap-1 justify-center">
+                          <Move className="w-3 h-3" />
+                          ADJUST IMAGE
+                        </p>
+                        <div className="flex flex-col gap-1.5">
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); handleRotateCurrentPrint((currentPrintData.rotation + 90) % 360); }} 
+                            className="w-10 h-10 bg-primary/10 hover:bg-primary/20 border border-primary/30 rounded-lg flex items-center justify-center transition-colors" 
+                            title="Rotate 90°"
+                          >
+                            <RotateCw className="w-5 h-5 text-primary" />
                           </button>
-                        )}
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); handleZoomCurrentPrint(Math.min(currentPrintData.zoom + 0.25, 3)); handlePanCurrentPrint(0, 0); }} 
+                            className="w-10 h-10 bg-primary/10 hover:bg-primary/20 border border-primary/30 rounded-lg flex items-center justify-center transition-colors" 
+                            title="Zoom In"
+                          >
+                            <ZoomIn className="w-5 h-5 text-primary" />
+                          </button>
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); handleZoomCurrentPrint(Math.max(currentPrintData.zoom - 0.25, 1)); handlePanCurrentPrint(0, 0); }} 
+                            className="w-10 h-10 bg-primary/10 hover:bg-primary/20 border border-primary/30 rounded-lg flex items-center justify-center transition-colors" 
+                            title="Zoom Out"
+                          >
+                            <ZoomOut className="w-5 h-5 text-primary" />
+                          </button>
+                          {(currentPrintData.zoom > 1 || currentPrintData.panX !== 0 || currentPrintData.panY !== 0 || currentPrintData.rotation !== 0) && (
+                            <button 
+                              onClick={(e) => { e.stopPropagation(); handleZoomCurrentPrint(1); handlePanCurrentPrint(0, 0); handleRotateCurrentPrint(0); }} 
+                              className="w-10 h-10 bg-destructive/10 hover:bg-destructive/20 border border-destructive/30 rounded-lg flex items-center justify-center transition-colors" 
+                              title="Reset All"
+                            >
+                              <X className="w-5 h-5 text-destructive" />
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  )}
                   
                   {/* Drag instruction */}
                   <div className="absolute top-3 left-3 bg-card/90 backdrop-blur-sm border border-primary/30 rounded-lg px-3 py-1.5 z-50 pointer-events-none">

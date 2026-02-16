@@ -261,10 +261,10 @@ const StepReview = ({ state, onBack, onAddAnother, onCheckout }: Props) => {
               panY: item.panY || 0,
             } : undefined;
             return (
-              <div key={i}>
+            <div key={i}>
                 <ItemBreakdown item={item} title={title} imageUrl={img} transform={transform} />
-                {i < allItems.length - 1 && <div className="border-t border-border mt-4" />}
-              </div>
+              {i < allItems.length - 1 && <div className="border-t border-border mt-4" />}
+            </div>
             );
           })}
 

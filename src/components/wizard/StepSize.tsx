@@ -68,6 +68,43 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
   const [pickerSlot, setPickerSlot] = useState<number | null>(null);
   const [viewingPrintIndex, setViewingPrintIndex] = useState<number>(0); // 0 = main print, 1+ = additional prints
 
+  // Update transformations for the currently viewing print (defined early to be used in pointer handlers)
+  const handleRotateCurrentPrint = useCallback((deg: number) => {
+    if (viewingPrintIndex === 0) {
+      onRotate(deg);
+    } else {
+      const updated = [...additionalPrints];
+      if (updated[viewingPrintIndex - 1]) {
+        updated[viewingPrintIndex - 1] = { ...updated[viewingPrintIndex - 1], rotation: deg };
+        onAdditionalPrints(updated);
+      }
+    }
+  }, [viewingPrintIndex, onRotate, additionalPrints, onAdditionalPrints]);
+
+  const handleZoomCurrentPrint = useCallback((z: number) => {
+    if (viewingPrintIndex === 0) {
+      onZoom(z);
+    } else {
+      const updated = [...additionalPrints];
+      if (updated[viewingPrintIndex - 1]) {
+        updated[viewingPrintIndex - 1] = { ...updated[viewingPrintIndex - 1], zoom: z };
+        onAdditionalPrints(updated);
+      }
+    }
+  }, [viewingPrintIndex, onZoom, additionalPrints, onAdditionalPrints]);
+
+  const handlePanCurrentPrint = useCallback((x: number, y: number) => {
+    if (viewingPrintIndex === 0) {
+      onPan(x, y);
+    } else {
+      const updated = [...additionalPrints];
+      if (updated[viewingPrintIndex - 1]) {
+        updated[viewingPrintIndex - 1] = { ...updated[viewingPrintIndex - 1], panX: x, panY: y };
+        onAdditionalPrints(updated);
+      }
+    }
+  }, [viewingPrintIndex, onPan, additionalPrints, onAdditionalPrints]);
+
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
     const currentPan = viewingPrintIndex === 0 ? { panX, panY } : { 
       panX: additionalPrints[viewingPrintIndex - 1]?.panX || 0, 
@@ -179,43 +216,6 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
       naturalHeight: imageNaturalHeight,
     };
   }, [viewingPrintIndex, additionalPrints, imageUrl, rotation, zoom, panX, panY, imageNaturalWidth, imageNaturalHeight]);
-
-  // Update transformations for the currently viewing print
-  const handleRotateCurrentPrint = useCallback((deg: number) => {
-    if (viewingPrintIndex === 0) {
-      onRotate(deg);
-    } else {
-      const updated = [...additionalPrints];
-      if (updated[viewingPrintIndex - 1]) {
-        updated[viewingPrintIndex - 1] = { ...updated[viewingPrintIndex - 1], rotation: deg };
-        onAdditionalPrints(updated);
-      }
-    }
-  }, [viewingPrintIndex, onRotate, additionalPrints, onAdditionalPrints]);
-
-  const handleZoomCurrentPrint = useCallback((z: number) => {
-    if (viewingPrintIndex === 0) {
-      onZoom(z);
-    } else {
-      const updated = [...additionalPrints];
-      if (updated[viewingPrintIndex - 1]) {
-        updated[viewingPrintIndex - 1] = { ...updated[viewingPrintIndex - 1], zoom: z };
-        onAdditionalPrints(updated);
-      }
-    }
-  }, [viewingPrintIndex, onZoom, additionalPrints, onAdditionalPrints]);
-
-  const handlePanCurrentPrint = useCallback((x: number, y: number) => {
-    if (viewingPrintIndex === 0) {
-      onPan(x, y);
-    } else {
-      const updated = [...additionalPrints];
-      if (updated[viewingPrintIndex - 1]) {
-        updated[viewingPrintIndex - 1] = { ...updated[viewingPrintIndex - 1], panX: x, panY: y };
-        onAdditionalPrints(updated);
-      }
-    }
-  }, [viewingPrintIndex, onPan, additionalPrints, onAdditionalPrints]);
 
   const totalPrice = (basePricePerUnit: number) => basePricePerUnit * quantity;
 

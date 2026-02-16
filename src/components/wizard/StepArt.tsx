@@ -109,29 +109,35 @@ const StepArt = ({ image, uploadedFile, onSelect, onUpload, onNext }: Props) => 
     <div className="space-y-3">
 
       {/* Upload + Search row */}
-      <div className="flex items-center gap-3 max-w-3xl mx-auto">
-        <label className="flex items-center gap-2 px-4 py-2 border-2 border-dashed border-border hover:border-primary/50 rounded-lg cursor-pointer transition-colors bg-card shrink-0">
-          <Upload className="w-4 h-4 text-primary" />
-          <span className="font-body text-xs text-foreground">Upload Photo</span>
+      <div className="flex items-stretch gap-3 max-w-3xl mx-auto">
+        <label className="flex-1 flex flex-col items-center justify-center gap-2 px-6 py-4 border-2 border-dashed border-primary/40 hover:border-primary rounded-lg cursor-pointer transition-all bg-primary/5 hover:bg-primary/10 group">
+          <Upload className="w-6 h-6 text-primary group-hover:scale-110 transition-transform" />
+          <span className="font-body text-sm font-semibold text-foreground">Upload Your Photo</span>
+          <span className="font-body text-xs text-muted-foreground">JPG, PNG, TIFF</span>
           <input type="file" accept="image/*" className="hidden" onChange={handleUpload} />
         </label>
 
-        <span className="text-xs text-muted-foreground font-body tracking-[0.2em] uppercase shrink-0">or</span>
+        <div className="flex items-center">
+          <span className="text-xs text-muted-foreground font-body tracking-[0.2em] uppercase">or</span>
+        </div>
 
-        <form onSubmit={(e) => { e.preventDefault(); doSearch(query); }} className="flex gap-1.5 flex-1">
-          <div className="relative flex-1">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-            <Input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search photos..."
-              className="pl-8 bg-secondary border-border text-foreground font-body h-8 text-xs"
-            />
-          </div>
-          <Button type="submit" disabled={loading} className="bg-gradient-gold text-primary-foreground font-body font-semibold hover:opacity-90 h-8 text-xs px-3">
-            {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Search"}
-          </Button>
-        </form>
+        <div className="flex-1 flex flex-col justify-center gap-2">
+          <form onSubmit={(e) => { e.preventDefault(); doSearch(query); }} className="flex gap-1.5">
+            <div className="relative flex-1">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+              <Input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search millions of photos..."
+                className="pl-8 bg-secondary border-border text-foreground font-body h-10 text-sm"
+              />
+            </div>
+            <Button type="submit" disabled={loading} className="bg-gradient-gold text-primary-foreground font-body font-semibold hover:opacity-90 h-10 text-sm px-4">
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Search"}
+            </Button>
+          </form>
+          <p className="text-xs text-muted-foreground font-body">Browse our curated gallery below</p>
+        </div>
       </div>
 
       {/* Genre tags */}

@@ -269,15 +269,39 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
                 </div>
                   )}
                   
-                  {/* Transform controls */}
-                  <div className="absolute bottom-2 right-2 flex flex-col gap-1 z-10">
-                    <button onClick={(e) => { e.stopPropagation(); onZoom(Math.min(zoom + 0.25, 3)); onPan(0, 0); }} className="w-7 h-7 bg-card/90 backdrop-blur-sm border border-border rounded flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors shadow-sm" title="Zoom in"><ZoomIn className="w-4 h-4" /></button>
-                    <button onClick={(e) => { e.stopPropagation(); onZoom(Math.max(zoom - 0.25, 1)); onPan(0, 0); }} className="w-7 h-7 bg-card/90 backdrop-blur-sm border border-border rounded flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors shadow-sm" title="Zoom out"><ZoomOut className="w-4 h-4" /></button>
-                    <button onClick={(e) => { e.stopPropagation(); onRotate((rotation + 90) % 360); }} className="w-7 h-7 bg-card/90 backdrop-blur-sm border border-border rounded flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors shadow-sm" title="Rotate 90°"><RotateCw className="w-4 h-4" /></button>
-                    {(zoom > 1 || panX !== 0 || panY !== 0 || rotation !== 0) && (
-                      <button onClick={(e) => { e.stopPropagation(); onZoom(1); onPan(0, 0); onRotate(0); }} className="w-7 h-7 bg-card/90 backdrop-blur-sm border border-border rounded flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors shadow-sm" title="Reset"><Move className="w-4 h-4" /></button>
-                  )}
-                </div>
+                  {/* Transform controls - Made more prominent */}
+                  <div className="absolute bottom-3 right-3 z-50">
+                    <div className="bg-card/95 backdrop-blur-sm border-2 border-primary/30 rounded-xl p-2 shadow-2xl">
+                      <p className="text-[10px] font-body font-semibold text-primary mb-2 text-center flex items-center gap-1 justify-center">
+                        <Move className="w-3 h-3" />
+                        ADJUST IMAGE
+                      </p>
+                      <div className="flex flex-col gap-1.5">
+                        <button onClick={(e) => { e.stopPropagation(); onRotate((rotation + 90) % 360); }} className="w-10 h-10 bg-primary/10 hover:bg-primary/20 border border-primary/30 rounded-lg flex items-center justify-center transition-colors" title="Rotate 90°">
+                          <RotateCw className="w-5 h-5 text-primary" />
+                        </button>
+                        <button onClick={(e) => { e.stopPropagation(); onZoom(Math.min(zoom + 0.25, 3)); onPan(0, 0); }} className="w-10 h-10 bg-primary/10 hover:bg-primary/20 border border-primary/30 rounded-lg flex items-center justify-center transition-colors" title="Zoom In">
+                          <ZoomIn className="w-5 h-5 text-primary" />
+                        </button>
+                        <button onClick={(e) => { e.stopPropagation(); onZoom(Math.max(zoom - 0.25, 1)); onPan(0, 0); }} className="w-10 h-10 bg-primary/10 hover:bg-primary/20 border border-primary/30 rounded-lg flex items-center justify-center transition-colors" title="Zoom Out">
+                          <ZoomOut className="w-5 h-5 text-primary" />
+                        </button>
+                        {(zoom > 1 || panX !== 0 || panY !== 0 || rotation !== 0) && (
+                          <button onClick={(e) => { e.stopPropagation(); onZoom(1); onPan(0, 0); onRotate(0); }} className="w-10 h-10 bg-destructive/10 hover:bg-destructive/20 border border-destructive/30 rounded-lg flex items-center justify-center transition-colors" title="Reset All">
+                            <X className="w-5 h-5 text-destructive" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Drag instruction */}
+                  <div className="absolute top-3 left-3 bg-card/90 backdrop-blur-sm border border-primary/30 rounded-lg px-3 py-1.5 z-50 pointer-events-none">
+                    <p className="text-[10px] font-body font-semibold text-primary flex items-center gap-1.5">
+                      <Move className="w-3 h-3" />
+                      Drag to reposition
+                    </p>
+                  </div>
                   
                   {/* Size label */}
                   <div className="absolute bottom-2 left-2 bg-card/90 backdrop-blur-sm border border-border rounded px-2.5 py-1 z-10">

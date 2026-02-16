@@ -34,7 +34,7 @@ const Hero = () => {
             <span className="text-gradient-gold italic">Legacy</span>
           </h1>
 
-          <p className="text-base md:text-lg text-foreground/50 font-body font-light max-w-lg mb-10 leading-relaxed tracking-wide">
+          <p className="text-base md:text-lg text-foreground font-body font-light max-w-lg mb-10 leading-relaxed tracking-wide">
             Bespoke museum-grade metal & acrylic prints for America's most
             discerning homes. Each piece handcrafted to order.
           </p>
@@ -54,7 +54,7 @@ const Hero = () => {
           </div>
 
           {/* Value props */}
-          <div className="flex flex-wrap gap-8 text-[10px] font-body text-foreground/40 uppercase tracking-[0.2em]">
+          <div className="flex flex-wrap gap-8 text-[10px] font-body text-foreground uppercase tracking-[0.2em]">
             <span className="flex items-center gap-2">
               <Truck className="w-3.5 h-3.5 text-primary" />
               White-Glove Delivery

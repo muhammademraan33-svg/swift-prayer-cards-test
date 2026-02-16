@@ -331,8 +331,14 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
                         }`}
                         onClick={() => {
                           onSelect(idx);
-                          if (idx >= DESK_SHELF_MAX_IDX && companionPrint) {
-                            onCompanionChange(null);
+                          if (companionPrint) {
+                            // Sync companion sizeIdx, or remove if moving to large sizes with qty 1
+                            if (idx < 10) {
+                              onCompanionChange({ ...companionPrint, sizeIdx: idx });
+                            } else {
+                              onCompanionChange(null);
+                              onQuantity(1);
+                            }
                           }
                         }}
                       >
@@ -403,24 +409,12 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-xs font-body font-semibold text-foreground">Add image for Print 2</p>
-                          <p className="text-[10px] text-muted-foreground font-body">Upload or use the same image</p>
+                          <p className="text-[10px] text-muted-foreground font-body">Upload a different image</p>
                         </div>
-                        <div className="flex gap-1 shrink-0">
-                          <Button size="sm" variant="outline" className="h-7 px-2 border-primary/40 text-primary hover:bg-primary/10 gap-1" onClick={() => companionFileRef.current?.click()}>
-                            <Upload className="w-3 h-3" />
-                            <span className="text-[10px] font-body">Upload</span>
-                          </Button>
-                          <Button size="sm" variant="outline" className="h-7 px-2 border-primary/40 text-primary hover:bg-primary/10 gap-1" onClick={() => {
-                            onCompanionChange({
-                              image: null,
-                              uploadedFile: imageUrl,
-                              sizeIdx: sizeIdx,
-                              orientation: orientation,
-                            });
-                          }}>
-                            <span className="text-[10px] font-body">Same image</span>
-                          </Button>
-                        </div>
+                        <Button size="sm" variant="outline" className="h-7 px-2 border-primary/40 text-primary hover:bg-primary/10 gap-1 shrink-0" onClick={() => companionFileRef.current?.click()}>
+                          <Upload className="w-3 h-3" />
+                          <span className="text-[10px] font-body">Upload</span>
+                        </Button>
                       </>
                     )}
                   </div>

@@ -16,7 +16,7 @@ const faqs = [
   },
   {
     q: "How long does shipping take?",
-    a: "Standard delivery is 48–72 hours from production. We also offer LuXpress (47-hour) and Overnight (24-hour) shipping options.",
+    a: "We guarantee delivery in 48–72 hours with standard shipping. We also offer LuXpress (47-hour) and Overnight (24-hour) options.",
   },
   {
     q: "What's the difference between metal and acrylic prints?",

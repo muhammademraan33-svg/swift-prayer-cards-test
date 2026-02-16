@@ -16,8 +16,8 @@ const steps = [
   {
     icon: Package,
     step: "03",
-    title: "White-Glove Delivery",
-    description: "Each piece is handcrafted, inspected, and shipped in protective archival packaging within 48–72 hours.",
+    title: "Guaranteed Delivery",
+    description: "Each piece is handcrafted and inspected to perfection. We guarantee delivery in 48–72 hours.",
   },
 ];
 

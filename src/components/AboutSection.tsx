@@ -3,8 +3,8 @@ import { Shield, Clock, Award } from "lucide-react";
 const features = [
   {
     icon: Clock,
-    title: "48–72 Hour Delivery",
-    description: "Fast turnaround without compromising quality. Your prints ship within 2–3 business days.",
+    title: "Guaranteed 48–72 Hour Delivery",
+    description: "We guarantee delivery in 48–72 hours — fast turnaround without compromising quality.",
   },
   {
     icon: Shield,

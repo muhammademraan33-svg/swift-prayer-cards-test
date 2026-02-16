@@ -440,7 +440,7 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
         <div className="grid grid-cols-2 gap-3 mb-3">
           {materialOpts.filter(m => m.id !== "acrylic").map((mat) => {
             const isSelected = material === mat.id;
-            const size = standardSizes[sizeIdx];
+            const size = selected;
             const price = mat.id === "metal-designer"
               ? calcMetalPrice(size.w, size.h, metalOptions[0])
               : calcMetalPrice(size.w, size.h, metalOptions[2]);
@@ -499,7 +499,7 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
         {(() => {
           const mat = materialOpts.find(m => m.id === "acrylic")!;
           const isSelected = material === mat.id;
-          const size = standardSizes[sizeIdx];
+          const size = selected;
           const price = calcAcrylicPrice(size.w, size.h);
           const companionPrice = hasCompanion && companionSize ? calcAcrylicPrice(companionSize.w, companionSize.h) : 0;
           const totalPrice = price + companionPrice;

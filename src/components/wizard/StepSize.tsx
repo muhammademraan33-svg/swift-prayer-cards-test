@@ -240,10 +240,10 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
                   {/* Crop boundary container - this is the actual printable area */}
                   <div
                     className="relative w-full h-full cursor-grab active:cursor-grabbing z-20"
-                    onPointerDown={handlePointerDown}
-                    onPointerMove={handlePointerMove}
-                    onPointerUp={handlePointerUp}
-                  >
+                  onPointerDown={handlePointerDown}
+                  onPointerMove={handlePointerMove}
+                  onPointerUp={handlePointerUp}
+                >
                     {/* Crop boundary border - clearly marks the printable area */}
                     <div className="absolute inset-0 border-2 border-primary shadow-[0_0_0_2px_rgba(0,0,0,0.3)] pointer-events-none z-30"></div>
                     
@@ -266,7 +266,7 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
                         <AlertTriangle className="w-3 h-3 mr-1" />
                         {Math.round(effectiveDpi)} DPI
                       </Badge>
-                    </div>
+                </div>
                   )}
                   
                   {/* Transform controls */}
@@ -276,8 +276,8 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
                     <button onClick={(e) => { e.stopPropagation(); onRotate((rotation + 90) % 360); }} className="w-7 h-7 bg-card/90 backdrop-blur-sm border border-border rounded flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors shadow-sm" title="Rotate 90°"><RotateCw className="w-4 h-4" /></button>
                     {(zoom > 1 || panX !== 0 || panY !== 0 || rotation !== 0) && (
                       <button onClick={(e) => { e.stopPropagation(); onZoom(1); onPan(0, 0); onRotate(0); }} className="w-7 h-7 bg-card/90 backdrop-blur-sm border border-border rounded flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors shadow-sm" title="Reset"><Move className="w-4 h-4" /></button>
-                    )}
-                  </div>
+                  )}
+                </div>
                   
                   {/* Size label */}
                   <div className="absolute bottom-2 left-2 bg-card/90 backdrop-blur-sm border border-border rounded px-2.5 py-1 z-10">

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   standardSizes,
   calcMetalPrice,
@@ -9,10 +10,18 @@ import {
 import { resolveSize } from "@/lib/sizeHelpers";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ShoppingBag, Plus } from "lucide-react";
+import { ArrowLeft, ShoppingBag, Plus, CreditCard, CheckCircle2 } from "lucide-react";
 import type { WizardState, MaterialChoice, CartItem } from "./types";
 import { useToast } from "@/hooks/use-toast";
 import { getImageTransformStyle } from "@/lib/imageTransform";
+import StripeCheckout from "@/components/StripeCheckout";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface Props {
   state: WizardState;
@@ -138,6 +147,9 @@ function ItemBreakdown({ item, title, imageUrl, transform }: { item: CartItem | 
 
 const StepReview = ({ state, onBack, onAddAnother, onCheckout }: Props) => {
   const { toast } = useToast();
+  const [showCheckout, setShowCheckout] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
 
   const allItems: { item: CartItem | WizardState; title: string; imageUrl: string }[] = [
     ...state.cart.map((item, i) => ({
@@ -157,11 +169,14 @@ const StepReview = ({ state, onBack, onAddAnother, onCheckout }: Props) => {
     return sum + lines.reduce((s, l) => s + l.amount, 0);
   }, 0);
 
-  const handleCheckout = () => {
-    toast({
-      title: "Order Submitted!",
-      description: `Your order of $${grandTotal.toFixed(2)} has been received. We'll be in touch shortly.`,
-    });
+  const handlePaymentSuccess = (paymentId: string) => {
+    setPaymentIntentId(paymentId);
+    setShowCheckout(false);
+    setShowConfirmation(true);
+  };
+
+  const handleConfirmationClose = () => {
+    setShowConfirmation(false);
     onCheckout();
   };
 
@@ -269,11 +284,61 @@ const StepReview = ({ state, onBack, onAddAnother, onCheckout }: Props) => {
           <Button variant="outline" onClick={onAddAnother} className="font-body gap-2 border-primary/40 text-primary hover:bg-primary/10">
             <Plus className="w-4 h-4" /> Add Another Print
           </Button>
-          <Button onClick={handleCheckout} className="bg-gradient-gold text-primary-foreground font-body font-semibold hover:opacity-90 gap-2 h-14 px-10 text-sm tracking-[0.15em]">
-            <ShoppingBag className="w-4 h-4" /> CHECKOUT
+          <Button onClick={() => setShowCheckout(true)} className="bg-gradient-gold text-primary-foreground font-body font-semibold hover:opacity-90 gap-2 h-14 px-10 text-sm tracking-[0.15em]">
+            <CreditCard className="w-4 h-4" /> PAY NOW
           </Button>
         </div>
       </div>
+
+      {/* Checkout Dialog */}
+      <Dialog open={showCheckout} onOpenChange={setShowCheckout}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Complete Your Order</DialogTitle>
+            <DialogDescription>
+              Total: ${grandTotal.toFixed(2)}
+            </DialogDescription>
+          </DialogHeader>
+          <StripeCheckout
+            amount={grandTotal}
+            items={allItems}
+            orderDetails={{
+              items: allItems,
+              total: grandTotal,
+              timestamp: new Date().toISOString(),
+            }}
+            onSuccess={handlePaymentSuccess}
+            onCancel={() => setShowCheckout(false)}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Order Confirmation Dialog */}
+      <Dialog open={showConfirmation} onOpenChange={handleConfirmationClose}>
+        <DialogContent className="max-w-md text-center">
+          <DialogHeader>
+            <div className="flex justify-center mb-4">
+              <CheckCircle2 className="w-16 h-16 text-green-500" />
+            </div>
+            <DialogTitle className="text-2xl">Order Confirmed!</DialogTitle>
+            <DialogDescription className="text-base">
+              Your payment of ${grandTotal.toFixed(2)} has been processed successfully.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <p className="text-sm text-muted-foreground">
+              Payment ID: {paymentIntentId}
+            </p>
+            <p className="text-sm text-muted-foreground">
+              We've received your order and will begin production shortly.
+              You'll receive an email confirmation with tracking information.
+            </p>
+            <Button onClick={handleConfirmationClose} className="w-full bg-gradient-gold hover:opacity-90">
+              Done
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

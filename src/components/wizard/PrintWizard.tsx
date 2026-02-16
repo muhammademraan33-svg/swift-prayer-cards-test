@@ -50,6 +50,16 @@ const PrintWizard = ({ onStepChange }: Props) => {
   return (
     <section id="wizard" className="py-10 px-6">
       <div className="max-w-6xl mx-auto">
+        {/* Section header */}
+        <div className="text-center mb-6">
+          <span className="text-[10px] tracking-[0.3em] uppercase text-primary font-body">Start Here</span>
+          <h2 className="text-3xl md:text-4xl font-display font-bold text-foreground mt-1">
+            Create Your Print
+          </h2>
+          <p className="text-muted-foreground font-body text-sm mt-2 max-w-md mx-auto">
+            Follow the steps below to design your custom museum-grade print.
+          </p>
+        </div>
         {/* Progress bar */}
         <div className="mb-8">
           <div className="flex items-center gap-1 mb-2">

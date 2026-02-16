@@ -107,11 +107,6 @@ const StepArt = ({ image, uploadedFile, onSelect, onUpload, onNext }: Props) => 
 
   return (
     <div className="space-y-3">
-      <div className="text-center">
-        <h2 className="text-2xl md:text-3xl font-display font-bold text-foreground">
-          Select Your Artwork
-        </h2>
-      </div>
 
       {/* Upload + Search row */}
       <div className="flex items-center gap-3 max-w-3xl mx-auto">

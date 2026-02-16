@@ -32,7 +32,7 @@ const slides = [
   {
     image: metalOffice,
     label: "Gallery Wall",
-    caption: "A curated gallery of metal prints transforms a private study into a personal museum.",
+    caption: "A mix of acrylic and metal prints with stand-off hardware creates a curated gallery wall in a private study.",
   },
 ];
 

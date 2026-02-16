@@ -21,8 +21,8 @@ interface Props {
 
 function getMaterialLabel(m: MaterialChoice): string {
   if (m === "acrylic") return "Acrylic Print";
-  if (m === "metal-designer") return 'Metal Designer (.040")';
-  return 'Metal Museum (.080")';
+  if (m === "metal-designer") return 'Lux Metal (.040")';
+  return 'Designer Metal (.080")';
 }
 
 function getMetalIdx(m: MaterialChoice, doubleSided: boolean): number {

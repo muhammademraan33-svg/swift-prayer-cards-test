@@ -177,7 +177,7 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
             const printBottom = isDesk ? "38%" : undefined;
             const printTop = isDesk ? undefined : "35%";
 
-            if (isDesk && hasCompanion) {
+            if (hasCompanion && quantity >= 2) {
               const gap = 2;
               const totalW = displayW + companionDisplayW + gap;
               const sceneW = Math.max(WALL_W, totalW * 1.5);
@@ -353,7 +353,20 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
                       {[1, 2, 3, 4, 5, 6].map((q) => (
                         <button
                           key={q}
-                          onClick={() => onQuantity(q)}
+                          onClick={() => {
+                            onQuantity(q);
+                            // Auto-manage companion: qty >= 2 adds a companion slot, qty 1 removes it
+                            if (q >= 2 && !companionPrint) {
+                              onCompanionChange({
+                                image: null,
+                                uploadedFile: null,
+                                sizeIdx: sizeIdx,
+                                orientation: "landscape",
+                              });
+                            } else if (q === 1 && companionPrint) {
+                              onCompanionChange(null);
+                            }
+                          }}
                           className={`w-7 h-7 rounded-md text-xs font-body font-bold transition-all ${
                             quantity === q
                               ? "bg-gradient-gold text-primary-foreground shadow-sm"
@@ -364,6 +377,52 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
                         </button>
                       ))}
                     </div>
+                  </div>
+                )}
+                {/* Companion image upload/search prompt when qty >= 2 */}
+                {groupHasSelection && isSmallGroup && quantity >= 2 && (
+                  <div className="mt-1.5 flex items-center gap-2 bg-card border border-border rounded-lg px-3 py-2">
+                    {companionImgSrc ? (
+                      <>
+                        <img src={companionImgSrc} alt="Print 2" className="w-10 h-10 rounded object-cover border border-border" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-body font-semibold text-foreground">Print 2 image set</p>
+                          <p className="text-[10px] text-muted-foreground font-body">
+                            {quantity > 2 ? `Prints 3–${quantity} will use the same image` : ""}
+                          </p>
+                        </div>
+                        <Button size="sm" variant="ghost" className="shrink-0 text-destructive hover:bg-destructive/10 gap-1 h-7 px-2" onClick={removeCompanion}>
+                          <X className="w-3 h-3" />
+                          <span className="text-[10px] font-body">Change</span>
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <div className="w-10 h-10 rounded border-2 border-dashed border-primary/30 flex items-center justify-center bg-primary/5">
+                          <Upload className="w-4 h-4 text-primary/50" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-body font-semibold text-foreground">Add image for Print 2</p>
+                          <p className="text-[10px] text-muted-foreground font-body">Upload or use the same image</p>
+                        </div>
+                        <div className="flex gap-1 shrink-0">
+                          <Button size="sm" variant="outline" className="h-7 px-2 border-primary/40 text-primary hover:bg-primary/10 gap-1" onClick={() => companionFileRef.current?.click()}>
+                            <Upload className="w-3 h-3" />
+                            <span className="text-[10px] font-body">Upload</span>
+                          </Button>
+                          <Button size="sm" variant="outline" className="h-7 px-2 border-primary/40 text-primary hover:bg-primary/10 gap-1" onClick={() => {
+                            onCompanionChange({
+                              image: null,
+                              uploadedFile: imageUrl,
+                              sizeIdx: sizeIdx,
+                              orientation: orientation,
+                            });
+                          }}>
+                            <span className="text-[10px] font-body">Same image</span>
+                          </Button>
+                        </div>
+                      </>
+                    )}
                   </div>
                 )}
               </div>

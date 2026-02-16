@@ -28,10 +28,11 @@ const Hero = () => {
           </div>
 
           <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-display font-bold leading-[1.02] mb-6 tracking-tight">
-            <span className="text-foreground">Where Photography</span>
+            <span className="text-foreground">Turn Any Room Into</span>
             <br />
-            <span className="text-foreground">Becomes</span>{" "}
-            <span className="text-gradient-gold italic">Legacy</span>
+            <span className="text-foreground">a </span>
+            <span className="text-gradient-gold italic">Gallery</span>
+            <span className="text-foreground"> — In Just 48 Hours</span>
           </h1>
 
           <p className="text-base md:text-lg text-foreground font-body font-light max-w-lg mb-10 leading-relaxed tracking-wide">

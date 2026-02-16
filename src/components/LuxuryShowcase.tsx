@@ -57,10 +57,7 @@ const LuxuryShowcase = () => {
   return (
     <section className="py-20 px-0 overflow-hidden">
       <div className="max-w-7xl mx-auto px-6 mb-10 text-center">
-        <span className="text-sm tracking-[0.3em] uppercase text-primary font-body">
-          In Situ
-        </span>
-        <h2 className="text-4xl md:text-5xl font-display font-bold mt-3 text-foreground">
+        <h2 className="text-4xl md:text-5xl font-display font-bold text-foreground">
           Prints in Luxury Spaces
         </h2>
         <p className="text-muted-foreground font-body mt-4 max-w-xl mx-auto">

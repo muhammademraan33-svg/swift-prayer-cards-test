@@ -140,7 +140,7 @@ const StepSize = ({ imageUrl, sizeIdx, material, companionPrint, onSelect, onSel
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* LEFT: Preview */}
-        <div className="flex justify-center md:sticky md:top-4 md:self-start">
+        <div className="flex justify-center md:sticky md:top-4 md:self-start max-h-[400px]">
           {(() => {
             const backdropImg = isDesk ? shelfBackdrop : couchWall;
             const WALL_W = isDesk ? 24 : 96;

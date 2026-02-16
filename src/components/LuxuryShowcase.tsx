@@ -22,7 +22,7 @@ const slides = [
   {
     image: dividerLoft,
     label: "Double-Sided Divider",
-    caption: "A double-sided metal print hangs as a dramatic suspended divider in a grand hotel lobby.",
+    caption: "A suspended double-sided metal print divides a five-star hotel atrium with dramatic elegance.",
   },
   {
     image: acrylicBedroom,

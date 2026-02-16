@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight, ArrowLeft, Upload, RotateCw } from "lucide-react";
 import { standardSizes, calcMetalPrice, metalOptions } from "@/lib/pricing";
-import type { SelectedImage, MaterialChoice } from "./types";
+import type { SelectedImage, MaterialChoice, AdditionalPrint } from "./types";
 
 interface Props {
   frontImage: string;
@@ -10,6 +10,8 @@ interface Props {
   doubleSided: boolean;
   material: MaterialChoice;
   sizeIdx: number;
+  quantity: number;
+  additionalPrints: AdditionalPrint[];
   onToggleDouble: (v: boolean) => void;
   onSelectBack: (img: SelectedImage) => void;
   onUploadBack: (dataUrl: string) => void;
@@ -17,7 +19,7 @@ interface Props {
   onBack: () => void;
 }
 
-const StepUpsell = ({ frontImage, backImage, backUploadedFile, doubleSided, material, sizeIdx, onToggleDouble, onUploadBack, onNext, onBack }: Props) => {
+const StepUpsell = ({ frontImage, backImage, backUploadedFile, doubleSided, material, sizeIdx, quantity, additionalPrints, onToggleDouble, onUploadBack, onNext, onBack }: Props) => {
   const backUrl = backUploadedFile || backImage?.url;
 
   const size = standardSizes[sizeIdx];
@@ -46,7 +48,34 @@ const StepUpsell = ({ frontImage, backImage, backUploadedFile, doubleSided, mate
         </p>
       </div>
 
-      {/* Simple visual showing the concept */}
+      {/* All print images */}
+      {quantity > 1 && additionalPrints.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs text-muted-foreground font-body text-center tracking-wider uppercase font-semibold">Your Prints</p>
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <div className="text-center">
+              <div className="w-20 h-16 sm:w-24 sm:h-20 rounded-lg overflow-hidden border border-primary/30 shadow-md">
+                <img src={frontImage} alt="Print 1" className="w-full h-full object-cover" />
+              </div>
+              <p className="text-[10px] text-primary font-body mt-1 font-semibold">Print 1</p>
+            </div>
+            {additionalPrints.map((ap, idx) => {
+              const apImg = ap.uploadedFile || ap.image?.url;
+              if (!apImg) return null;
+              return (
+                <div key={idx} className="text-center">
+                  <div className="w-20 h-16 sm:w-24 sm:h-20 rounded-lg overflow-hidden border border-border shadow-md">
+                    <img src={apImg} alt={`Print ${idx + 2}`} className="w-full h-full object-cover" />
+                  </div>
+                  <p className="text-[10px] text-muted-foreground font-body mt-1 font-semibold">Print {idx + 2}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Front/Back flip concept */}
       <div className="flex items-center justify-center gap-4 py-4">
         <div className="text-center">
           <div className="w-28 h-20 sm:w-36 sm:h-28 rounded-lg overflow-hidden border border-primary/30 shadow-lg">

@@ -48,7 +48,7 @@ const PrintWizard = ({ onStepChange }: Props) => {
   };
 
   return (
-    <section id="wizard" className="py-20 px-6">
+    <section id="wizard" className="py-10 px-6">
       <div className="max-w-6xl mx-auto">
         {/* Progress bar */}
         <div className="mb-8">

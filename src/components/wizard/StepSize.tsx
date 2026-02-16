@@ -163,13 +163,17 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
 
             if (quantity >= 2) {
               const totalPrints = quantity;
-              const sceneW = Math.max(WALL_W, displayW * totalPrints * 1.3);
+              // Use percentage-based sizing so prints always fit inside the container
+              const gapPct = 2; // gap between prints in %
+              const totalGap = (totalPrints - 1) * gapPct;
+              const maxGroupWidth = 90; // max % width the group of prints can occupy
+              const perPrintPct = Math.min((maxGroupWidth - totalGap) / totalPrints, printWPct);
 
               return (
                 <div className="relative w-full overflow-hidden rounded-lg border border-border" style={{ aspectRatio: containerAspect }}>
                   <img src={backdropImg} alt="Room backdrop" className="absolute inset-0 w-full h-full object-cover" />
-                  <div className="absolute left-1/2 -translate-x-1/2 flex items-end gap-[2%]" style={{ bottom: isDesk ? "38%" : "30%" }}>
-                    <div className="shadow-[0_4px_20px_rgba(0,0,0,0.3)] overflow-hidden shrink-0" style={{ width: `${Math.max((displayW / sceneW) * 100, 8)}vw`, maxWidth: `${(displayW / sceneW) * 720}px`, aspectRatio: `${printAspect}` }}>
+                  <div className="absolute left-1/2 -translate-x-1/2 flex items-end" style={{ bottom: isDesk ? "38%" : "30%", gap: `${gapPct}%` }}>
+                    <div className="shadow-[0_4px_20px_rgba(0,0,0,0.3)] overflow-hidden shrink-0" style={{ width: `${perPrintPct}%`, aspectRatio: `${printAspect}` }}>
                       <img src={imageUrl} alt="Print 1" className="w-full h-full object-cover" style={{ transform: `scale(${zoom}) translate(${panX / zoom}px, ${panY / zoom}px) rotate(${rotation}deg)`, transformOrigin: "center center" }} />
                     </div>
                     {Array.from({ length: quantity - 1 }).map((_, idx) => {
@@ -179,7 +183,7 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
                       const slotH = slotOri === "portrait" ? Math.max(selected.w, selected.h) : Math.min(selected.w, selected.h);
                       const slotAspect = slotW / slotH;
                       return (
-                        <div key={idx} className="shadow-[0_4px_20px_rgba(0,0,0,0.3)] overflow-hidden shrink-0 bg-muted/50 cursor-pointer" style={{ width: `${Math.max((slotW / sceneW) * 100, 8)}vw`, maxWidth: `${(slotW / sceneW) * 720}px`, aspectRatio: `${slotAspect}` }} onClick={() => setPickerSlot(idx)}>
+                        <div key={idx} className="shadow-[0_4px_20px_rgba(0,0,0,0.3)] overflow-hidden shrink-0 bg-muted/50 cursor-pointer" style={{ width: `${perPrintPct}%`, aspectRatio: `${slotAspect}` }} onClick={() => setPickerSlot(idx)}>
                           {slotImg ? (
                             <img src={slotImg} alt={`Print ${idx + 2}`} className="w-full h-full object-cover" />
                           ) : (

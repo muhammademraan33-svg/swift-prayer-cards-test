@@ -13,7 +13,7 @@ interface Props {
   image: SelectedImage | null;
   uploadedFile: string | null;
   onSelect: (image: SelectedImage) => void;
-  onUpload: (dataUrl: string) => void;
+  onUpload: (dataUrl: string, width: number, height: number) => void;
   onNext: () => void;
 }
 
@@ -98,7 +98,12 @@ const StepArt = ({ image, uploadedFile, onSelect, onUpload, onNext }: Props) => 
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = () => onUpload(reader.result as string);
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      const img = new Image();
+      img.onload = () => onUpload(dataUrl, img.naturalWidth, img.naturalHeight);
+      img.src = dataUrl;
+    };
     reader.readAsDataURL(file);
   };
 

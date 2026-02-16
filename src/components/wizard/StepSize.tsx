@@ -3,7 +3,7 @@ import { standardSizes, calcMetalPrice, calcAcrylicPrice, metalOptions } from "@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowRight, ArrowLeft, RectangleHorizontal, RectangleVertical, Sparkles, Shield, Gem, Check, RotateCw, ZoomIn, ZoomOut, Move, Plus, X, Upload } from "lucide-react";
+import { ArrowRight, ArrowLeft, RectangleHorizontal, RectangleVertical, Sparkles, Shield, Gem, Check, RotateCw, ZoomIn, ZoomOut, Move, Plus, X, Upload, AlertTriangle } from "lucide-react";
 import couchWall from "@/assets/couch-wall.jpg";
 import shelfBackdrop from "@/assets/shelf-backdrop.jpg";
 import acrylicImg from "@/assets/acrylic-print.jpg";
@@ -19,9 +19,18 @@ interface Props {
   sizeIdx: number;
   material: MaterialChoice;
   companionPrint: CompanionPrint | null;
+  imageNaturalWidth: number;
+  imageNaturalHeight: number;
+  rotation: number;
+  zoom: number;
+  panX: number;
+  panY: number;
   onSelect: (idx: number) => void;
   onSelectMaterial: (m: MaterialChoice) => void;
   onCompanionChange: (cp: CompanionPrint | null) => void;
+  onRotate: (r: number) => void;
+  onZoom: (z: number) => void;
+  onPan: (x: number, y: number) => void;
   onNext: () => void;
   onBack: () => void;
 }
@@ -42,31 +51,29 @@ const sizeGroups = [
 // Desk & shelf size indices
 const DESK_SHELF_MAX_IDX = 4;
 
-const StepSize = ({ imageUrl, sizeIdx, material, companionPrint, onSelect, onSelectMaterial, onCompanionChange, onNext, onBack }: Props) => {
+const StepSize = ({ imageUrl, sizeIdx, material, companionPrint, imageNaturalWidth, imageNaturalHeight, rotation, zoom, panX, panY, onSelect, onSelectMaterial, onCompanionChange, onRotate, onZoom, onPan, onNext, onBack }: Props) => {
   const selected = standardSizes[sizeIdx];
   const [orientation, setOrientation] = useState<"landscape" | "portrait">("landscape");
-  const [zoom, setZoom] = useState(1);
-  const [pan, setPan] = useState({ x: 0, y: 0 });
   const isDragging = useRef(false);
   const dragStart = useRef({ x: 0, y: 0, panX: 0, panY: 0 });
   const companionFileRef = useRef<HTMLInputElement>(null);
 
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
     isDragging.current = true;
-    dragStart.current = { x: e.clientX, y: e.clientY, panX: pan.x, panY: pan.y };
+    dragStart.current = { x: e.clientX, y: e.clientY, panX, panY };
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
-  }, [pan]);
+  }, [panX, panY]);
 
   const handlePointerMove = useCallback((e: React.PointerEvent) => {
     if (!isDragging.current) return;
     const dx = e.clientX - dragStart.current.x;
     const dy = e.clientY - dragStart.current.y;
     const maxPan = (zoom - 1) * 50;
-    setPan({
-      x: Math.max(-maxPan, Math.min(maxPan, dragStart.current.panX + dx)),
-      y: Math.max(-maxPan, Math.min(maxPan, dragStart.current.panY + dy)),
-    });
-  }, [zoom]);
+    onPan(
+      Math.max(-maxPan, Math.min(maxPan, dragStart.current.panX + dx)),
+      Math.max(-maxPan, Math.min(maxPan, dragStart.current.panY + dy)),
+    );
+  }, [zoom, onPan]);
 
   const handlePointerUp = useCallback(() => {
     isDragging.current = false;
@@ -75,6 +82,16 @@ const StepSize = ({ imageUrl, sizeIdx, material, companionPrint, onSelect, onSel
   const isSquare = selected.w === selected.h;
   const displayW = orientation === "portrait" ? Math.min(selected.w, selected.h) : Math.max(selected.w, selected.h);
   const displayH = orientation === "portrait" ? Math.max(selected.w, selected.h) : Math.min(selected.w, selected.h);
+
+  // Image quality check at 300 DPI
+  const requiredPxW = displayW * 300;
+  const requiredPxH = displayH * 300;
+  const hasImageDimensions = imageNaturalWidth > 0 && imageNaturalHeight > 0;
+  const isLowQuality = hasImageDimensions && (imageNaturalWidth < requiredPxW * 0.75 || imageNaturalHeight < requiredPxH * 0.75);
+  const actualDpi = hasImageDimensions
+    ? Math.min(Math.round(imageNaturalWidth / displayW * (imageNaturalWidth >= imageNaturalHeight ? 1 : displayW / displayH)), Math.round(imageNaturalHeight / displayH * (imageNaturalHeight >= imageNaturalWidth ? 1 : displayH / displayW)))
+    : 0;
+  const effectiveDpi = hasImageDimensions ? Math.min(Math.round(imageNaturalWidth / displayW), Math.round(imageNaturalHeight / displayH)) : 0;
 
   const displayLabel = isSquare
     ? selected.label
@@ -176,7 +193,7 @@ const StepSize = ({ imageUrl, sizeIdx, material, companionPrint, onSelect, onSel
                         alt="Main print"
                         className="w-full h-full object-cover"
                         style={{
-                          transform: `scale(${zoom}) translate(${pan.x / zoom}px, ${pan.y / zoom}px)`,
+                          transform: `scale(${zoom}) translate(${panX / zoom}px, ${panY / zoom}px) rotate(${rotation}deg)`,
                           transformOrigin: "center center",
                         }}
                       />
@@ -236,20 +253,23 @@ const StepSize = ({ imageUrl, sizeIdx, material, companionPrint, onSelect, onSel
                     className="absolute inset-0 w-full h-full object-cover select-none pointer-events-none"
                     draggable={false}
                     style={{
-                      transform: `scale(${zoom}) translate(${pan.x / zoom}px, ${pan.y / zoom}px)`,
+                      transform: `scale(${zoom}) translate(${panX / zoom}px, ${panY / zoom}px) rotate(${rotation}deg)`,
                       transformOrigin: "center center",
                     }}
                   />
                 </div>
                 <div className="absolute top-2 right-2 flex flex-col gap-1">
-                  <button onClick={(e) => { e.stopPropagation(); setZoom((z) => Math.min(z + 0.25, 3)); setPan({ x: 0, y: 0 }); }} className="w-7 h-7 bg-card/80 backdrop-blur-sm border border-border rounded flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors" title="Zoom in">
+                  <button onClick={(e) => { e.stopPropagation(); onZoom(Math.min(zoom + 0.25, 3)); onPan(0, 0); }} className="w-7 h-7 bg-card/80 backdrop-blur-sm border border-border rounded flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors" title="Zoom in">
                     <ZoomIn className="w-4 h-4" />
                   </button>
-                  <button onClick={(e) => { e.stopPropagation(); setZoom((z) => Math.max(z - 0.25, 1)); setPan({ x: 0, y: 0 }); }} className="w-7 h-7 bg-card/80 backdrop-blur-sm border border-border rounded flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors" title="Zoom out">
+                  <button onClick={(e) => { e.stopPropagation(); onZoom(Math.max(zoom - 0.25, 1)); onPan(0, 0); }} className="w-7 h-7 bg-card/80 backdrop-blur-sm border border-border rounded flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors" title="Zoom out">
                     <ZoomOut className="w-4 h-4" />
                   </button>
-                  {zoom > 1 && (
-                    <button onClick={(e) => { e.stopPropagation(); setZoom(1); setPan({ x: 0, y: 0 }); }} className="w-7 h-7 bg-card/80 backdrop-blur-sm border border-border rounded flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors" title="Reset">
+                  <button onClick={(e) => { e.stopPropagation(); onRotate((rotation + 90) % 360); }} className="w-7 h-7 bg-card/80 backdrop-blur-sm border border-border rounded flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors" title="Rotate 90°">
+                    <RotateCw className="w-4 h-4" />
+                  </button>
+                  {(zoom > 1 || panX !== 0 || panY !== 0) && (
+                    <button onClick={(e) => { e.stopPropagation(); onZoom(1); onPan(0, 0); }} className="w-7 h-7 bg-card/80 backdrop-blur-sm border border-border rounded flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors" title="Reset">
                       <Move className="w-4 h-4" />
                     </button>
                   )}
@@ -313,10 +333,21 @@ const StepSize = ({ imageUrl, sizeIdx, material, companionPrint, onSelect, onSel
               </div>
             );
           })}
+
+          {/* Low quality warning */}
+          {isLowQuality && (
+            <div className="flex items-start gap-2 bg-destructive/10 border border-destructive/30 rounded-lg px-4 py-3 mt-3">
+              <AlertTriangle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
+              <div>
+                <p className="text-xs font-body font-semibold text-destructive">Low Image Quality</p>
+                <p className="text-xs font-body text-destructive/80">
+                  Your image is {imageNaturalWidth}×{imageNaturalHeight}px (~{effectiveDpi} DPI at this size). For best results at {displayLabel}, we recommend at least {requiredPxW}×{requiredPxH}px (300 DPI).
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
-
-      {/* Material selection — full width below the two-column grid */}
       <div>
         <h3 className="text-xs font-body font-semibold tracking-[0.2em] uppercase text-primary mb-2">
           Choose Your Medium

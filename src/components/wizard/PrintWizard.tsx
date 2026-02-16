@@ -105,8 +105,8 @@ const PrintWizard = ({ onStepChange }: Props) => {
           <StepArt
             image={state.image}
             uploadedFile={state.uploadedFile}
-            onSelect={(img) => update({ image: img, uploadedFile: null })}
-            onUpload={(dataUrl) => update({ uploadedFile: dataUrl, image: null })}
+            onSelect={(img) => update({ image: img, uploadedFile: null, imageNaturalWidth: 0, imageNaturalHeight: 0, rotation: 0, zoom: 1, panX: 0, panY: 0 })}
+            onUpload={(dataUrl, w, h) => update({ uploadedFile: dataUrl, image: null, imageNaturalWidth: w, imageNaturalHeight: h, rotation: 0, zoom: 1, panX: 0, panY: 0 })}
             onNext={nextStep}
           />
         )}
@@ -117,9 +117,18 @@ const PrintWizard = ({ onStepChange }: Props) => {
             sizeIdx={state.sizeIdx}
             material={state.material}
             companionPrint={state.companionPrint}
+            imageNaturalWidth={state.imageNaturalWidth}
+            imageNaturalHeight={state.imageNaturalHeight}
+            rotation={state.rotation}
+            zoom={state.zoom}
+            panX={state.panX}
+            panY={state.panY}
             onSelect={(idx) => update({ sizeIdx: idx })}
             onSelectMaterial={(m) => update({ material: m, doubleSided: false, backImage: null, backUploadedFile: null })}
             onCompanionChange={(cp) => update({ companionPrint: cp })}
+            onRotate={(r) => update({ rotation: r })}
+            onZoom={(z) => update({ zoom: z })}
+            onPan={(x, y) => update({ panX: x, panY: y })}
             onNext={nextStep}
             onBack={prevStep}
           />
@@ -166,6 +175,8 @@ const PrintWizard = ({ onStepChange }: Props) => {
               const cartItem: CartItem = {
                 image: state.image,
                 uploadedFile: state.uploadedFile,
+                imageNaturalWidth: state.imageNaturalWidth,
+                imageNaturalHeight: state.imageNaturalHeight,
                 sizeIdx: state.sizeIdx,
                 material: state.material,
                 doubleSided: state.doubleSided,
@@ -175,6 +186,10 @@ const PrintWizard = ({ onStepChange }: Props) => {
                 standOffQty: state.standOffQty,
                 roundedCorners: state.roundedCorners,
                 companionPrint: state.companionPrint,
+                rotation: state.rotation,
+                zoom: state.zoom,
+                panX: state.panX,
+                panY: state.panY,
               };
               setState({
                 ...initialWizardState,

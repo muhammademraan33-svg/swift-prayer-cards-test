@@ -1,10 +1,7 @@
-import { useState, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { ArrowRight, ArrowLeft, Search, Loader2, Upload, RotateCw } from "lucide-react";
+import { ArrowRight, ArrowLeft, Upload, RotateCw } from "lucide-react";
 import { standardSizes, calcMetalPrice, metalOptions } from "@/lib/pricing";
 import type { SelectedImage, MaterialChoice } from "./types";
-import { searchPhotos, getCuratedPhotos, type NormalizedPhoto } from "@/lib/artApi";
 
 interface Props {
   frontImage: string;
@@ -20,11 +17,7 @@ interface Props {
   onBack: () => void;
 }
 
-const StepUpsell = ({ frontImage, backImage, backUploadedFile, doubleSided, material, sizeIdx, onToggleDouble, onSelectBack, onUploadBack, onNext, onBack }: Props) => {
-  const [query, setQuery] = useState("");
-  const [photos, setPhotos] = useState<NormalizedPhoto[]>([]);
-  const [loading, setLoading] = useState(false);
-
+const StepUpsell = ({ frontImage, backImage, backUploadedFile, doubleSided, material, sizeIdx, onToggleDouble, onUploadBack, onNext, onBack }: Props) => {
   const backUrl = backUploadedFile || backImage?.url;
 
   const size = standardSizes[sizeIdx];
@@ -33,26 +26,6 @@ const StepUpsell = ({ frontImage, backImage, backUploadedFile, doubleSided, mate
   const singlePrice = calcMetalPrice(size.w, size.h, metalOptions[singleIdx]);
   const doublePrice = calcMetalPrice(size.w, size.h, metalOptions[doubleIdx]);
   const upsellCost = doublePrice - singlePrice;
-
-  useEffect(() => {
-    const loadCurated = async () => {
-      setLoading(true);
-      try {
-        setPhotos(await getCuratedPhotos(12));
-      } catch { setPhotos([]); }
-      finally { setLoading(false); }
-    };
-    loadCurated();
-  }, []);
-
-  const doSearch = useCallback(async (q: string) => {
-    if (!q.trim()) return;
-    setLoading(true);
-    try {
-      setPhotos(await searchPhotos(q, 12));
-    } catch { setPhotos([]); }
-    finally { setLoading(false); }
-  }, []);
 
   const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -120,48 +93,25 @@ const StepUpsell = ({ frontImage, backImage, backUploadedFile, doubleSided, mate
         </div>
       )}
 
-      {/* Image picker — shown after opting in */}
-      {(doubleSided || backUrl) && (
-        <div className="space-y-3">
-          <div className="flex items-center gap-3">
-            <label className="flex items-center gap-2 px-3 py-1.5 border border-dashed border-border hover:border-primary/50 rounded cursor-pointer transition-colors text-xs shrink-0">
-              <Upload className="w-3.5 h-3.5 text-primary" />
-              <span className="font-body text-foreground">Upload Photo</span>
-              <input type="file" accept="image/*" className="hidden" onChange={handleUpload} />
-            </label>
-            <form onSubmit={(e) => { e.preventDefault(); doSearch(query); }} className="flex gap-1.5 flex-1">
-              <div className="relative flex-1">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
-                <Input
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Search art..."
-                  className="pl-7 bg-secondary border-border text-foreground font-body text-xs h-8"
-                />
-              </div>
-              <Button type="submit" size="sm" disabled={loading} className="bg-gradient-gold text-primary-foreground font-body hover:opacity-90 h-8 w-8 p-0">
-                {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Search className="w-3 h-3" />}
-              </Button>
-            </form>
-          </div>
+      {/* Upload only — shown after opting in */}
+      {(doubleSided || backUrl) && !backUrl && (
+        <div className="flex justify-center">
+          <label className="flex flex-col items-center gap-3 px-8 py-6 border-2 border-dashed border-primary/40 hover:border-primary rounded-xl cursor-pointer transition-all bg-primary/5 hover:bg-primary/10 group">
+            <Upload className="w-8 h-8 text-primary group-hover:scale-110 transition-transform" />
+            <span className="font-body text-sm font-semibold text-foreground">Upload Your Back Image</span>
+            <span className="font-body text-xs text-muted-foreground">JPG, PNG, TIFF</span>
+            <input type="file" accept="image/*" className="hidden" onChange={handleUpload} />
+          </label>
+        </div>
+      )}
 
-          {loading && <Loader2 className="w-5 h-5 animate-spin text-primary mx-auto" />}
-
-          {photos.length > 0 && !loading && (
-            <div className="grid grid-cols-4 md:grid-cols-6 gap-1.5">
-              {photos.map((photo) => (
-                <div
-                  key={photo.id}
-                  className={`aspect-[4/3] rounded overflow-hidden cursor-pointer border-2 transition-all ${
-                    backImage?.url === photo.large ? "border-primary ring-1 ring-primary" : "border-transparent hover:border-primary/40"
-                  }`}
-                  onClick={() => { onSelectBack({ url: photo.large, photographer: photo.artist, alt: photo.alt }); onToggleDouble(true); }}
-                >
-                  <img src={photo.medium} alt={photo.alt} className="w-full h-full object-cover" loading="lazy" />
-                </div>
-              ))}
-            </div>
-          )}
+      {(doubleSided || backUrl) && backUrl && (
+        <div className="flex justify-center">
+          <label className="flex items-center gap-2 px-4 py-2 border border-dashed border-border hover:border-primary/50 rounded-lg cursor-pointer transition-colors text-sm">
+            <Upload className="w-4 h-4 text-primary" />
+            <span className="font-body text-foreground">Change Back Image</span>
+            <input type="file" accept="image/*" className="hidden" onChange={handleUpload} />
+          </label>
         </div>
       )}
 

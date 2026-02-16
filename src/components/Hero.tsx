@@ -1,8 +1,24 @@
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Star, Shield, Truck, Award, Clock } from "lucide-react";
 import heroImg from "@/assets/hero-lifestyle.jpg";
 
+const rotatingWords = ["Gallery", "Statement", "Experience", "Masterpiece", "Showroom"];
+
 const Hero = () => {
+  const [wordIndex, setWordIndex] = useState(0);
+  const [fade, setFade] = useState(true);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setFade(false);
+      setTimeout(() => {
+        setWordIndex((prev) => (prev + 1) % rotatingWords.length);
+        setFade(true);
+      }, 400);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
   return (
     <section className="relative min-h-screen flex items-end pb-20 md:pb-28 overflow-hidden">
       {/* Background */}
@@ -31,8 +47,11 @@ const Hero = () => {
             <span className="text-foreground">Turn Any Room Into</span>
             <br />
             <span className="text-foreground">a </span>
-            <span className="text-gradient-gold italic">Gallery</span>
-            <span className="text-foreground"> — In Just 48 Hours</span>
+            <span
+              className={`text-gradient-gold italic inline-block transition-all duration-400 ${fade ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}`}
+            >
+              {rotatingWords[wordIndex]}
+            </span>
           </h1>
 
           <p className="text-base md:text-lg text-foreground font-body font-light max-w-lg mb-10 leading-relaxed tracking-wide">

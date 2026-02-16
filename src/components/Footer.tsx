@@ -69,7 +69,7 @@ const Footer = () => {
             <ul className="space-y-2 text-sm text-muted-foreground font-body">
               <li>Handcrafted in USA</li>
               <li>Lifetime Guarantee</li>
-              <li>Complimentary Shipping $150+</li>
+              <li>Fast Nationwide Shipping</li>
               <li>White-Glove Delivery</li>
             </ul>
           </div>

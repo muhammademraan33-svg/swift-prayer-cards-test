@@ -334,6 +334,55 @@ const StepSize = ({ imageUrl, sizeIdx, material, companionPrint, imageNaturalWid
             );
           })}
 
+          {/* Bundle / Add Another prompt for smaller sizes */}
+          {sizeIdx < 10 && (
+            <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 flex items-center justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-display font-bold text-foreground">
+                  {sizeIdx < DESK_SHELF_MAX_IDX ? "Pair it — desk prints look great in sets!" : "Add a matching piece for a gallery wall"}
+                </p>
+                <p className="text-[10px] text-muted-foreground font-body mt-0.5">
+                  {sizeIdx < DESK_SHELF_MAX_IDX
+                    ? "Add a companion print at the same size right next to it."
+                    : "Create a stunning arrangement with multiple sizes."}
+                </p>
+              </div>
+              {sizeIdx < DESK_SHELF_MAX_IDX ? (
+                !hasCompanion ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="shrink-0 border-primary/40 text-primary hover:bg-primary/10 gap-1.5"
+                    onClick={addCompanion}
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span className="text-xs font-body">Add Print</span>
+                  </Button>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="shrink-0 text-destructive hover:bg-destructive/10 gap-1"
+                    onClick={removeCompanion}
+                  >
+                    <X className="w-3.5 h-3.5" />
+                    <span className="text-xs font-body">Remove</span>
+                  </Button>
+                )
+              ) : (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="shrink-0 border-primary/40 text-primary hover:bg-primary/10 gap-1.5"
+                  onClick={addCompanion}
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span className="text-xs font-body">Add Print</span>
+                </Button>
+              )}
+            </div>
+          )}
+
           {/* Low quality warning */}
           {isLowQuality && (
             <div className="flex items-start gap-2 bg-destructive/10 border border-destructive/30 rounded-lg px-4 py-3 mt-3">

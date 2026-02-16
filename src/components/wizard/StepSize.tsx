@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useMemo } from "react";
 import { standardSizes, calcMetalPrice, calcAcrylicPrice, metalOptions } from "@/lib/pricing";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -141,8 +141,8 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
     }
   };
 
-  // Get data for the currently viewing print
-  const getCurrentPrintData = (): PrintData => {
+  // Get data for the currently viewing print (memoized to prevent recomputation)
+  const currentPrintData = useMemo((): PrintData => {
     if (viewingPrintIndex === 0 || !additionalPrints[viewingPrintIndex - 1]) {
       // Always use main image for Print 1 or if additional print doesn't exist
       return {
@@ -154,35 +154,34 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
         naturalWidth: imageNaturalWidth,
         naturalHeight: imageNaturalHeight,
       };
-    } else {
-      const additionalPrint = additionalPrints[viewingPrintIndex - 1];
-      if (!additionalPrint) {
-        return {
-          imageUrl: "",
-          rotation: 0,
-          zoom: 1,
-          panX: 0,
-          panY: 0,
-          naturalWidth: 0,
-          naturalHeight: 0,
-        };
-      }
+    }
+    
+    const additionalPrint = additionalPrints[viewingPrintIndex - 1];
+    if (!additionalPrint) {
       return {
-        imageUrl: additionalPrint.uploadedFile || additionalPrint.image?.url || "",
-        rotation: additionalPrint.rotation,
-        zoom: additionalPrint.zoom,
-        panX: additionalPrint.panX,
-        panY: additionalPrint.panY,
-        naturalWidth: imageNaturalWidth, // Use main image dimensions for now
-        naturalHeight: imageNaturalHeight,
+        imageUrl: "",
+        rotation: 0,
+        zoom: 1,
+        panX: 0,
+        panY: 0,
+        naturalWidth: 0,
+        naturalHeight: 0,
       };
     }
-  };
-
-  const currentPrintData = getCurrentPrintData();
+    
+    return {
+      imageUrl: additionalPrint.uploadedFile || additionalPrint.image?.url || "",
+      rotation: additionalPrint.rotation,
+      zoom: additionalPrint.zoom,
+      panX: additionalPrint.panX,
+      panY: additionalPrint.panY,
+      naturalWidth: imageNaturalWidth,
+      naturalHeight: imageNaturalHeight,
+    };
+  }, [viewingPrintIndex, additionalPrints, imageUrl, rotation, zoom, panX, panY, imageNaturalWidth, imageNaturalHeight]);
 
   // Update transformations for the currently viewing print
-  const handleRotateCurrentPrint = (deg: number) => {
+  const handleRotateCurrentPrint = useCallback((deg: number) => {
     if (viewingPrintIndex === 0) {
       onRotate(deg);
     } else {
@@ -192,9 +191,9 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
         onAdditionalPrints(updated);
       }
     }
-  };
+  }, [viewingPrintIndex, onRotate, additionalPrints, onAdditionalPrints]);
 
-  const handleZoomCurrentPrint = (z: number) => {
+  const handleZoomCurrentPrint = useCallback((z: number) => {
     if (viewingPrintIndex === 0) {
       onZoom(z);
     } else {
@@ -204,9 +203,9 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
         onAdditionalPrints(updated);
       }
     }
-  };
+  }, [viewingPrintIndex, onZoom, additionalPrints, onAdditionalPrints]);
 
-  const handlePanCurrentPrint = (x: number, y: number) => {
+  const handlePanCurrentPrint = useCallback((x: number, y: number) => {
     if (viewingPrintIndex === 0) {
       onPan(x, y);
     } else {
@@ -216,7 +215,7 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
         onAdditionalPrints(updated);
       }
     }
-  };
+  }, [viewingPrintIndex, onPan, additionalPrints, onAdditionalPrints]);
 
   const totalPrice = (basePricePerUnit: number) => basePricePerUnit * quantity;
 

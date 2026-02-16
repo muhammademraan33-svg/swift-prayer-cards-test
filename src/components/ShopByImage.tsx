@@ -10,7 +10,7 @@ import {
   ArrowRight,
   Camera,
 } from "lucide-react";
-import { searchArt, type NormalizedPhoto } from "@/lib/artApi";
+import { searchPhotos, type NormalizedPhoto } from "@/lib/artApi";
 
 const curatedQueries = [
   "Impressionism",
@@ -38,7 +38,7 @@ const ShopByImage = () => {
     setSearched(true);
     setSelectedPhoto(null);
     try {
-      setPhotos(await searchArt(searchQuery, 24));
+      setPhotos(await searchPhotos(searchQuery, 24));
     } catch (err) {
       console.error("Art search error:", err);
       setPhotos([]);
@@ -74,7 +74,7 @@ const ShopByImage = () => {
             Discover Your Next Masterpiece
           </h2>
           <p className="text-muted-foreground font-body mt-4 max-w-lg mx-auto tracking-wide">
-            Browse thousands of museum-quality, public domain artworks. Select any piece and
+            Browse millions of museum-worthy photographs. Select any image and
             we'll render it on your chosen medium.
           </p>
         </div>
@@ -204,16 +204,10 @@ const ShopByImage = () => {
 
         {/* Attribution */}
         <p className="text-center text-[10px] text-muted-foreground/50 font-body mt-8">
-          Artworks from the{" "}
-          <a
-            href="https://www.artic.edu"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="underline hover:text-primary"
-          >
-            Art Institute of Chicago
-          </a>{" "}
-          — public domain
+          Photos provided by{" "}
+          <a href="https://www.pexels.com" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">Pexels</a>
+          {" & "}
+          <a href="https://pixabay.com" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">Pixabay</a>
         </p>
       </div>
     </section>

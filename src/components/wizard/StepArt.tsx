@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Search, Loader2, Camera, Upload, ArrowRight } from "lucide-react";
 import type { SelectedImage } from "./types";
-import { searchArt, getCuratedArt, type NormalizedPhoto } from "@/lib/artApi";
+import { searchPhotos, getCuratedPhotos, type NormalizedPhoto } from "@/lib/artApi";
 
 const genres = ["Impressionism", "Landscape", "Portrait", "Abstract", "Still Life", "Sculpture", "Japanese", "Renaissance", "Modern Art", "Photography"];
 
@@ -28,7 +28,7 @@ const StepArt = ({ image, uploadedFile, onSelect, onUpload, onNext }: Props) => 
     setLoading(true);
     setSearched(true);
     try {
-      setPhotos(await searchArt(q, 20));
+      setPhotos(await searchPhotos(q, 20));
     } catch {
       setPhotos([]);
     } finally {
@@ -40,7 +40,7 @@ const StepArt = ({ image, uploadedFile, onSelect, onUpload, onNext }: Props) => 
     const loadCurated = async () => {
       setLoading(true);
       try {
-        setPhotos(await getCuratedArt(20));
+        setPhotos(await getCuratedPhotos(20));
       } catch {
         setPhotos([]);
       } finally {
@@ -179,7 +179,7 @@ const StepArt = ({ image, uploadedFile, onSelect, onUpload, onNext }: Props) => 
       )}
 
       <p className="text-center text-[10px] text-muted-foreground/50 font-body">
-        Artworks from the <a href="https://www.artic.edu" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">Art Institute of Chicago</a> — public domain
+        Photos by <a href="https://www.pexels.com" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">Pexels</a> & <a href="https://pixabay.com" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">Pixabay</a>
       </p>
     </div>
   );

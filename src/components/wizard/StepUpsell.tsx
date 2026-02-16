@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { ArrowRight, ArrowLeft, Search, Loader2, Upload, RotateCw } from "lucide-react";
 import { standardSizes, calcMetalPrice, metalOptions } from "@/lib/pricing";
 import type { SelectedImage, MaterialChoice } from "./types";
-import { searchArt, getCuratedArt, type NormalizedPhoto } from "@/lib/artApi";
+import { searchPhotos, getCuratedPhotos, type NormalizedPhoto } from "@/lib/artApi";
 
 interface Props {
   frontImage: string;
@@ -38,7 +38,7 @@ const StepUpsell = ({ frontImage, backImage, backUploadedFile, doubleSided, mate
     const loadCurated = async () => {
       setLoading(true);
       try {
-        setPhotos(await getCuratedArt(12));
+        setPhotos(await getCuratedPhotos(12));
       } catch { setPhotos([]); }
       finally { setLoading(false); }
     };
@@ -49,7 +49,7 @@ const StepUpsell = ({ frontImage, backImage, backUploadedFile, doubleSided, mate
     if (!q.trim()) return;
     setLoading(true);
     try {
-      setPhotos(await searchArt(q, 12));
+      setPhotos(await searchPhotos(q, 12));
     } catch { setPhotos([]); }
     finally { setLoading(false); }
   }, []);

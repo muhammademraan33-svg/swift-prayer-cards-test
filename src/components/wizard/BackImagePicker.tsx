@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Search, Loader2, Upload, ImagePlus, X } from "lucide-react";
 import type { SelectedImage } from "./types";
-import { searchArt, getCuratedArt, type NormalizedPhoto } from "@/lib/artApi";
+import { searchPhotos, getCuratedPhotos, type NormalizedPhoto } from "@/lib/artApi";
 
 interface Props {
   backImage: SelectedImage | null;
@@ -24,7 +24,7 @@ const BackImagePicker = ({ backImage, backUploadedFile, upsellCost, onSelectBack
     const loadCurated = async () => {
       setLoading(true);
       try {
-        setPhotos(await getCuratedArt(8));
+        setPhotos(await getCuratedPhotos(8));
       } catch { setPhotos([]); }
       finally { setLoading(false); }
     };
@@ -35,7 +35,7 @@ const BackImagePicker = ({ backImage, backUploadedFile, upsellCost, onSelectBack
     if (!q.trim()) return;
     setLoading(true);
     try {
-      setPhotos(await searchArt(q, 8));
+      setPhotos(await searchPhotos(q, 8));
     } catch { setPhotos([]); }
     finally { setLoading(false); }
   }, []);

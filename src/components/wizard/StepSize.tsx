@@ -9,6 +9,9 @@ import shelfBackdrop from "@/assets/shelf-backdrop.jpg";
 import acrylicImg from "@/assets/acrylic-print.jpg";
 import metalImg from "@/assets/metal-print.jpg";
 import metalMuseumImg from "@/assets/metal-museum-print.jpg";
+import cornerLuxMetal from "@/assets/corner-lux-metal.jpg";
+import cornerDesignerMetal from "@/assets/corner-designer-metal.jpg";
+import cornerAcrylic from "@/assets/corner-acrylic.jpg";
 import type { MaterialChoice, CompanionPrint } from "./types";
 
 interface Props {
@@ -23,10 +26,10 @@ interface Props {
   onBack: () => void;
 }
 
-const materialOpts: { id: MaterialChoice; label: string; subtitle: string; img: string; icon: React.ReactNode }[] = [
-  { id: "metal-designer", label: "Metal Designer", subtitle: '.040" Lightweight', img: metalImg, icon: <Gem className="w-4 h-4" /> },
-  { id: "metal-museum", label: "Metal Museum", subtitle: '.080" Heirloom', img: metalMuseumImg, icon: <Shield className="w-4 h-4" /> },
-  { id: "acrylic", label: "Acrylic", subtitle: "Vivid & Luminous", img: acrylicImg, icon: <Sparkles className="w-4 h-4" /> },
+const materialOpts: { id: MaterialChoice; label: string; subtitle: string; img: string; cornerImg: string; icon: React.ReactNode }[] = [
+  { id: "metal-designer", label: "Lux Metal", subtitle: '.040" Lightweight', img: metalImg, cornerImg: cornerLuxMetal, icon: <Gem className="w-4 h-4" /> },
+  { id: "metal-museum", label: "Designer Metal", subtitle: '.080" Heirloom', img: metalMuseumImg, cornerImg: cornerDesignerMetal, icon: <Shield className="w-4 h-4" /> },
+  { id: "acrylic", label: "Acrylic", subtitle: "Vivid & Luminous", img: acrylicImg, cornerImg: cornerAcrylic, icon: <Sparkles className="w-4 h-4" /> },
 ];
 
 const sizeGroups = [
@@ -358,6 +361,9 @@ const StepSize = ({ imageUrl, sizeIdx, material, companionPrint, onSelect, onSel
                       <Check className="w-3 h-3 text-primary-foreground" />
                     </div>
                   )}
+                  <div className="absolute bottom-1 left-1 w-10 h-10 rounded border border-border/50 overflow-hidden shadow-md">
+                    <img src={mat.cornerImg} alt={`${mat.label} corner detail`} className="w-full h-full object-cover" />
+                  </div>
                 </div>
                 <div className="p-2 text-center">
                   <div className="flex items-center justify-center gap-1 text-primary">

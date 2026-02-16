@@ -6,6 +6,9 @@ import { ArrowRight, ArrowLeft, Check, RotateCw, Shield, Sparkles, Gem } from "l
 import type { MaterialChoice } from "./types";
 import acrylicImg from "@/assets/acrylic-print.jpg";
 import metalImg from "@/assets/metal-print.jpg";
+import cornerLuxMetal from "@/assets/corner-lux-metal.jpg";
+import cornerDesignerMetal from "@/assets/corner-designer-metal.jpg";
+import cornerAcrylic from "@/assets/corner-acrylic.jpg";
 
 interface Props {
   imageUrl: string;
@@ -16,29 +19,32 @@ interface Props {
   onBack: () => void;
 }
 
-const materials: { id: MaterialChoice; label: string; subtitle: string; img: string; features: string[]; icon: React.ReactNode; metalIdx?: number }[] = [
+const materials: { id: MaterialChoice; label: string; subtitle: string; img: string; cornerImg: string; features: string[]; icon: React.ReactNode; metalIdx?: number }[] = [
   {
     id: "acrylic",
     label: "Acrylic",
     subtitle: "Vivid & Luminous",
     img: acrylicImg,
+    cornerImg: cornerAcrylic,
     features: ["Face-mounted to 1/4\" acrylic", "Extraordinary depth & vibrancy", "UV-resistant archival inks", "Gallery-ready polished edges"],
     icon: <Sparkles className="w-5 h-5" />,
   },
   {
     id: "metal-designer",
-    label: "Metal Designer",
+    label: "Lux Metal",
     subtitle: '.040" — Lightweight Elegance',
     img: metalImg,
+    cornerImg: cornerLuxMetal,
     features: ["Ultra-thin .040\" aluminum", "Dye-sublimation infused", "Scratch & fade resistant", "Lightweight — easy to hang"],
     icon: <Gem className="w-5 h-5" />,
     metalIdx: 0,
   },
   {
     id: "metal-museum",
-    label: "Metal Museum",
+    label: "Designer Metal",
     subtitle: '.080" — Heirloom Grade',
     img: metalImg,
+    cornerImg: cornerDesignerMetal,
     features: ["Heavy-gauge .080\" aluminum", "Museum-grade archival quality", "Superior color depth", "Rigid & substantial feel"],
     icon: <Shield className="w-5 h-5" />,
     metalIdx: 2,
@@ -79,7 +85,6 @@ const StepMaterial = ({ imageUrl, sizeIdx, material, onSelect, onNext, onBack }:
               }`}
               onClick={() => onSelect(mat.id)}
             >
-              {/* Image preview */}
               <div className="aspect-[4/3] overflow-hidden relative">
                 <img src={mat.img} alt={mat.label} className="w-full h-full object-cover" />
                 {isSelected && (
@@ -87,8 +92,11 @@ const StepMaterial = ({ imageUrl, sizeIdx, material, onSelect, onNext, onBack }:
                     <Check className="w-4 h-4 text-primary-foreground" />
                   </div>
                 )}
+                <div className="absolute bottom-3 left-3 w-14 h-14 rounded border border-border/50 overflow-hidden shadow-lg">
+                  <img src={mat.cornerImg} alt={`${mat.label} corner detail`} className="w-full h-full object-cover" />
+                </div>
                 {isMetal && (
-                  <div className="absolute bottom-3 left-3">
+                  <div className="absolute bottom-3 right-3">
                     <Badge className="bg-card/80 backdrop-blur-sm text-foreground border-0 font-body text-[10px] gap-1">
                       <RotateCw className="w-3 h-3" /> Flip for 2 looks
                     </Badge>

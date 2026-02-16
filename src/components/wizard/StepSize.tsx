@@ -143,7 +143,8 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
 
   // Get data for the currently viewing print
   const getCurrentPrintData = (): PrintData => {
-    if (viewingPrintIndex === 0) {
+    if (viewingPrintIndex === 0 || !additionalPrints[viewingPrintIndex - 1]) {
+      // Always use main image for Print 1 or if additional print doesn't exist
       return {
         imageUrl,
         rotation,
@@ -340,12 +341,12 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
                     width: "100%"
                   }}
                 >
-                  {currentPrintData.imageUrl ? (
+                  {(currentPrintData.imageUrl || imageUrl) ? (
                     <>
                       {/* Full background image (dimmed/blurred to show crop boundaries) - shows full image extent */}
                       <div className="absolute inset-0 overflow-hidden">
                         <img 
-                          src={currentPrintData.imageUrl} 
+                          src={currentPrintData.imageUrl || imageUrl} 
                           alt="Print preview background" 
                           className="absolute inset-0 w-full h-full object-cover"
                           draggable={false}
@@ -372,7 +373,7 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
                         {/* Transformed image inside crop boundary - this is what will be printed */}
                         <div className="absolute inset-0 overflow-hidden">
                           <img 
-                            src={currentPrintData.imageUrl} 
+                            src={currentPrintData.imageUrl || imageUrl} 
                             alt="Print preview" 
                             className="absolute inset-0 w-full h-full object-cover select-none pointer-events-none" 
                             draggable={false}
@@ -411,7 +412,7 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
                   )}
                   
                   {/* Transform controls - Made more prominent */}
-                  {currentPrintData.imageUrl && (
+                  {(currentPrintData.imageUrl || imageUrl) && (
                     <div className="absolute bottom-3 right-3 z-50">
                       <div className="bg-card/95 backdrop-blur-sm border-2 border-primary/30 rounded-xl p-2 shadow-2xl">
                         <p className="text-[10px] font-body font-semibold text-primary mb-2 text-center flex items-center gap-1 justify-center">

@@ -53,35 +53,10 @@ const StepMounting = ({ sizeIdx, standOff, standOffQty, roundedCorners, onStandO
           Wall Mounting
         </h3>
 
-        {/* No Holes option */}
-        <Card
-          className={`overflow-hidden cursor-pointer transition-all duration-200 mb-3 ${
-            standOff === "none" ? "ring-2 ring-primary border-primary" : "border-border hover:border-primary/40"
-          }`}
-          onClick={() => onStandOff("none")}
-        >
-          <div className="flex items-center gap-3 p-3">
-            <div className="w-10 h-10 bg-secondary rounded flex items-center justify-center shrink-0">
-              <span className="text-lg text-muted-foreground">✕</span>
-            </div>
-            <div className="flex-1">
-              <p className="text-xs font-display font-bold text-foreground">No Holes</p>
-              <p className="text-[9px] text-muted-foreground font-body">Print only — mount your way</p>
-            </div>
-            {standOff === "none" && (
-              <div className="w-5 h-5 bg-primary rounded-full flex items-center justify-center shrink-0">
-                <Check className="w-3 h-3 text-primary-foreground" />
-              </div>
-            )}
-            <p className="text-sm font-display font-bold text-primary shrink-0">Included</p>
-          </div>
-        </Card>
-
-        {/* Silver & Black side by side */}
-        <div className="grid grid-cols-2 gap-3">
-          {[standOptions[1], standOptions[2]].map((opt) => {
+        <div className="grid grid-cols-3 gap-3">
+          {standOptions.map((opt) => {
             const isSelected = standOff === opt.id;
-            const optPrice = opt.id === "silver" ? qty * addOns.standOffSilver : qty * addOns.standOffBlack;
+            const optPrice = opt.id === "none" ? 0 : opt.id === "silver" ? qty * addOns.standOffSilver : qty * addOns.standOffBlack;
             return (
               <Card
                 key={opt.id}
@@ -90,11 +65,17 @@ const StepMounting = ({ sizeIdx, standOff, standOffQty, roundedCorners, onStandO
                 }`}
                 onClick={() => {
                   onStandOff(opt.id);
-                  onStandOffQty(qty);
+                  if (opt.id !== "none") onStandOffQty(qty);
                 }}
               >
-                <div className="aspect-[4/3] relative overflow-hidden">
-                  <img src={opt.img} alt={opt.label} className="w-full h-full object-cover" />
+                <div className="aspect-[4/3] relative overflow-hidden bg-secondary">
+                  {opt.img ? (
+                    <img src={opt.img} alt={opt.label} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <span className="text-3xl text-muted-foreground">✕</span>
+                    </div>
+                  )}
                   {isSelected && (
                     <div className="absolute top-1.5 right-1.5 w-5 h-5 bg-primary rounded-full flex items-center justify-center">
                       <Check className="w-3 h-3 text-primary-foreground" />
@@ -105,7 +86,7 @@ const StepMounting = ({ sizeIdx, standOff, standOffQty, roundedCorners, onStandO
                   <p className="text-xs font-display font-bold text-foreground">{opt.label}</p>
                   <p className="text-[9px] text-muted-foreground font-body">{opt.desc}</p>
                   <p className="text-sm font-display font-bold text-gradient-gold mt-0.5">
-                    ${optPrice.toFixed(0)} <span className="text-[9px] text-muted-foreground font-body font-normal">({qty} pcs)</span>
+                    {opt.id === "none" ? "Included" : `$${optPrice.toFixed(0)}`}
                   </p>
                 </div>
               </Card>

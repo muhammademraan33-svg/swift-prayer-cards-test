@@ -31,8 +31,8 @@ const slides = [
   },
   {
     image: metalOffice,
-    label: "Gallery Wall",
-    caption: "A mix of acrylic and metal prints with stand-off hardware creates a curated gallery wall in a private study.",
+    label: "Family Gallery Wall",
+    caption: "Frameless family photos on acrylic and metal with stand-off mounts create a deeply personal gallery wall.",
   },
 ];
 

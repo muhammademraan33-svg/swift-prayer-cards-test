@@ -12,7 +12,7 @@ const slides = [
   {
     image: metalLiving,
     label: "Grand Scale",
-    caption: "A grand wedding ballroom wall awaiting your vision — imagine your art at monumental scale.",
+    caption: "Turn your wedding portrait into a grand-scale metal print — timeless elegance for your forever moment.",
   },
   {
     image: acrylicDining,

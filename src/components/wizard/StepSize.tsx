@@ -283,7 +283,7 @@ const StepSize = ({ imageUrl, sizeIdx, material, companionPrint, onSelect, onSel
 
             return (
               <div key={group.label}>
-                <h3 className="text-[10px] font-body font-semibold tracking-[0.2em] uppercase text-primary mb-1.5">
+                <h3 className="text-xs font-body font-semibold tracking-[0.2em] uppercase text-primary mb-1.5">
                   {group.label}
                 </h3>
                 <div className="flex gap-1.5 flex-wrap">
@@ -305,7 +305,7 @@ const StepSize = ({ imageUrl, sizeIdx, material, companionPrint, onSelect, onSel
                           }
                         }}
                       >
-                        <p className="text-[11px] font-display font-bold text-foreground leading-tight whitespace-nowrap">{size.label}</p>
+                        <p className="text-xs font-display font-bold text-foreground leading-tight whitespace-nowrap">{size.label}</p>
                       </Card>
                     );
                   })}
@@ -318,7 +318,7 @@ const StepSize = ({ imageUrl, sizeIdx, material, companionPrint, onSelect, onSel
 
       {/* Material selection — full width below the two-column grid */}
       <div>
-        <h3 className="text-[10px] font-body font-semibold tracking-[0.2em] uppercase text-primary mb-1.5">
+        <h3 className="text-xs font-body font-semibold tracking-[0.2em] uppercase text-primary mb-1.5">
           Choose Your Medium
         </h3>
         <div className="grid grid-cols-3 gap-3">
@@ -365,10 +365,10 @@ const StepSize = ({ imageUrl, sizeIdx, material, companionPrint, onSelect, onSel
                     {mat.icon}
                     <span className="text-xs font-display font-bold text-foreground">{mat.label}</span>
                   </div>
-                  <p className="text-[9px] text-muted-foreground font-body text-center">{mat.subtitle}</p>
+                  <p className="text-[10px] text-muted-foreground font-body text-center">{mat.subtitle}</p>
                   <ul className="mt-1.5 space-y-0.5">
                     {mat.benefits.map((b) => (
-                      <li key={b} className="flex items-start gap-1 text-[9px] text-muted-foreground font-body">
+                      <li key={b} className="flex items-start gap-1 text-[10px] text-muted-foreground font-body">
                         <Check className="w-3 h-3 text-primary shrink-0 mt-[1px]" />
                         <span>{b}</span>
                       </li>
@@ -376,7 +376,7 @@ const StepSize = ({ imageUrl, sizeIdx, material, companionPrint, onSelect, onSel
                   </ul>
                   <p className="text-sm font-display font-bold text-gradient-gold mt-1.5 text-center">
                     ${totalPrice}
-                    {hasCompanion && <span className="text-[9px] text-muted-foreground font-body ml-1">(2 prints)</span>}
+                    {hasCompanion && <span className="text-[10px] text-muted-foreground font-body ml-1">(2 prints)</span>}
                   </p>
                 </div>
               </Card>

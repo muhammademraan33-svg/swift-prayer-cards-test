@@ -48,7 +48,7 @@ const Navbar = () => {
             <li key={item.href}>
               <button
                 onClick={() => scrollTo(item.href)}
-                className="text-[11px] font-body tracking-[0.2em] text-foreground/60 hover:text-primary transition-colors duration-300 uppercase"
+                className="text-xs font-body tracking-[0.2em] text-foreground/60 hover:text-primary transition-colors duration-300 uppercase"
               >
                 {item.label}
               </button>
@@ -58,7 +58,7 @@ const Navbar = () => {
 
         <Button
           size="sm"
-          className="hidden lg:inline-flex bg-gradient-gold text-primary-foreground font-body font-semibold text-[10px] tracking-[0.2em] hover:opacity-90 px-6"
+          className="hidden lg:inline-flex bg-gradient-gold text-primary-foreground font-body font-semibold text-xs tracking-[0.2em] hover:opacity-90 px-6"
           onClick={() => scrollTo("#calculator")}
         >
           COMMISSION A PIECE

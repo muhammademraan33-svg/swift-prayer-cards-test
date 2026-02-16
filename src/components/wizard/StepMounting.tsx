@@ -42,14 +42,14 @@ const StepMounting = ({ sizeIdx, standOff, standOffQty, roundedCorners, onStandO
         <h2 className="text-2xl md:text-3xl font-display font-bold text-foreground">
           Finishing Touches
         </h2>
-        <p className="text-muted-foreground font-body mt-1 tracking-wide text-xs">
+        <p className="text-muted-foreground font-body mt-1 tracking-wide text-sm">
           Select your mounting hardware and corner finish.
         </p>
       </div>
 
       {/* Stand-off options */}
       <div>
-        <h3 className="text-[10px] font-body font-semibold tracking-[0.2em] uppercase text-primary mb-1.5">
+        <h3 className="text-xs font-body font-semibold tracking-[0.2em] uppercase text-primary mb-1.5">
           Wall Mounting
         </h3>
 
@@ -83,8 +83,8 @@ const StepMounting = ({ sizeIdx, standOff, standOffQty, roundedCorners, onStandO
                   )}
                 </div>
                 <div className="p-1.5 text-center">
-                  <p className="text-[11px] font-display font-bold text-foreground">{opt.label}</p>
-                  <p className="text-[8px] text-muted-foreground font-body">{opt.desc}</p>
+                  <p className="text-xs font-display font-bold text-foreground">{opt.label}</p>
+                  <p className="text-[10px] text-muted-foreground font-body">{opt.desc}</p>
                   <p className="text-xs font-display font-bold text-gradient-gold mt-0.5">
                     {opt.id === "none" ? "Included" : `$${optPrice.toFixed(0)}`}
                   </p>

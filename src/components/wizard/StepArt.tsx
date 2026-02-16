@@ -116,7 +116,7 @@ const StepArt = ({ image, uploadedFile, onSelect, onUpload, onNext }: Props) => 
           <input type="file" accept="image/*" className="hidden" onChange={handleUpload} />
         </label>
 
-        <span className="text-[9px] text-muted-foreground font-body tracking-[0.2em] uppercase shrink-0">or</span>
+        <span className="text-xs text-muted-foreground font-body tracking-[0.2em] uppercase shrink-0">or</span>
 
         <form onSubmit={(e) => { e.preventDefault(); doSearch(query); }} className="flex gap-1.5 flex-1">
           <div className="relative flex-1">
@@ -140,7 +140,7 @@ const StepArt = ({ image, uploadedFile, onSelect, onUpload, onNext }: Props) => 
           <Badge
             key={tag}
             variant="outline"
-            className="border-border text-muted-foreground hover:border-primary hover:text-primary cursor-pointer transition-colors font-body tracking-wider text-[9px] py-0 px-1.5"
+            className="border-border text-muted-foreground hover:border-primary hover:text-primary cursor-pointer transition-colors font-body tracking-wider text-xs py-0.5 px-2"
             onClick={() => { setQuery(tag); doSearch(tag); }}
           >
             {tag}
@@ -203,8 +203,8 @@ const StepArt = ({ image, uploadedFile, onSelect, onUpload, onNext }: Props) => 
             <img src={previewUrl} alt="Selected" className="w-16 h-11 object-cover rounded" />
             <div className="flex-1">
               <p className="text-foreground font-display font-semibold text-sm">Your Artwork</p>
-              {image && <p className="text-[10px] text-muted-foreground font-body">By {image.photographer}</p>}
-              {uploadedFile && <p className="text-[10px] text-muted-foreground font-body">Your uploaded image</p>}
+              {image && <p className="text-xs text-muted-foreground font-body">By {image.photographer}</p>}
+              {uploadedFile && <p className="text-xs text-muted-foreground font-body">Your uploaded image</p>}
             </div>
             <Button onClick={onNext} className="bg-gradient-gold text-primary-foreground font-body font-semibold hover:opacity-90 gap-2 h-10 px-6 text-sm">
               Choose Size <ArrowRight className="w-4 h-4" />
@@ -213,7 +213,7 @@ const StepArt = ({ image, uploadedFile, onSelect, onUpload, onNext }: Props) => 
         </div>
       )}
 
-      <p className="text-center text-[8px] text-muted-foreground/50 font-body">
+      <p className="text-center text-[10px] text-muted-foreground/50 font-body">
         Photos by <a href="https://www.pexels.com" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">Pexels</a> & <a href="https://pixabay.com" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">Pixabay</a>
       </p>
     </div>

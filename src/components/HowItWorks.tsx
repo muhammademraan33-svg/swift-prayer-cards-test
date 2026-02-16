@@ -26,7 +26,7 @@ const HowItWorks = () => {
     <section id="how-it-works" className="py-14 md:py-20 px-6">
       <div className="max-w-5xl mx-auto">
         <div className="text-center mb-10">
-          <p className="text-[10px] tracking-[0.4em] uppercase text-primary font-body mb-2">
+          <p className="text-xs tracking-[0.4em] uppercase text-primary font-body mb-2">
             The Process
           </p>
           <h2 className="text-2xl md:text-3xl font-display font-bold text-foreground">

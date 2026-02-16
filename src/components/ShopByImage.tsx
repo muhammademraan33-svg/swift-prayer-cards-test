@@ -102,7 +102,7 @@ const ShopByImage = () => {
     <section id="shop-by-image" className="py-28 px-6">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-12">
-          <p className="text-[10px] tracking-[0.4em] uppercase text-primary font-body mb-4">
+          <p className="text-xs tracking-[0.4em] uppercase text-primary font-body mb-4">
             Curated Gallery
           </p>
           <h2 className="text-4xl md:text-5xl font-display font-bold text-foreground">
@@ -140,7 +140,7 @@ const ShopByImage = () => {
             <Badge
               key={tag}
               variant="outline"
-              className="border-border text-muted-foreground hover:border-primary hover:text-primary cursor-pointer transition-colors duration-300 font-body tracking-wider text-[10px]"
+              className="border-border text-muted-foreground hover:border-primary hover:text-primary cursor-pointer transition-colors duration-300 font-body tracking-wider text-xs"
               onClick={() => { setQuery(tag); doSearch(tag); }}
             >
               {tag}
@@ -244,7 +244,7 @@ const ShopByImage = () => {
         )}
 
         {/* Attribution */}
-        <p className="text-center text-[10px] text-muted-foreground/50 font-body mt-8">
+        <p className="text-center text-xs text-muted-foreground/50 font-body mt-8">
           Photos provided by{" "}
           <a href="https://www.pexels.com" target="_blank" rel="noopener noreferrer" className="underline hover:text-primary">Pexels</a>
           {" & "}

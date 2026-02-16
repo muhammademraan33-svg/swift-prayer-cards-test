@@ -79,7 +79,7 @@ const StepUpsell = ({ frontImage, backImage, backUploadedFile, doubleSided, mate
           <div className="w-28 h-20 sm:w-36 sm:h-28 rounded-lg overflow-hidden border border-primary/30 shadow-lg">
             <img src={frontImage} alt="Front" className="w-full h-full object-cover" />
           </div>
-          <p className="text-[10px] text-primary font-body mt-1.5 font-semibold tracking-wider uppercase">Front</p>
+          <p className="text-xs text-primary font-body mt-1.5 font-semibold tracking-wider uppercase">Front</p>
         </div>
         <RotateCw className="w-5 h-5 text-primary shrink-0" />
         <div className="text-center">
@@ -89,10 +89,10 @@ const StepUpsell = ({ frontImage, backImage, backUploadedFile, doubleSided, mate
             </div>
           ) : (
             <div className="w-28 h-20 sm:w-36 sm:h-28 rounded-lg border-2 border-dashed border-border flex items-center justify-center bg-secondary/50">
-              <p className="text-[10px] text-muted-foreground font-body">Your 2nd image</p>
+              <p className="text-xs text-muted-foreground font-body">Your 2nd image</p>
             </div>
           )}
-          <p className="text-[10px] text-muted-foreground font-body mt-1.5 font-semibold tracking-wider uppercase">Back</p>
+          <p className="text-xs text-muted-foreground font-body mt-1.5 font-semibold tracking-wider uppercase">Back</p>
         </div>
       </div>
 

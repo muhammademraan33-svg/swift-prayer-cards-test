@@ -123,7 +123,7 @@ function ItemBreakdown({ item, title, imageUrl }: { item: CartItem | WizardState
       {/* Line items */}
       <div className="ml-13 space-y-0.5">
         {lines.map((line, i) => (
-          <div key={i} className="flex justify-between text-[11px] font-body">
+          <div key={i} className="flex justify-between text-xs font-body">
             <span className="text-muted-foreground">
               {line.label}
               {line.detail && <span className="text-muted-foreground/60 ml-1">({line.detail})</span>}
@@ -188,14 +188,14 @@ const StepReview = ({ state, onBack, onAddAnother, onCheckout }: Props) => {
           <div className="w-36 h-28 rounded-lg overflow-hidden border border-primary/30 shadow-xl">
             <img src={imageUrl} alt="Front" className="w-full h-full object-cover" />
           </div>
-          {state.doubleSided && <p className="text-[10px] text-primary font-body mt-1 font-semibold">FRONT</p>}
+          {state.doubleSided && <p className="text-xs text-primary font-body mt-1 font-semibold">FRONT</p>}
         </div>
         {state.doubleSided && backUrl && (
           <div className="text-center">
             <div className="w-36 h-28 rounded-lg overflow-hidden border border-border shadow-xl">
               <img src={backUrl} alt="Back" className="w-full h-full object-cover" />
             </div>
-            <p className="text-[10px] text-muted-foreground font-body mt-1 font-semibold">BACK</p>
+            <p className="text-xs text-muted-foreground font-body mt-1 font-semibold">BACK</p>
           </div>
         )}
         {companion && companionImgSrc && companionSize && (
@@ -203,7 +203,7 @@ const StepReview = ({ state, onBack, onAddAnother, onCheckout }: Props) => {
             <div className="w-36 h-28 rounded-lg overflow-hidden border border-border shadow-xl">
               <img src={companionImgSrc} alt="Companion" className="w-full h-full object-cover" />
             </div>
-            <p className="text-[10px] text-muted-foreground font-body mt-1 font-semibold">{companionSize.label}</p>
+            <p className="text-xs text-muted-foreground font-body mt-1 font-semibold">{companionSize.label}</p>
           </div>
         )}
       </div>

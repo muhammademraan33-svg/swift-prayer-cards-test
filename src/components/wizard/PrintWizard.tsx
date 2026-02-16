@@ -75,7 +75,7 @@ const PrintWizard = ({ onStepChange }: Props) => {
                 <button
                   key={label + i}
                   onClick={() => stepNum <= state.step && goTo(stepNum)}
-                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-body tracking-wider uppercase transition-all whitespace-nowrap ${
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-body tracking-wider uppercase transition-all whitespace-nowrap ${
                     isActive
                       ? "bg-gradient-gold text-primary-foreground font-bold"
                       : isDone
@@ -84,7 +84,7 @@ const PrintWizard = ({ onStepChange }: Props) => {
                   }`}
                   disabled={stepNum > state.step}
                 >
-                  <span className="w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold shrink-0 border border-current/20">
+                  <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 border border-current/20">
                     {isDone ? "✓" : stepNum}
                   </span>
                   <span className="hidden sm:inline">{label}</span>

@@ -45,7 +45,7 @@ const Testimonials = () => {
     <section id="reviews" className="py-28 md:py-36 px-6 bg-secondary/30">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-16">
-          <p className="text-[10px] tracking-[0.4em] uppercase text-primary font-body mb-4">
+          <p className="text-xs tracking-[0.4em] uppercase text-primary font-body mb-4">
             Client Testimonials
           </p>
           <h2 className="text-3xl md:text-5xl font-display font-bold text-foreground mb-4">

@@ -17,7 +17,7 @@ const Footer = () => {
           </div>
 
           <div>
-            <p className="text-[10px] font-body font-semibold text-foreground uppercase tracking-[0.2em] mb-4">
+             <p className="text-xs font-body font-semibold text-foreground uppercase tracking-[0.2em] mb-4">
               Collection
             </p>
             <ul className="space-y-2">
@@ -40,7 +40,7 @@ const Footer = () => {
           </div>
 
           <div>
-            <p className="text-[10px] font-body font-semibold text-foreground uppercase tracking-[0.2em] mb-4">
+             <p className="text-xs font-body font-semibold text-foreground uppercase tracking-[0.2em] mb-4">
               Concierge
             </p>
             <ul className="space-y-2">
@@ -63,7 +63,7 @@ const Footer = () => {
           </div>
 
           <div>
-            <p className="text-[10px] font-body font-semibold text-foreground uppercase tracking-[0.2em] mb-4">
+            <p className="text-xs font-body font-semibold text-foreground uppercase tracking-[0.2em] mb-4">
               Promise
             </p>
             <ul className="space-y-2 text-sm text-muted-foreground font-body">

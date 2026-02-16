@@ -62,7 +62,7 @@ const Hero = () => {
           </div>
 
           {/* Value props */}
-          <div className="flex flex-wrap gap-8 text-[10px] font-body text-foreground uppercase tracking-[0.2em]">
+          <div className="flex flex-wrap gap-8 text-xs font-body text-foreground uppercase tracking-[0.2em]">
             <span className="flex items-center gap-2">
               <Truck className="w-3.5 h-3.5 text-primary" />
               White-Glove Delivery

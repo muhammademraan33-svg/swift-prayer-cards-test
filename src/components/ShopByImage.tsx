@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,39 +13,74 @@ import {
 import { searchPhotos, type NormalizedPhoto } from "@/lib/artApi";
 
 const curatedQueries = [
-  "Impressionism",
+  "Fine Art",
+  "Architecture",
   "Landscape",
   "Portrait",
   "Abstract",
-  "Still Life",
-  "Japanese",
-  "Renaissance",
+  "Wildlife",
   "Botanical",
-  "Sculpture",
-  "Modern Art",
+  "Aerial",
+  "Ocean",
+  "Cityscape",
 ];
 
 const ShopByImage = () => {
   const [query, setQuery] = useState("");
   const [photos, setPhotos] = useState<NormalizedPhoto[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [searched, setSearched] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<NormalizedPhoto | null>(null);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [activeQuery, setActiveQuery] = useState("");
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
   const doSearch = useCallback(async (searchQuery: string) => {
     if (!searchQuery.trim()) return;
     setLoading(true);
     setSearched(true);
     setSelectedPhoto(null);
+    setActiveQuery(searchQuery);
+    setPage(1);
+    setHasMore(true);
     try {
-      setPhotos(await searchPhotos(searchQuery, 24));
+      const results = await searchPhotos(searchQuery, 24, 1);
+      setPhotos(results);
+      if (results.length < 24) setHasMore(false);
     } catch (err) {
-      console.error("Art search error:", err);
+      console.error("Search error:", err);
       setPhotos([]);
     } finally {
       setLoading(false);
     }
   }, []);
+
+  const loadMore = useCallback(async () => {
+    if (loadingMore || !hasMore || !activeQuery) return;
+    setLoadingMore(true);
+    const nextPage = page + 1;
+    try {
+      const results = await searchPhotos(activeQuery, 24, nextPage);
+      if (results.length < 24) setHasMore(false);
+      setPhotos(prev => [...prev, ...results]);
+      setPage(nextPage);
+    } catch { /* ignore */ }
+    finally { setLoadingMore(false); }
+  }, [loadingMore, hasMore, page, activeQuery]);
+
+  // Intersection observer
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+    const observer = new IntersectionObserver(
+      (entries) => { if (entries[0].isIntersecting) loadMore(); },
+      { rootMargin: "200px" }
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [loadMore]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,7 +121,7 @@ const ShopByImage = () => {
             <Input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search by subject... (e.g. monet, starry night, ukiyo-e)"
+              placeholder="Search by subject... (e.g. sunset, mountains, flowers)"
               className="pl-10 bg-secondary border-border text-foreground font-body"
             />
           </div>
@@ -126,7 +161,7 @@ const ShopByImage = () => {
         )}
 
         {/* Loading */}
-        {loading && (
+        {loading && photos.length === 0 && (
           <div className="text-center py-16">
             <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-4" />
             <p className="text-muted-foreground font-body">Curating results...</p>
@@ -134,37 +169,43 @@ const ShopByImage = () => {
         )}
 
         {/* Results grid */}
-        {searched && !loading && photos.length > 0 && (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {photos.map((photo) => (
-              <Card
-                key={photo.id}
-                className={`overflow-hidden cursor-pointer transition-all duration-300 group ${
-                  selectedPhoto?.id === photo.id
-                    ? "ring-2 ring-primary border-primary"
-                    : "border-border hover:border-primary/40"
-                }`}
-                onClick={() => selectAndGoToCalculator(photo)}
-              >
-                <div className="aspect-[4/3] overflow-hidden">
-                  <img
-                    src={photo.medium}
-                    alt={photo.alt}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                    loading="lazy"
-                  />
-                </div>
-                <div className="p-3">
-                  <p className="text-xs text-muted-foreground font-body truncate">
-                    🎨 {photo.artist}
-                  </p>
-                  <p className="text-[10px] text-muted-foreground/60 font-body truncate">
-                    {photo.alt}
-                  </p>
-                </div>
-              </Card>
-            ))}
-          </div>
+        {searched && photos.length > 0 && (
+          <>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {photos.map((photo) => (
+                <Card
+                  key={photo.id}
+                  className={`overflow-hidden cursor-pointer transition-all duration-300 group ${
+                    selectedPhoto?.id === photo.id
+                      ? "ring-2 ring-primary border-primary"
+                      : "border-border hover:border-primary/40"
+                  }`}
+                  onClick={() => selectAndGoToCalculator(photo)}
+                >
+                  <div className="aspect-[4/3] overflow-hidden">
+                    <img
+                      src={photo.medium}
+                      alt={photo.alt}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                      loading="lazy"
+                    />
+                  </div>
+                  <div className="p-3">
+                    <p className="text-xs text-muted-foreground font-body truncate">
+                      📷 {photo.artist}
+                    </p>
+                  </div>
+                </Card>
+              ))}
+            </div>
+
+            {/* Infinite scroll sentinel */}
+            {hasMore && (
+              <div ref={sentinelRef} className="flex justify-center py-8">
+                {loadingMore && <Loader2 className="w-6 h-6 animate-spin text-primary" />}
+              </div>
+            )}
+          </>
         )}
 
         {/* No results */}
@@ -172,7 +213,7 @@ const ShopByImage = () => {
           <div className="text-center py-16">
             <ImageIcon className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
             <p className="text-muted-foreground font-body">
-              No artworks found. Try a different search term.
+              No photos found. Try a different search term.
             </p>
           </div>
         )}
@@ -190,7 +231,7 @@ const ShopByImage = () => {
                 Commission this as a bespoke print
               </p>
               <p className="text-sm text-muted-foreground font-body">
-                By {selectedPhoto.artist} — public domain, archival resolution
+                By {selectedPhoto.artist} — archival resolution
               </p>
             </div>
             <Button

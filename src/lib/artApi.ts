@@ -1,4 +1,4 @@
-// Combined Pexels + Pixabay image API
+// Combined Pexels + Pixabay image API with pagination
 
 const PEXELS_API_KEY = "X6x17AZ7r5kg7ViRIiE33JuEwA7RHF17EbdFYNXg5jqn5mNRg2EAvkwl";
 const PIXABAY_API_KEY = "54670247-d6839253912348db4e9fc20e1";
@@ -13,10 +13,10 @@ export interface NormalizedPhoto {
 }
 
 // --- Pexels ---
-async function pexelsSearch(query: string, limit: number): Promise<NormalizedPhoto[]> {
+async function pexelsSearch(query: string, limit: number, page: number): Promise<NormalizedPhoto[]> {
   try {
     const res = await fetch(
-      `https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=${limit}&orientation=landscape`,
+      `https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=${limit}&page=${page}&orientation=landscape`,
       { headers: { Authorization: PEXELS_API_KEY } }
     );
     const data = await res.json();
@@ -33,10 +33,10 @@ async function pexelsSearch(query: string, limit: number): Promise<NormalizedPho
   }
 }
 
-async function pexelsCurated(limit: number): Promise<NormalizedPhoto[]> {
+async function pexelsCurated(limit: number, page: number): Promise<NormalizedPhoto[]> {
   try {
     const res = await fetch(
-      `https://api.pexels.com/v1/curated?per_page=${limit}`,
+      `https://api.pexels.com/v1/curated?per_page=${limit}&page=${page}`,
       { headers: { Authorization: PEXELS_API_KEY } }
     );
     const data = await res.json();
@@ -54,10 +54,10 @@ async function pexelsCurated(limit: number): Promise<NormalizedPhoto[]> {
 }
 
 // --- Pixabay ---
-async function pixabaySearch(query: string, limit: number): Promise<NormalizedPhoto[]> {
+async function pixabaySearch(query: string, limit: number, page: number): Promise<NormalizedPhoto[]> {
   try {
     const res = await fetch(
-      `https://pixabay.com/api/?key=${PIXABAY_API_KEY}&q=${encodeURIComponent(query)}&per_page=${limit}&orientation=horizontal&image_type=photo&safesearch=true`
+      `https://pixabay.com/api/?key=${PIXABAY_API_KEY}&q=${encodeURIComponent(query)}&per_page=${limit}&page=${page}&orientation=horizontal&image_type=photo&safesearch=true`
     );
     const data = await res.json();
     return (data.hits || []).map((h: any) => ({
@@ -73,10 +73,10 @@ async function pixabaySearch(query: string, limit: number): Promise<NormalizedPh
   }
 }
 
-async function pixabayCurated(limit: number): Promise<NormalizedPhoto[]> {
+async function pixabayCurated(limit: number, page: number): Promise<NormalizedPhoto[]> {
   try {
     const res = await fetch(
-      `https://pixabay.com/api/?key=${PIXABAY_API_KEY}&per_page=${limit}&orientation=horizontal&image_type=photo&safesearch=true&editors_choice=true`
+      `https://pixabay.com/api/?key=${PIXABAY_API_KEY}&per_page=${limit}&page=${page}&orientation=horizontal&image_type=photo&safesearch=true&editors_choice=true`
     );
     const data = await res.json();
     return (data.hits || []).map((h: any) => ({
@@ -104,21 +104,21 @@ function interleave(a: NormalizedPhoto[], b: NormalizedPhoto[]): NormalizedPhoto
 }
 
 /** Search both Pexels and Pixabay, merge results */
-export async function searchPhotos(query: string, limit = 20): Promise<NormalizedPhoto[]> {
+export async function searchPhotos(query: string, limit = 20, page = 1): Promise<NormalizedPhoto[]> {
   const half = Math.ceil(limit / 2);
   const [pexels, pixabay] = await Promise.all([
-    pexelsSearch(query, half),
-    pixabaySearch(query, half),
+    pexelsSearch(query, half, page),
+    pixabaySearch(query, half, page),
   ]);
   return interleave(pexels, pixabay);
 }
 
 /** Get curated photos from both sources */
-export async function getCuratedPhotos(limit = 20): Promise<NormalizedPhoto[]> {
+export async function getCuratedPhotos(limit = 20, page = 1): Promise<NormalizedPhoto[]> {
   const half = Math.ceil(limit / 2);
   const [pexels, pixabay] = await Promise.all([
-    pexelsCurated(half),
-    pixabayCurated(half),
+    pexelsCurated(half, page),
+    pixabayCurated(half, page),
   ]);
   return interleave(pexels, pixabay);
 }

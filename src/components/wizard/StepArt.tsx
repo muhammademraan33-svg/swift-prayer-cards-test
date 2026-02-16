@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,7 +7,7 @@ import { Search, Loader2, Camera, Upload, ArrowRight } from "lucide-react";
 import type { SelectedImage } from "./types";
 import { searchPhotos, getCuratedPhotos, type NormalizedPhoto } from "@/lib/artApi";
 
-const genres = ["Impressionism", "Landscape", "Portrait", "Abstract", "Still Life", "Sculpture", "Japanese", "Renaissance", "Modern Art", "Photography"];
+const genres = ["Fine Art", "Landscape", "Architecture", "Abstract", "Wildlife", "Botanical", "Aerial", "Ocean", "Portrait", "Cityscape"];
 
 interface Props {
   image: SelectedImage | null;
@@ -21,14 +21,24 @@ const StepArt = ({ image, uploadedFile, onSelect, onUpload, onNext }: Props) => 
   const [query, setQuery] = useState("");
   const [photos, setPhotos] = useState<NormalizedPhoto[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [searched, setSearched] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [activeQuery, setActiveQuery] = useState<string | null>(null); // null = curated
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
   const doSearch = useCallback(async (q: string) => {
     if (!q.trim()) return;
     setLoading(true);
     setSearched(true);
+    setActiveQuery(q);
+    setPage(1);
+    setHasMore(true);
     try {
-      setPhotos(await searchPhotos(q, 20));
+      const results = await searchPhotos(q, 20, 1);
+      setPhotos(results);
+      if (results.length < 20) setHasMore(false);
     } catch {
       setPhotos([]);
     } finally {
@@ -36,11 +46,17 @@ const StepArt = ({ image, uploadedFile, onSelect, onUpload, onNext }: Props) => 
     }
   }, []);
 
+  // Load curated on mount
   useEffect(() => {
     const loadCurated = async () => {
       setLoading(true);
+      setActiveQuery(null);
+      setPage(1);
+      setHasMore(true);
       try {
-        setPhotos(await getCuratedPhotos(20));
+        const results = await getCuratedPhotos(20, 1);
+        setPhotos(results);
+        if (results.length < 20) setHasMore(false);
       } catch {
         setPhotos([]);
       } finally {
@@ -49,6 +65,34 @@ const StepArt = ({ image, uploadedFile, onSelect, onUpload, onNext }: Props) => 
     };
     loadCurated();
   }, []);
+
+  // Load more
+  const loadMore = useCallback(async () => {
+    if (loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    const nextPage = page + 1;
+    try {
+      const results = activeQuery
+        ? await searchPhotos(activeQuery, 20, nextPage)
+        : await getCuratedPhotos(20, nextPage);
+      if (results.length < 20) setHasMore(false);
+      setPhotos(prev => [...prev, ...results]);
+      setPage(nextPage);
+    } catch { /* ignore */ }
+    finally { setLoadingMore(false); }
+  }, [loadingMore, hasMore, page, activeQuery]);
+
+  // Intersection observer for infinite scroll
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+    const observer = new IntersectionObserver(
+      (entries) => { if (entries[0].isIntersecting) loadMore(); },
+      { rootMargin: "200px" }
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [loadMore]);
 
   const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -68,7 +112,7 @@ const StepArt = ({ image, uploadedFile, onSelect, onUpload, onNext }: Props) => 
           Select Your Artwork
         </h2>
         <p className="text-muted-foreground font-body mt-3 tracking-wide">
-          Browse museum-quality public domain art or upload your own image.
+          Browse millions of photos or upload your own image.
         </p>
       </div>
 
@@ -95,7 +139,7 @@ const StepArt = ({ image, uploadedFile, onSelect, onUpload, onNext }: Props) => 
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search... (e.g. monet, starry night, ukiyo-e)"
+            placeholder="Search... (e.g. sunset, mountains, flowers)"
             className="pl-10 bg-secondary border-border text-foreground font-body"
           />
         </div>
@@ -118,34 +162,43 @@ const StepArt = ({ image, uploadedFile, onSelect, onUpload, onNext }: Props) => 
         ))}
       </div>
 
-      {/* Results */}
-      {loading && (
+      {/* Initial loading */}
+      {loading && photos.length === 0 && (
         <div className="text-center py-12">
           <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-3" />
           <p className="text-muted-foreground font-body">Curating results...</p>
         </div>
       )}
 
-      {!loading && photos.length > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-          {photos.map((photo) => (
-            <Card
-              key={photo.id}
-              className={`overflow-hidden cursor-pointer transition-all duration-300 group ${
-                image?.url === photo.large ? "ring-2 ring-primary border-primary" : "border-border hover:border-primary/40"
-              }`}
-              onClick={() => onSelect({ url: photo.large, photographer: photo.artist, alt: photo.alt })}
-            >
-              <div className="aspect-[4/3] overflow-hidden">
-                <img src={photo.medium} alt={photo.alt} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" loading="lazy" />
-              </div>
-              <div className="p-2">
-                <p className="text-[10px] text-muted-foreground font-body truncate">🎨 {photo.artist}</p>
-                <p className="text-[10px] text-muted-foreground/60 font-body truncate">{photo.alt}</p>
-              </div>
-            </Card>
-          ))}
-        </div>
+      {/* Results */}
+      {photos.length > 0 && (
+        <>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+            {photos.map((photo) => (
+              <Card
+                key={photo.id}
+                className={`overflow-hidden cursor-pointer transition-all duration-300 group ${
+                  image?.url === photo.large ? "ring-2 ring-primary border-primary" : "border-border hover:border-primary/40"
+                }`}
+                onClick={() => onSelect({ url: photo.large, photographer: photo.artist, alt: photo.alt })}
+              >
+                <div className="aspect-[4/3] overflow-hidden">
+                  <img src={photo.medium} alt={photo.alt} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" loading="lazy" />
+                </div>
+                <div className="p-2">
+                  <p className="text-[10px] text-muted-foreground font-body truncate">📷 {photo.artist}</p>
+                </div>
+              </Card>
+            ))}
+          </div>
+
+          {/* Infinite scroll sentinel */}
+          {hasMore && (
+            <div ref={sentinelRef} className="flex justify-center py-6">
+              {loadingMore && <Loader2 className="w-5 h-5 animate-spin text-primary" />}
+            </div>
+          )}
+        </>
       )}
 
       {!loading && !searched && photos.length === 0 && (

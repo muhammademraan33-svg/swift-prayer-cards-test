@@ -14,8 +14,7 @@ const FinalCTA = () => {
         </h2>
         <p className="text-foreground/50 font-body mb-10 max-w-lg mx-auto leading-relaxed tracking-wide">
           Submit any photograph and our artisans will craft a museum-grade
-          piece tailored to your vision. Complimentary shipping on orders
-          over $150.
+          piece tailored to your vision.
         </p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Button

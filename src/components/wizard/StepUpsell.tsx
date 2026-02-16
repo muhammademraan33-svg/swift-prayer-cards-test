@@ -48,54 +48,57 @@ const StepUpsell = ({ frontImage, backImage, backUploadedFile, doubleSided, mate
         </p>
       </div>
 
-      {/* All print images */}
-      {quantity > 1 && additionalPrints.length > 0 && (
-        <div className="space-y-2">
-          <p className="text-xs text-muted-foreground font-body text-center tracking-wider uppercase font-semibold">Your Prints</p>
-          <div className="flex flex-wrap items-center justify-center gap-3">
-            <div className="text-center">
-              <div className="w-20 h-16 sm:w-24 sm:h-20 rounded-lg overflow-hidden border border-primary/30 shadow-md">
-                <img src={frontImage} alt="Print 1" className="w-full h-full object-cover" />
-              </div>
-              <p className="text-[10px] text-primary font-body mt-1 font-semibold">Print 1</p>
-            </div>
-            {additionalPrints.map((ap, idx) => {
-              const apImg = ap.uploadedFile || ap.image?.url;
-              if (!apImg) return null;
-              return (
-                <div key={idx} className="text-center">
-                  <div className="w-20 h-16 sm:w-24 sm:h-20 rounded-lg overflow-hidden border border-border shadow-md">
-                    <img src={apImg} alt={`Print ${idx + 2}`} className="w-full h-full object-cover" />
-                  </div>
-                  <p className="text-[10px] text-muted-foreground font-body mt-1 font-semibold">Print {idx + 2}</p>
-                </div>
-              );
-            })}
+      {/* All prints listed with back-image upload */}
+      <div className="space-y-3 max-w-md mx-auto">
+        {/* Primary print */}
+        <div className="flex items-center gap-4 p-3 rounded-xl border border-border bg-card">
+          <div className="w-20 h-16 sm:w-24 sm:h-20 rounded-lg overflow-hidden border border-primary/30 shadow-md shrink-0">
+            <img src={frontImage} alt="Print 1" className="w-full h-full object-cover" />
           </div>
-        </div>
-      )}
-
-      {/* Front/Back flip concept */}
-      <div className="flex items-center justify-center gap-4 py-4">
-        <div className="text-center">
-          <div className="w-28 h-20 sm:w-36 sm:h-28 rounded-lg overflow-hidden border border-primary/30 shadow-lg">
-            <img src={frontImage} alt="Front" className="w-full h-full object-cover" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-display font-bold text-foreground">Print 1</p>
+            <p className="text-xs text-primary font-body font-semibold uppercase tracking-wider">Front</p>
           </div>
-          <p className="text-xs text-primary font-body mt-1.5 font-semibold tracking-wider uppercase">Front</p>
-        </div>
-        <RotateCw className="w-5 h-5 text-primary shrink-0" />
-        <div className="text-center">
+          <RotateCw className="w-4 h-4 text-primary shrink-0" />
           {backUrl ? (
-            <div className="w-28 h-20 sm:w-36 sm:h-28 rounded-lg overflow-hidden border border-primary/30 shadow-lg">
-              <img src={backUrl} alt="Back" className="w-full h-full object-cover" />
+            <div className="flex items-center gap-2 shrink-0">
+              <div className="w-16 h-12 sm:w-20 sm:h-16 rounded-lg overflow-hidden border border-primary/30 shadow-md">
+                <img src={backUrl} alt="Back" className="w-full h-full object-cover" />
+              </div>
+              <label className="cursor-pointer text-primary hover:text-primary/80 transition-colors">
+                <Upload className="w-4 h-4" />
+                <input type="file" accept="image/*" className="hidden" onChange={handleUpload} />
+              </label>
             </div>
           ) : (
-            <div className="w-28 h-20 sm:w-36 sm:h-28 rounded-lg border-2 border-dashed border-border flex items-center justify-center bg-secondary/50">
-              <p className="text-xs text-muted-foreground font-body">Your 2nd image</p>
-            </div>
+            <label className="flex items-center gap-2 px-3 py-2 border border-dashed border-primary/40 hover:border-primary rounded-lg cursor-pointer transition-all bg-primary/5 hover:bg-primary/10 shrink-0">
+              <Upload className="w-4 h-4 text-primary" />
+              <span className="font-body text-xs font-semibold text-foreground">Upload Back</span>
+              <input type="file" accept="image/*" className="hidden" onChange={handleUpload} />
+            </label>
           )}
-          <p className="text-xs text-muted-foreground font-body mt-1.5 font-semibold tracking-wider uppercase">Back</p>
         </div>
+
+        {/* Additional prints in set */}
+        {quantity > 1 && additionalPrints.map((ap, idx) => {
+          const apImg = ap.uploadedFile || ap.image?.url;
+          if (!apImg) return null;
+          return (
+            <div key={idx} className="flex items-center gap-4 p-3 rounded-xl border border-border bg-card">
+              <div className="w-20 h-16 sm:w-24 sm:h-20 rounded-lg overflow-hidden border border-border shadow-md shrink-0">
+                <img src={apImg} alt={`Print ${idx + 2}`} className="w-full h-full object-cover" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-display font-bold text-foreground">Print {idx + 2}</p>
+                <p className="text-xs text-muted-foreground font-body font-semibold uppercase tracking-wider">Front</p>
+              </div>
+              <RotateCw className="w-4 h-4 text-muted-foreground/40 shrink-0" />
+              <div className="w-16 h-12 sm:w-20 sm:h-16 rounded-lg border border-dashed border-border flex items-center justify-center bg-secondary/30 shrink-0">
+                <p className="text-[9px] text-muted-foreground/50 font-body text-center leading-tight">Same back</p>
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       {/* Decision */}
@@ -119,28 +122,6 @@ const StepUpsell = ({ frontImage, backImage, backUploadedFile, doubleSided, mate
               No thanks, continue
             </Button>
           </div>
-        </div>
-      )}
-
-      {/* Upload only — shown after opting in */}
-      {(doubleSided || backUrl) && !backUrl && (
-        <div className="flex justify-center">
-          <label className="flex flex-col items-center gap-3 px-8 py-6 border-2 border-dashed border-primary/40 hover:border-primary rounded-xl cursor-pointer transition-all bg-primary/5 hover:bg-primary/10 group">
-            <Upload className="w-8 h-8 text-primary group-hover:scale-110 transition-transform" />
-            <span className="font-body text-sm font-semibold text-foreground">Upload Your Back Image</span>
-            <span className="font-body text-xs text-muted-foreground">JPG, PNG, TIFF</span>
-            <input type="file" accept="image/*" className="hidden" onChange={handleUpload} />
-          </label>
-        </div>
-      )}
-
-      {(doubleSided || backUrl) && backUrl && (
-        <div className="flex justify-center">
-          <label className="flex items-center gap-2 px-4 py-2 border border-dashed border-border hover:border-primary/50 rounded-lg cursor-pointer transition-colors text-sm">
-            <Upload className="w-4 h-4 text-primary" />
-            <span className="font-body text-foreground">Change Back Image</span>
-            <input type="file" accept="image/*" className="hidden" onChange={handleUpload} />
-          </label>
         </div>
       )}
 

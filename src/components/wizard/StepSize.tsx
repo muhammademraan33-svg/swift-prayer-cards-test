@@ -144,7 +144,7 @@ const StepSize = ({ imageUrl, sizeIdx, material, companionPrint, onSelect, onSel
           {(() => {
             const backdropImg = isDesk ? shelfBackdrop : couchWall;
             const WALL_W = isDesk ? 24 : 96;
-            const containerAspect = isDesk ? "3/4" : "16/9";
+            const containerAspect = "16/10";
 
             const printWPct = Math.max((displayW / WALL_W) * 100, 10);
             const printAspect = displayW / displayH;

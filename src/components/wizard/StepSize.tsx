@@ -478,7 +478,7 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
                   className="relative w-full overflow-hidden rounded-lg border border-border" 
                   style={{ 
                     aspectRatio: containerAspect,
-                    maxHeight: "300px"
+                    maxHeight: "200px"
                   }}
                 >
                   <img src={backdropImg} alt="Room backdrop" className="absolute inset-0 w-full h-full object-cover" />

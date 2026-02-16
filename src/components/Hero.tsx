@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Star, Shield, Truck, Award } from "lucide-react";
+import { Star, Shield, Truck, Award, Clock } from "lucide-react";
 import heroImg from "@/assets/hero-lifestyle.jpg";
 
 const Hero = () => {
@@ -38,6 +38,14 @@ const Hero = () => {
             Bespoke museum-grade metal & acrylic prints for America's most
             discerning homes. Each piece handcrafted to order.
           </p>
+
+          {/* Delivery guarantee banner */}
+          <div className="flex items-center gap-3 mb-8 bg-primary/10 border border-primary/20 rounded-lg px-5 py-3 w-fit backdrop-blur-sm">
+            <Clock className="w-5 h-5 text-primary shrink-0" />
+            <span className="font-display font-bold text-foreground text-sm md:text-base tracking-wide">
+              Guaranteed Delivery in 48–72 Hours
+            </span>
+          </div>
 
           <div className="flex flex-col sm:flex-row gap-3 mb-14">
             <Button

@@ -138,9 +138,9 @@ const StepSize = ({ imageUrl, sizeIdx, material, companionPrint, onSelect, onSel
       {/* Hidden file input for companion */}
       <input ref={companionFileRef} type="file" accept="image/*" className="hidden" onChange={handleCompanionUpload} />
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* LEFT: Preview */}
-        <div className="flex justify-center lg:sticky lg:top-4 lg:self-start">
+        <div className="flex justify-center md:sticky md:top-4 md:self-start">
           {(() => {
             const backdropImg = isDesk ? shelfBackdrop : couchWall;
             const WALL_W = isDesk ? 24 : 96;

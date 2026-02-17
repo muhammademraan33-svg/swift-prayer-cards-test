@@ -59,13 +59,39 @@ function getLineItems(item: CartItem | WizardState): LineItem[] {
 
   // Print (with quantity)
   const qty = item.quantity || 1;
-  const printPrice = calcPrintPrice(item.material, size.w, size.h, item.doubleSided);
+  
+  // Calculate price for main print
+  const mainPrintPrice = calcPrintPrice(item.material, size.w, size.h, item.doubleSided);
+  
+  // Calculate prices for additional prints (may have different sizes)
+  let totalPrice = mainPrintPrice;
+  let detailParts: string[] = [];
+  
+  if (qty > 1 && 'additionalPrints' in item && item.additionalPrints) {
+    // Main print
+    detailParts.push(`Print 1: ${size.label}`);
+    
+    // Additional prints
+    for (let i = 0; i < qty - 1 && i < item.additionalPrints.length; i++) {
+      const ap = item.additionalPrints[i];
+      const apSize = ap.sizeIdx !== undefined 
+        ? resolveSize(ap.sizeIdx, ap.customWidth, ap.customHeight)
+        : size;
+      const apPrice = calcPrintPrice(item.material, apSize.w, apSize.h, item.doubleSided);
+      totalPrice += apPrice;
+      detailParts.push(`Print ${i + 2}: ${apSize.label}`);
+    }
+  } else {
+    // Single print or all same size
+    totalPrice = mainPrintPrice * qty;
+    detailParts.push(`${size.label}${qty > 1 ? ` × ${qty}` : ""}`);
+  }
+  
   lines.push({
     label: getMaterialLabel(item.material),
-    detail: `${size.label}${item.doubleSided ? " — Double-Sided" : ""}${qty > 1 ? ` × ${qty}` : ""}`,
-    amount: printPrice * qty,
+    detail: `${detailParts.join(", ")}${item.doubleSided ? " — Double-Sided" : ""}`,
+    amount: totalPrice,
   });
-  // Additional prints in set are already accounted for by quantity multiplier above
 
   // Rounded corners
   if (item.roundedCorners) {
@@ -211,6 +237,8 @@ const StepReview = ({ state, onBack, onAddAnother, onCheckout }: Props) => {
           let currentBackUrl = itemBackUrl;
           let currentTransform = transform;
           
+          // Get size for this specific print (may differ per print)
+          let currentSize = size;
           if (printIdx > 0 && 'additionalPrints' in item && item.additionalPrints) {
             const additionalPrint = item.additionalPrints[printIdx - 1];
             if (additionalPrint) {
@@ -222,6 +250,10 @@ const StepReview = ({ state, onBack, onAddAnother, onCheckout }: Props) => {
                 panX: additionalPrint.panX || 0,
                 panY: additionalPrint.panY || 0,
               };
+              // Use per-print size if available
+              if (additionalPrint.sizeIdx !== undefined) {
+                currentSize = resolveSize(additionalPrint.sizeIdx, additionalPrint.customWidth, additionalPrint.customHeight);
+              }
             }
           }
           
@@ -232,8 +264,8 @@ const StepReview = ({ state, onBack, onAddAnother, onCheckout }: Props) => {
             imageBase64: currentImageUrl,
             backImageBase64: item.doubleSided && currentBackUrl ? currentBackUrl : undefined,
             printDimensions: {
-              width: size.w,
-              height: size.h,
+              width: currentSize.w,
+              height: currentSize.h,
             },
             transform: currentTransform,
             backTransform: item.doubleSided && currentBackUrl ? currentTransform : undefined,

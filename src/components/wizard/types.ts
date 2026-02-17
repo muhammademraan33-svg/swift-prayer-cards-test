@@ -20,6 +20,11 @@ export interface AdditionalPrint {
   zoom: number;
   panX: number;
   panY: number;
+  sizeIdx: number; // Size index for this print (defaults to main print size)
+  customWidth: number; // Custom width if sizeIdx is CUSTOM_SIZE_IDX
+  customHeight: number; // Custom height if sizeIdx is CUSTOM_SIZE_IDX
+  imageNaturalWidth: number; // Natural width of the image for DPI calculation
+  imageNaturalHeight: number; // Natural height of the image for DPI calculation
 }
 
 export interface CartItem {
@@ -98,7 +103,7 @@ export const initialWizardState: WizardState = {
 };
 
 /** Helper to create a new AdditionalPrint with default values */
-export function createAdditionalPrint(): AdditionalPrint {
+export function createAdditionalPrint(sizeIdx: number = 0, customWidth: number = 12, customHeight: number = 16): AdditionalPrint {
   return {
     image: null,
     uploadedFile: null,
@@ -109,5 +114,10 @@ export function createAdditionalPrint(): AdditionalPrint {
     zoom: 1,
     panX: 0,
     panY: 0,
+    sizeIdx,
+    customWidth,
+    customHeight,
+    imageNaturalWidth: 0,
+    imageNaturalHeight: 0,
   };
 }

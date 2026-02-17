@@ -112,7 +112,7 @@ function getLineItems(item: CartItem | WizardState): LineItem[] {
   // Metal stand-off surcharge
   const isMetal = item.material.startsWith("metal");
   if (isMetal && item.standOff !== "none") {
-    const cogs = printPrice / 2;
+    const cogs = totalPrice / 2;
     const surcharge = Math.ceil(cogs * addOns.metalStandOffSurcharge);
     if (surcharge > 0) {
       lines.push({ label: "Mounting Surcharge", amount: surcharge });
@@ -171,12 +171,22 @@ function ItemBreakdown({ item, title, imageUrl, transform }: { item: CartItem | 
   );
 }
 
+interface GeneratedPDF {
+  filename: string;
+  blob: Blob;
+  url: string;
+  printTitle: string;
+  size: string;
+}
+
 const StepReview = ({ state, onBack, onAddAnother, onCheckout }: Props) => {
   const { toast } = useToast();
   const [showCheckout, setShowCheckout] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [generatedPDFs, setGeneratedPDFs] = useState<GeneratedPDF[]>([]);
+  const [showPDFPreview, setShowPDFPreview] = useState(false);
 
   const allItems: { item: CartItem | WizardState; title: string; imageUrl: string }[] = [
     ...state.cart.map((item, i) => ({
@@ -207,18 +217,21 @@ const StepReview = ({ state, onBack, onAddAnother, onCheckout }: Props) => {
     onCheckout();
   };
 
-  const handleDownloadPrintFiles = async () => {
+  const handleGeneratePDFs = async () => {
     setIsGeneratingPDF(true);
+    setGeneratedPDFs([]);
     try {
-      // Generate PDF for each print in the order
+      const pdfs: GeneratedPDF[] = [];
+      
+      // Generate PDF for each print in the order - EACH FILE IS A SEPARATE PDF
       for (let i = 0; i < allItems.length; i++) {
         const { item, title } = allItems[i];
         const itemImageUrl = 'uploadedFile' in item ? item.uploadedFile : state.uploadedFile;
         const itemBackUrl = ('backUploadedFile' in item ? item.backUploadedFile : state.backUploadedFile) || 
                            ('backImage' in item && item.backImage ? item.backImage.url : state.backImage?.url);
         
-        // Get size dimensions
-        const size = resolveSize(item.sizeIdx, item.customWidth, item.customHeight);
+        // Get base size dimensions
+        const baseSize = resolveSize(item.sizeIdx, item.customWidth, item.customHeight);
         
         // Get transform data
         const transform = {
@@ -228,17 +241,19 @@ const StepReview = ({ state, onBack, onAddAnother, onCheckout }: Props) => {
           panY: ('panY' in item ? item.panY : state.panY) || 0,
         };
         
-        // If this is a multi-print set (quantity > 1), generate PDFs for each print
+        // If this is a multi-print set (quantity > 1), generate SEPARATE PDFs for each print
         const quantity = item.quantity || 1;
         for (let printIdx = 0; printIdx < quantity; printIdx++) {
-          // For main print and first additional print, use the main image
-          // For other additional prints, use their respective images
+          // For main print (printIdx === 0), use the main image
+          // For additional prints (printIdx > 0), use their respective images
           let currentImageUrl = itemImageUrl;
           let currentBackUrl = itemBackUrl;
           let currentTransform = transform;
           
-          // Get size for this specific print (may differ per print)
-          let currentSize = size;
+          // Get size for this SPECIFIC print (each print can have different size)
+          let currentSize = baseSize;
+          let printTitle = title;
+          
           if (printIdx > 0 && 'additionalPrints' in item && item.additionalPrints) {
             const additionalPrint = item.additionalPrints[printIdx - 1];
             if (additionalPrint) {
@@ -250,33 +265,37 @@ const StepReview = ({ state, onBack, onAddAnother, onCheckout }: Props) => {
                 panX: additionalPrint.panX || 0,
                 panY: additionalPrint.panY || 0,
               };
-              // Use per-print size if available
+              // Use per-print size if available - EACH PRINT CAN HAVE DIFFERENT SIZE
               if (additionalPrint.sizeIdx !== undefined) {
                 currentSize = resolveSize(additionalPrint.sizeIdx, additionalPrint.customWidth, additionalPrint.customHeight);
               }
+              printTitle = `${title} - Print ${printIdx + 1}`;
             }
           }
           
-          if (!currentImageUrl) continue;
+          if (!currentImageUrl) {
+            console.warn(`Skipping PDF generation for ${printTitle}: No image found`);
+            continue;
+          }
           
-          // Prepare request body
+          // Prepare request body - EACH PDF IS GENERATED SEPARATELY
           const requestBody = {
             imageBase64: currentImageUrl,
             backImageBase64: item.doubleSided && currentBackUrl ? currentBackUrl : undefined,
             printDimensions: {
-              width: currentSize.w,
-              height: currentSize.h,
+              width: currentSize.w,  // Use the specific size for this print
+              height: currentSize.h,  // Use the specific size for this print
             },
             transform: currentTransform,
             backTransform: item.doubleSided && currentBackUrl ? currentTransform : undefined,
             includeBleed: true,
             includeCropMarks: true,
             filename: quantity > 1 
-              ? `${title.replace(/\s+/g, '-')}-print-${printIdx + 1}-300dpi.pdf`
-              : `${title.replace(/\s+/g, '-')}-300dpi.pdf`,
+              ? `${title.replace(/\s+/g, '-')}-print-${printIdx + 1}-${currentSize.w}x${currentSize.h}-300dpi.pdf`
+              : `${title.replace(/\s+/g, '-')}-${currentSize.w}x${currentSize.h}-300dpi.pdf`,
           };
           
-          // Call PDF generation API
+          // Call PDF generation API - GENERATES ONE PDF PER PRINT
           const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
           const response = await fetch(`${apiUrl}/api/generate-pdf`, {
             method: 'POST',
@@ -288,30 +307,38 @@ const StepReview = ({ state, onBack, onAddAnother, onCheckout }: Props) => {
           
           if (!response.ok) {
             const error = await response.json();
-            throw new Error(error.error || 'Failed to generate PDF');
+            throw new Error(error.error || `Failed to generate PDF for ${printTitle}`);
           }
           
-          // Download the PDF
+          // Store the PDF blob for preview
           const blob = await response.blob();
           const url = window.URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = requestBody.filename;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          window.URL.revokeObjectURL(url);
           
-          // Small delay between downloads to avoid overwhelming the browser
+          pdfs.push({
+            filename: requestBody.filename,
+            blob,
+            url,
+            printTitle: printTitle,
+            size: `${currentSize.w}" × ${currentSize.h}"`,
+          });
+          
+          // Small delay between generations to avoid overwhelming the server
           if (i < allItems.length - 1 || printIdx < quantity - 1) {
-            await new Promise(resolve => setTimeout(resolve, 500));
+            await new Promise(resolve => setTimeout(resolve, 300));
           }
         }
       }
       
+      if (pdfs.length === 0) {
+        throw new Error('No PDFs were generated. Please check that all prints have images.');
+      }
+      
+      setGeneratedPDFs(pdfs);
+      setShowPDFPreview(true);
+      
       toast({
-        title: "Print files downloaded!",
-        description: "Your print-ready PDF files are ready for production.",
+        title: "PDFs generated successfully!",
+        description: `Generated ${pdfs.length} print-ready PDF${pdfs.length > 1 ? 's' : ''}. Please review before downloading.`,
       });
     } catch (error: any) {
       console.error('Error generating PDF:', error);
@@ -323,6 +350,31 @@ const StepReview = ({ state, onBack, onAddAnother, onCheckout }: Props) => {
     } finally {
       setIsGeneratingPDF(false);
     }
+  };
+
+  const handleDownloadAllPDFs = () => {
+    generatedPDFs.forEach((pdf, index) => {
+      setTimeout(() => {
+        const a = document.createElement('a');
+        a.href = pdf.url;
+        a.download = pdf.filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }, index * 300); // Stagger downloads
+    });
+    
+    // Clean up URLs after a delay
+    setTimeout(() => {
+      generatedPDFs.forEach(pdf => window.URL.revokeObjectURL(pdf.url));
+      setGeneratedPDFs([]);
+      setShowPDFPreview(false);
+    }, generatedPDFs.length * 300 + 1000);
+    
+    toast({
+      title: "Downloading PDFs...",
+      description: `Downloading ${generatedPDFs.length} file${generatedPDFs.length > 1 ? 's' : ''}.`,
+    });
   };
 
   const imageUrl = state.uploadedFile || state.image?.url || "";
@@ -427,7 +479,7 @@ const StepReview = ({ state, onBack, onAddAnother, onCheckout }: Props) => {
         </p>
         <Button 
           variant="outline" 
-          onClick={handleDownloadPrintFiles}
+          onClick={handleGeneratePDFs}
           disabled={isGeneratingPDF}
           className="font-body gap-2 border-primary/40 text-primary hover:bg-primary/10"
         >
@@ -437,7 +489,7 @@ const StepReview = ({ state, onBack, onAddAnother, onCheckout }: Props) => {
             </>
           ) : (
             <>
-              <Download className="w-4 h-4" /> Download Print Files (300 DPI)
+              <Download className="w-4 h-4" /> Generate & Preview PDFs (300 DPI)
             </>
           )}
         </Button>
@@ -504,6 +556,92 @@ const StepReview = ({ state, onBack, onAddAnother, onCheckout }: Props) => {
             <Button onClick={handleConfirmationClose} className="w-full bg-gradient-gold hover:opacity-90">
               Done
             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* PDF Preview & Approval Dialog */}
+      <Dialog open={showPDFPreview} onOpenChange={setShowPDFPreview}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-display">Review Your Print-Ready PDFs</DialogTitle>
+            <DialogDescription className="text-base">
+              Please review each PDF file before downloading. Each file is generated at 300 DPI with bleed margins and crop marks.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            {generatedPDFs.length > 0 && (
+              <div className="bg-muted/30 rounded-lg p-3 mb-4">
+                <p className="text-sm font-body font-semibold text-foreground">
+                  Generated {generatedPDFs.length} separate PDF file{generatedPDFs.length > 1 ? 's' : ''}:
+                </p>
+              </div>
+            )}
+            
+            <div className="grid gap-4">
+              {generatedPDFs.map((pdf, index) => (
+                <div key={index} className="border border-border rounded-lg p-4 bg-card">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1">
+                      <h4 className="font-body font-bold text-foreground mb-1">{pdf.printTitle}</h4>
+                      <p className="text-sm text-muted-foreground font-body mb-2">
+                        Size: {pdf.size} • 300 DPI • Print-Ready
+                      </p>
+                      <p className="text-xs text-muted-foreground font-body font-mono">
+                        {pdf.filename}
+                      </p>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <iframe
+                        src={pdf.url}
+                        className="w-48 h-64 border border-border rounded"
+                        title={`Preview of ${pdf.filename}`}
+                      />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const a = document.createElement('a');
+                          a.href = pdf.url;
+                          a.download = pdf.filename;
+                          document.body.appendChild(a);
+                          a.click();
+                          document.body.removeChild(a);
+                        }}
+                        className="font-body text-xs"
+                      >
+                        <Download className="w-3 h-3 mr-1" /> Download This PDF
+          </Button>
+        </div>
+      </div>
+                </div>
+              ))}
+            </div>
+            
+            <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-border">
+              <Button
+                onClick={handleDownloadAllPDFs}
+                className="flex-1 bg-gradient-gold text-primary-foreground font-body font-semibold hover:opacity-90"
+              >
+                <Download className="w-4 h-4 mr-2" /> Download All PDFs ({generatedPDFs.length})
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  generatedPDFs.forEach(pdf => window.URL.revokeObjectURL(pdf.url));
+                  setGeneratedPDFs([]);
+                  setShowPDFPreview(false);
+                }}
+                className="font-body"
+              >
+                Close
+              </Button>
+            </div>
+            
+            <p className="text-xs text-muted-foreground font-body text-center pt-2">
+              Each PDF is generated separately at the exact size selected for that print.
+            </p>
           </div>
         </DialogContent>
       </Dialog>

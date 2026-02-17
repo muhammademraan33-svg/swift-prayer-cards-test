@@ -188,6 +188,12 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
   const handleReplaceMainImage = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !onReplaceImage) return;
+    
+    // Reset input value immediately to allow uploading the same file again
+    if (e.target) {
+      e.target.value = '';
+    }
+    
     const reader = new FileReader();
     reader.onload = () => {
       const dataUrl = reader.result as string;
@@ -195,11 +201,15 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
       img.onload = () => {
         onReplaceImage(dataUrl, img.naturalWidth, img.naturalHeight);
       };
+      img.onerror = () => {
+        console.error('Failed to load image for replacement');
+      };
       img.src = dataUrl;
     };
+    reader.onerror = () => {
+      console.error('Failed to read file');
+    };
     reader.readAsDataURL(file);
-    // Reset input so same file can be selected again
-    e.target.value = '';
   };
 
   // Get data for the currently viewing print (memoized to prevent recomputation)
@@ -577,10 +587,10 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
                     </div>
                   )}
                   
-                  {/* Replace Image button - Only show for Print 1 - Positioned top-left to avoid warning */}
-                  {viewingPrintIndex === 0 && onReplaceImage && (
+                  {/* Replace Image button - Always show for Print 1 when onReplaceImage is available */}
+                  {viewingPrintIndex === 0 && onReplaceImage ? (
                     <div className="absolute top-3 left-3 z-50">
-                      <label className="cursor-pointer">
+                      <label className="cursor-pointer block">
                         <input
                           ref={mainImageInputRef}
                           type="file"
@@ -591,11 +601,13 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
                         <Button
                           size="sm"
                           variant="outline"
-                          className="bg-card/95 backdrop-blur-sm border-2 border-primary/30 hover:bg-primary/10 text-primary font-body font-semibold text-xs sm:text-[10px] px-2.5 sm:px-3 py-1.5 touch-manipulation shadow-lg"
+                          className="bg-card/95 backdrop-blur-sm border-2 border-primary/30 hover:bg-primary/10 active:bg-primary/20 text-primary font-body font-semibold text-xs sm:text-[10px] px-2.5 sm:px-3 py-1.5 sm:py-2 touch-manipulation shadow-lg transition-all min-h-[36px] sm:min-h-[32px]"
                           onClick={(e) => {
                             e.stopPropagation();
+                            e.preventDefault();
                             mainImageInputRef.current?.click();
                           }}
+                          type="button"
                         >
                           <Upload className="w-3.5 h-3.5 sm:w-3 sm:h-3 sm:mr-1.5" />
                           <span className="hidden sm:inline">Replace Image</span>
@@ -603,7 +615,7 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
                         </Button>
                       </label>
                     </div>
-                  )}
+                  ) : null}
 
                   {/* Transform controls - MOBILE OPTIMIZED - Larger buttons */}
                   {(currentPrintData.imageUrl || imageUrl) && (

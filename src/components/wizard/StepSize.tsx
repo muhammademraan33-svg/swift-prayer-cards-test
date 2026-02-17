@@ -684,7 +684,7 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
                     return (
                       <Card
                         key={idx}
-                        className={`px-2.5 py-1.5 text-center cursor-pointer transition-all duration-200 shrink-0 ${isSelected ? "ring-2 ring-primary border-primary bg-primary/5" : "border-border hover:border-primary/40"}`}
+                        className={`px-2.5 py-1.5 sm:px-2.5 sm:py-1.5 text-center cursor-pointer transition-all duration-200 shrink-0 touch-manipulation min-h-[44px] sm:min-h-0 flex items-center justify-center ${isSelected ? "ring-2 ring-primary border-primary bg-primary/5" : "border-border hover:border-primary/40 active:bg-primary/10"}`}
                         onClick={() => {
                           onSelect(idx);
                           // Only reset additional prints for large sizes (idx >= 10)
@@ -696,7 +696,7 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
                           // DO NOT touch additionalPrints for regular sizes - they are completely independent
                         }}
                       >
-                        <p className="text-xs font-display font-bold text-foreground leading-tight whitespace-nowrap">{size.label}</p>
+                        <p className="text-xs sm:text-xs font-display font-bold text-foreground leading-tight whitespace-nowrap">{size.label}</p>
                       </Card>
                     );
                   })}
@@ -818,10 +818,9 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
                                       };
                                       onAdditionalPrints(updated);
                                     }}
-                                    className={`px-2 py-1 text-[9px] font-body font-semibold rounded transition-all ${
-                                      isSelected 
+                                    className={`px-2 py-1 sm:px-2 sm:py-1 text-[9px] sm:text-[9px] font-body font-semibold rounded transition-all touch-manipulation min-h-[36px] sm:min-h-0 flex items-center justify-center ${isSelected 
                                         ? "bg-gradient-gold text-primary-foreground shadow-sm" 
-                                        : "bg-secondary text-muted-foreground hover:bg-primary/10 hover:text-primary border border-border"
+                                        : "bg-secondary text-muted-foreground hover:bg-primary/10 hover:text-primary active:bg-primary/20 border border-border"
                                     }`}
                                   >
                                     {size.label}
@@ -854,10 +853,10 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
                                   };
                                   onAdditionalPrints(updated);
                                 }}
-                                className={`px-2 py-1 text-[9px] font-body font-semibold rounded transition-all flex items-center gap-1 ${
+                                className={`px-2 py-1 sm:px-2 sm:py-1 text-[9px] sm:text-[9px] font-body font-semibold rounded transition-all flex items-center gap-1 touch-manipulation min-h-[36px] sm:min-h-0 justify-center ${
                                   slotIsCustom
                                     ? "bg-gradient-gold text-primary-foreground shadow-sm" 
-                                    : "bg-secondary text-muted-foreground hover:bg-primary/10 hover:text-primary border border-border"
+                                    : "bg-secondary text-muted-foreground hover:bg-primary/10 hover:text-primary active:bg-primary/20 border border-border"
                                 }`}
                               >
                                 <Ruler className="w-3 h-3" />

@@ -10,7 +10,7 @@ import {
 import { resolveSize } from "@/lib/sizeHelpers";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ShoppingBag, Plus, CreditCard, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, ShoppingBag, Plus, CreditCard, CheckCircle2, Download, Loader2 } from "lucide-react";
 import type { WizardState, MaterialChoice, CartItem } from "./types";
 import { useToast } from "@/hooks/use-toast";
 import { getImageTransformStyle } from "@/lib/imageTransform";
@@ -150,6 +150,7 @@ const StepReview = ({ state, onBack, onAddAnother, onCheckout }: Props) => {
   const [showCheckout, setShowCheckout] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
 
   const allItems: { item: CartItem | WizardState; title: string; imageUrl: string }[] = [
     ...state.cart.map((item, i) => ({
@@ -178,6 +179,118 @@ const StepReview = ({ state, onBack, onAddAnother, onCheckout }: Props) => {
   const handleConfirmationClose = () => {
     setShowConfirmation(false);
     onCheckout();
+  };
+
+  const handleDownloadPrintFiles = async () => {
+    setIsGeneratingPDF(true);
+    try {
+      // Generate PDF for each print in the order
+      for (let i = 0; i < allItems.length; i++) {
+        const { item, title } = allItems[i];
+        const itemImageUrl = 'uploadedFile' in item ? item.uploadedFile : state.uploadedFile;
+        const itemBackUrl = ('backUploadedFile' in item ? item.backUploadedFile : state.backUploadedFile) || 
+                           ('backImage' in item && item.backImage ? item.backImage.url : state.backImage?.url);
+        
+        // Get size dimensions
+        const size = resolveSize(item.sizeIdx, item.customWidth, item.customHeight);
+        
+        // Get transform data
+        const transform = {
+          rotation: ('rotation' in item ? item.rotation : state.rotation) || 0,
+          zoom: ('zoom' in item ? item.zoom : state.zoom) || 1,
+          panX: ('panX' in item ? item.panX : state.panX) || 0,
+          panY: ('panY' in item ? item.panY : state.panY) || 0,
+        };
+        
+        // If this is a multi-print set (quantity > 1), generate PDFs for each print
+        const quantity = item.quantity || 1;
+        for (let printIdx = 0; printIdx < quantity; printIdx++) {
+          // For main print and first additional print, use the main image
+          // For other additional prints, use their respective images
+          let currentImageUrl = itemImageUrl;
+          let currentBackUrl = itemBackUrl;
+          let currentTransform = transform;
+          
+          if (printIdx > 0 && 'additionalPrints' in item && item.additionalPrints) {
+            const additionalPrint = item.additionalPrints[printIdx - 1];
+            if (additionalPrint) {
+              currentImageUrl = additionalPrint.uploadedFile || additionalPrint.image?.url;
+              currentBackUrl = additionalPrint.backUploadedFile || additionalPrint.backImage?.url;
+              currentTransform = {
+                rotation: additionalPrint.rotation || 0,
+                zoom: additionalPrint.zoom || 1,
+                panX: additionalPrint.panX || 0,
+                panY: additionalPrint.panY || 0,
+              };
+            }
+          }
+          
+          if (!currentImageUrl) continue;
+          
+          // Prepare request body
+          const requestBody = {
+            imageBase64: currentImageUrl,
+            backImageBase64: item.doubleSided && currentBackUrl ? currentBackUrl : undefined,
+            printDimensions: {
+              width: size.w,
+              height: size.h,
+            },
+            transform: currentTransform,
+            backTransform: item.doubleSided && currentBackUrl ? currentTransform : undefined,
+            includeBleed: true,
+            includeCropMarks: true,
+            filename: quantity > 1 
+              ? `${title.replace(/\s+/g, '-')}-print-${printIdx + 1}-300dpi.pdf`
+              : `${title.replace(/\s+/g, '-')}-300dpi.pdf`,
+          };
+          
+          // Call PDF generation API
+          const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+          const response = await fetch(`${apiUrl}/api/generate-pdf`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(requestBody),
+          });
+          
+          if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to generate PDF');
+          }
+          
+          // Download the PDF
+          const blob = await response.blob();
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = requestBody.filename;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          window.URL.revokeObjectURL(url);
+          
+          // Small delay between downloads to avoid overwhelming the browser
+          if (i < allItems.length - 1 || printIdx < quantity - 1) {
+            await new Promise(resolve => setTimeout(resolve, 500));
+          }
+        }
+      }
+      
+      toast({
+        title: "Print files downloaded!",
+        description: "Your print-ready PDF files are ready for production.",
+      });
+    } catch (error: any) {
+      console.error('Error generating PDF:', error);
+      toast({
+        variant: "destructive",
+        title: "Error generating print files",
+        description: error.message || "Please try again or contact support.",
+      });
+    } finally {
+      setIsGeneratingPDF(false);
+    }
   };
 
   const imageUrl = state.uploadedFile || state.image?.url || "";
@@ -274,6 +387,29 @@ const StepReview = ({ state, onBack, onAddAnother, onCheckout }: Props) => {
           </div>
         </div>
       </Card>
+
+      {/* Download Print Files Info */}
+      <div className="bg-muted/30 border border-border rounded-lg p-4 text-center">
+        <p className="text-sm text-muted-foreground font-body mb-3">
+          Download your print-ready files at 300 DPI with bleed margins and crop marks for professional printing.
+        </p>
+        <Button 
+          variant="outline" 
+          onClick={handleDownloadPrintFiles}
+          disabled={isGeneratingPDF}
+          className="font-body gap-2 border-primary/40 text-primary hover:bg-primary/10"
+        >
+          {isGeneratingPDF ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" /> Generating PDFs...
+            </>
+          ) : (
+            <>
+              <Download className="w-4 h-4" /> Download Print Files (300 DPI)
+            </>
+          )}
+        </Button>
+      </div>
 
       {/* Actions */}
       <div className="flex flex-col sm:flex-row justify-between gap-3 pt-2">

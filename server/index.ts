@@ -20,13 +20,20 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2024-12-18.acacia',
 });
 
-// Middleware
-app.use(cors({
+// Middleware - CORS with explicit preflight handling
+const corsOptions = {
   origin: process.env.NODE_ENV === 'production' 
     ? 'https://swift-metal-prints.lovable.app' 
-    : 'http://localhost:8080',
+    : true, // Allow all origins in development
   credentials: true,
-}));
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+  exposedHeaders: ['Content-Type', 'Content-Disposition', 'Content-Length'],
+  preflightContinue: false,
+  optionsSuccessStatus: 204,
+};
+
+app.use(cors(corsOptions));
 
 // Stripe webhook - must be before express.json() to get raw body
 app.post(
@@ -128,8 +135,73 @@ app.get('/api/payment-status/:paymentIntentId', async (req: Request, res: Respon
   }
 });
 
+// Test endpoint
+app.post('/api/test', (req: Request, res: Response) => {
+  res.json({ message: 'Test endpoint works!' });
+});
+
+// Generate print-ready PDF - Lazy load the PDF generator
+app.post('/api/generate-pdf', async (req: Request, res: Response) => {
+  try {
+    // Dynamically import PDF generator
+    const { generatePrintReadyPDF } = await import('./pdfGenerator.js');
+    
+    const {
+      imageBase64,
+      backImageBase64,
+      printDimensions,
+      transform,
+      backTransform,
+      includeBleed,
+      includeCropMarks,
+      filename,
+    } = req.body;
+
+    // Validate required fields
+    if (!imageBase64 || !printDimensions || !transform) {
+      return res.status(400).json({ error: 'Missing required fields: imageBase64, printDimensions, transform' });
+    }
+
+    // Validate print dimensions
+    if (!printDimensions.width || !printDimensions.height) {
+      return res.status(400).json({ error: 'Invalid print dimensions' });
+    }
+
+    // Validate transform
+    if (typeof transform.rotation !== 'number' || typeof transform.zoom !== 'number') {
+      return res.status(400).json({ error: 'Invalid transform parameters' });
+    }
+
+    console.log('Generating PDF with dimensions:', printDimensions);
+
+    // Generate PDF
+    const pdfBuffer = await generatePrintReadyPDF({
+      imageBase64,
+      backImageBase64,
+      printDimensions,
+      transform,
+      backTransform,
+      includeBleed: includeBleed ?? false,
+      includeCropMarks: includeCropMarks ?? false,
+    });
+
+    // Set response headers for PDF download
+    const pdfFilename = filename || `print-${Date.now()}.pdf`;
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${pdfFilename}"`);
+    res.setHeader('Content-Length', pdfBuffer.length);
+
+    // Send PDF buffer
+    res.send(pdfBuffer);
+  } catch (error: any) {
+    console.error('Error generating PDF:', error);
+    res.status(500).json({ error: `Failed to generate PDF: ${error.message}` });
+  }
+});
+
 // Start server
 app.listen(PORT, () => {
   console.log(`✅ Server running on http://localhost:${PORT}`);
   console.log(`✅ Stripe configured with key: ${process.env.STRIPE_SECRET_KEY?.substring(0, 20)}...`);
+  console.log(`✅ PDF generation endpoint: POST /api/generate-pdf`);
 });

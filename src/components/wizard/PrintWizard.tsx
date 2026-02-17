@@ -135,6 +135,7 @@ const PrintWizard = ({ onStepChange }: Props) => {
             onRotate={(r) => update({ rotation: r })}
             onZoom={(z) => update({ zoom: z })}
             onPan={(x, y) => update({ panX: x, panY: y })}
+            onReplaceImage={(dataUrl, w, h) => update({ uploadedFile: dataUrl, image: null, imageNaturalWidth: w, imageNaturalHeight: h, rotation: 0, zoom: 1, panX: 0, panY: 0 })}
             onNext={nextStep}
             onBack={prevStep}
           />

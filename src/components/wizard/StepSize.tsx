@@ -40,6 +40,7 @@ interface Props {
   onRotate: (r: number) => void;
   onZoom: (z: number) => void;
   onPan: (x: number, y: number) => void;
+  onReplaceImage?: (dataUrl: string, w: number, h: number) => void;
   onNext: () => void;
   onBack: () => void;
 }
@@ -69,7 +70,7 @@ const sizeGroups = [
 
 const DESK_SHELF_MAX_IDX = 4;
 
-const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, material, additionalPrints, imageNaturalWidth, imageNaturalHeight, rotation, zoom, panX, panY, onSelect, onCustomSize, onQuantity, onAdditionalPrints, onSelectMaterial, onRotate, onZoom, onPan, onNext, onBack }: Props) => {
+const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, material, additionalPrints, imageNaturalWidth, imageNaturalHeight, rotation, zoom, panX, panY, onSelect, onCustomSize, onQuantity, onAdditionalPrints, onSelectMaterial, onRotate, onZoom, onPan, onReplaceImage, onNext, onBack }: Props) => {
   const isCustom = sizeIdx === CUSTOM_SIZE_IDX;
   const selected = isCustom ? { label: `${customWidth}"×${customHeight}"`, w: customWidth, h: customHeight } : standardSizes[sizeIdx];
   const [orientation, setOrientation] = useState<"landscape" | "portrait">("landscape");
@@ -77,6 +78,7 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
   const dragStart = useRef({ x: 0, y: 0, panX: 0, panY: 0 });
   const [pickerSlot, setPickerSlot] = useState<number | null>(null);
   const [viewingPrintIndex, setViewingPrintIndex] = useState<number>(0); // 0 = main print, 1+ = additional prints
+  const mainImageInputRef = useRef<HTMLInputElement>(null);
 
   // Update transformations for the currently viewing print (defined early to be used in pointer handlers)
   const handleRotateCurrentPrint = useCallback((deg: number) => {
@@ -181,6 +183,23 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
       updated[slotIndex] = { ...updated[slotIndex], orientation: ori };
       onAdditionalPrints(updated);
     }
+  };
+
+  const handleReplaceMainImage = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !onReplaceImage) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      const img = new Image();
+      img.onload = () => {
+        onReplaceImage(dataUrl, img.naturalWidth, img.naturalHeight);
+      };
+      img.src = dataUrl;
+    };
+    reader.readAsDataURL(file);
+    // Reset input so same file can be selected again
+    e.target.value = '';
   };
 
   // Get data for the currently viewing print (memoized to prevent recomputation)
@@ -558,6 +577,34 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
                     </div>
                   )}
                   
+                  {/* Replace Image button - Only show for Print 1 - Positioned top-left to avoid warning */}
+                  {viewingPrintIndex === 0 && onReplaceImage && (
+                    <div className="absolute top-3 left-3 z-50">
+                      <label className="cursor-pointer">
+                        <input
+                          ref={mainImageInputRef}
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={handleReplaceMainImage}
+                        />
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="bg-card/95 backdrop-blur-sm border-2 border-primary/30 hover:bg-primary/10 text-primary font-body font-semibold text-xs sm:text-[10px] px-2.5 sm:px-3 py-1.5 touch-manipulation shadow-lg"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            mainImageInputRef.current?.click();
+                          }}
+                        >
+                          <Upload className="w-3.5 h-3.5 sm:w-3 sm:h-3 sm:mr-1.5" />
+                          <span className="hidden sm:inline">Replace Image</span>
+                          <span className="sm:hidden">Replace</span>
+                        </Button>
+                      </label>
+                    </div>
+                  )}
+
                   {/* Transform controls - MOBILE OPTIMIZED - Larger buttons */}
                   {(currentPrintData.imageUrl || imageUrl) && (
                     <div className="absolute bottom-3 right-3 z-50">
@@ -603,14 +650,26 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
                 </div>
                   )}
                   
-                  {/* Drag instruction - MOBILE OPTIMIZED */}
-                  <div className="absolute top-3 left-3 bg-card/90 backdrop-blur-sm border border-primary/30 rounded-lg px-3 py-2 sm:py-1.5 z-50 pointer-events-none">
-                    <p className="text-xs sm:text-[10px] font-body font-bold text-primary flex items-center gap-1.5">
-                      <Move className="w-4 h-4 sm:w-3 sm:h-3" />
-                      <span className="hidden sm:inline">Drag to reposition</span>
-                      <span className="sm:hidden">Drag</span>
-                    </p>
-                  </div>
+                  {/* Drag instruction - MOBILE OPTIMIZED - Moved down if Replace button is visible */}
+                  {!(viewingPrintIndex === 0 && onReplaceImage) && (
+                    <div className="absolute top-3 left-3 bg-card/90 backdrop-blur-sm border border-primary/30 rounded-lg px-3 py-2 sm:py-1.5 z-50 pointer-events-none">
+                      <p className="text-xs sm:text-[10px] font-body font-bold text-primary flex items-center gap-1.5">
+                        <Move className="w-4 h-4 sm:w-3 sm:h-3" />
+                        <span className="hidden sm:inline">Drag to reposition</span>
+                        <span className="sm:hidden">Drag</span>
+                      </p>
+                    </div>
+                  )}
+                  {/* Drag instruction - Positioned below Replace button when it's visible */}
+                  {viewingPrintIndex === 0 && onReplaceImage && (
+                    <div className="absolute top-14 sm:top-12 left-3 bg-card/90 backdrop-blur-sm border border-primary/30 rounded-lg px-3 py-2 sm:py-1.5 z-50 pointer-events-none">
+                      <p className="text-xs sm:text-[10px] font-body font-bold text-primary flex items-center gap-1.5">
+                        <Move className="w-4 h-4 sm:w-3 sm:h-3" />
+                        <span className="hidden sm:inline">Drag to reposition</span>
+                        <span className="sm:hidden">Drag</span>
+                      </p>
+                    </div>
+                  )}
                   
                   {/* Size label - MOBILE OPTIMIZED */}
                   <div className="absolute bottom-2 left-2 bg-card/90 backdrop-blur-sm border border-border rounded px-3 py-1.5 sm:px-2.5 sm:py-1 z-10">

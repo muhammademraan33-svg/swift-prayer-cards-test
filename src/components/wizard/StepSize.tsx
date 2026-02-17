@@ -44,6 +44,16 @@ interface Props {
   onBack: () => void;
 }
 
+interface PrintData {
+  imageUrl: string;
+  rotation: number;
+  zoom: number;
+  panX: number;
+  panY: number;
+  naturalWidth: number;
+  naturalHeight: number;
+}
+
 const materialOpts: { id: MaterialChoice; label: string; subtitle: string; img: string; cornerImg: string; icon: React.ReactNode; benefits: string[] }[] = [
   { id: "metal-designer", label: "Lux Metal", subtitle: '.040" Lightweight', img: metalImg, cornerImg: cornerLuxMetal, icon: <Gem className="w-4 h-4" />, benefits: ["Ultra-lightweight & easy to hang", "Scratch-resistant HD finish", "Best value for vibrant color"] },
   { id: "metal-museum", label: "Designer Metal", subtitle: '.080" Heirloom', img: metalMuseumImg, cornerImg: cornerDesignerMetal, icon: <Shield className="w-4 h-4" />, benefits: ["2× thicker for gallery-grade rigidity", "Zero warp guaranteed for life", "Museum archival pigments"] },
@@ -234,9 +244,9 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
         onUploadImage={handleSlotUpload}
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* LEFT: Preview */}
-        <div className="flex justify-center md:sticky md:top-4 md:self-start w-full">
+        <div className="flex justify-center lg:sticky lg:top-4 lg:self-start w-full">
           {(() => {
             const backdropImg = isDesk ? shelfBackdrop : couchWall;
             const WALL_W = isDesk ? 48 : 60;
@@ -292,17 +302,20 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
 
             return (
               <div className="space-y-3 w-full">
-                {/* Print Toggle Tabs - Only show when quantity >= 2 */}
+                {/* Print Toggle Tabs - Only show when quantity >= 2 - MOBILE OPTIMIZED */}
                 {quantity >= 2 && (
-                  <div className="flex items-center gap-2 bg-card border border-border rounded-lg p-2">
-                    <p className="text-xs font-body font-semibold text-muted-foreground mr-2">Editing:</p>
-                    <div className="flex gap-1 flex-wrap">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 bg-card border-2 border-primary/30 rounded-lg p-3 shadow-lg">
+                    <p className="text-sm font-body font-bold text-primary flex items-center gap-1.5">
+                      <span className="hidden sm:inline">Editing:</span>
+                      <span className="sm:hidden">Edit Print:</span>
+                    </p>
+                    <div className="grid grid-cols-3 sm:flex gap-2 flex-1">
                       <button
                         onClick={() => setViewingPrintIndex(0)}
-                        className={`px-3 py-1.5 rounded-md text-xs font-body font-semibold transition-all ${
+                        className={`px-4 py-2.5 sm:px-3 sm:py-1.5 rounded-lg text-sm sm:text-xs font-body font-bold transition-all ${
                           viewingPrintIndex === 0
-                            ? "bg-gradient-gold text-primary-foreground shadow-sm"
-                            : "bg-secondary text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                            ? "bg-gradient-gold text-primary-foreground shadow-md ring-2 ring-primary/50"
+                            : "bg-secondary text-muted-foreground hover:bg-primary/10 hover:text-primary border border-border"
                         }`}
                       >
                         Print 1
@@ -313,12 +326,12 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
                           <button
                             key={idx}
                             onClick={() => setViewingPrintIndex(idx + 1)}
-                            className={`px-3 py-1.5 rounded-md text-xs font-body font-semibold transition-all ${
+                            className={`px-4 py-2.5 sm:px-3 sm:py-1.5 rounded-lg text-sm sm:text-xs font-body font-bold transition-all ${
                               viewingPrintIndex === idx + 1
-                                ? "bg-gradient-gold text-primary-foreground shadow-sm"
+                                ? "bg-gradient-gold text-primary-foreground shadow-md ring-2 ring-primary/50"
                                 : hasImage
-                                  ? "bg-secondary text-muted-foreground hover:bg-primary/10 hover:text-primary"
-                                  : "bg-secondary/50 text-muted-foreground/50 hover:bg-primary/5"
+                                  ? "bg-secondary text-muted-foreground hover:bg-primary/10 hover:text-primary border border-border"
+                                  : "bg-secondary/50 text-muted-foreground/50 hover:bg-primary/5 border border-dashed border-border"
                             }`}
                           >
                             Print {idx + 2}
@@ -329,14 +342,15 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
                   </div>
                 )}
 
-                {/* WYSIWYG Crop Preview */}
+                {/* WYSIWYG Crop Preview - MOBILE OPTIMIZED */}
                 <div 
-                  className="relative w-full bg-secondary/30 rounded-lg border-2 border-primary/30 overflow-hidden"
+                  className="relative w-full bg-secondary/30 rounded-lg border-2 border-primary/30 overflow-hidden shadow-xl"
                   style={{ 
                     aspectRatio: `${printAspect}`,
                     maxWidth: "100%",
                     maxHeight: "600px",
-                    minHeight: "200px",
+                    minHeight: "300px",
+                    height: "auto",
                     width: "100%"
                   }}
                 >
@@ -410,43 +424,44 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
                 </div>
                   )}
                   
-                  {/* Transform controls - Made more prominent */}
+                  {/* Transform controls - MOBILE OPTIMIZED - Larger buttons */}
                   {(currentPrintData.imageUrl || imageUrl) && (
                     <div className="absolute bottom-3 right-3 z-50">
-                      <div className="bg-card/95 backdrop-blur-sm border-2 border-primary/30 rounded-xl p-2 shadow-2xl">
-                        <p className="text-[10px] font-body font-semibold text-primary mb-2 text-center flex items-center gap-1 justify-center">
-                          <Move className="w-3 h-3" />
-                          ADJUST IMAGE
+                      <div className="bg-card/95 backdrop-blur-sm border-2 border-primary/30 rounded-xl p-3 shadow-2xl">
+                        <p className="text-xs sm:text-[10px] font-body font-bold text-primary mb-2 text-center flex items-center gap-1.5 justify-center">
+                          <Move className="w-4 h-4 sm:w-3 sm:h-3" />
+                          <span className="hidden sm:inline">ADJUST IMAGE</span>
+                          <span className="sm:hidden">ADJUST</span>
                         </p>
-                        <div className="flex flex-col gap-1.5">
+                        <div className="flex flex-col gap-2">
                           <button 
                             onClick={(e) => { e.stopPropagation(); handleRotateCurrentPrint((currentPrintData.rotation + 90) % 360); }} 
-                            className="w-10 h-10 bg-primary/10 hover:bg-primary/20 border border-primary/30 rounded-lg flex items-center justify-center transition-colors" 
+                            className="w-12 h-12 sm:w-10 sm:h-10 bg-primary/10 hover:bg-primary/20 active:bg-primary/30 border-2 border-primary/30 rounded-lg flex items-center justify-center transition-colors touch-manipulation" 
                             title="Rotate 90°"
                           >
-                            <RotateCw className="w-5 h-5 text-primary" />
+                            <RotateCw className="w-6 h-6 sm:w-5 sm:h-5 text-primary" />
                           </button>
                           <button 
                             onClick={(e) => { e.stopPropagation(); handleZoomCurrentPrint(Math.min(currentPrintData.zoom + 0.25, 3)); handlePanCurrentPrint(0, 0); }} 
-                            className="w-10 h-10 bg-primary/10 hover:bg-primary/20 border border-primary/30 rounded-lg flex items-center justify-center transition-colors" 
+                            className="w-12 h-12 sm:w-10 sm:h-10 bg-primary/10 hover:bg-primary/20 active:bg-primary/30 border-2 border-primary/30 rounded-lg flex items-center justify-center transition-colors touch-manipulation" 
                             title="Zoom In"
                           >
-                            <ZoomIn className="w-5 h-5 text-primary" />
+                            <ZoomIn className="w-6 h-6 sm:w-5 sm:h-5 text-primary" />
                           </button>
                           <button 
                             onClick={(e) => { e.stopPropagation(); handleZoomCurrentPrint(Math.max(currentPrintData.zoom - 0.25, 1)); handlePanCurrentPrint(0, 0); }} 
-                            className="w-10 h-10 bg-primary/10 hover:bg-primary/20 border border-primary/30 rounded-lg flex items-center justify-center transition-colors" 
+                            className="w-12 h-12 sm:w-10 sm:h-10 bg-primary/10 hover:bg-primary/20 active:bg-primary/30 border-2 border-primary/30 rounded-lg flex items-center justify-center transition-colors touch-manipulation" 
                             title="Zoom Out"
                           >
-                            <ZoomOut className="w-5 h-5 text-primary" />
+                            <ZoomOut className="w-6 h-6 sm:w-5 sm:h-5 text-primary" />
                           </button>
                           {(currentPrintData.zoom > 1 || currentPrintData.panX !== 0 || currentPrintData.panY !== 0 || currentPrintData.rotation !== 0) && (
                             <button 
                               onClick={(e) => { e.stopPropagation(); handleZoomCurrentPrint(1); handlePanCurrentPrint(0, 0); handleRotateCurrentPrint(0); }} 
-                              className="w-10 h-10 bg-destructive/10 hover:bg-destructive/20 border border-destructive/30 rounded-lg flex items-center justify-center transition-colors" 
+                              className="w-12 h-12 sm:w-10 sm:h-10 bg-destructive/10 hover:bg-destructive/20 active:bg-destructive/30 border-2 border-destructive/30 rounded-lg flex items-center justify-center transition-colors touch-manipulation" 
                               title="Reset All"
                             >
-                              <X className="w-5 h-5 text-destructive" />
+                              <X className="w-6 h-6 sm:w-5 sm:h-5 text-destructive" />
                             </button>
                           )}
                         </div>
@@ -454,31 +469,33 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
                     </div>
                   )}
                   
-                  {/* Drag instruction */}
-                  <div className="absolute top-3 left-3 bg-card/90 backdrop-blur-sm border border-primary/30 rounded-lg px-3 py-1.5 z-50 pointer-events-none">
-                    <p className="text-[10px] font-body font-semibold text-primary flex items-center gap-1.5">
-                      <Move className="w-3 h-3" />
-                      Drag to reposition
+                  {/* Drag instruction - MOBILE OPTIMIZED */}
+                  <div className="absolute top-3 left-3 bg-card/90 backdrop-blur-sm border border-primary/30 rounded-lg px-3 py-2 sm:py-1.5 z-50 pointer-events-none">
+                    <p className="text-xs sm:text-[10px] font-body font-bold text-primary flex items-center gap-1.5">
+                      <Move className="w-4 h-4 sm:w-3 sm:h-3" />
+                      <span className="hidden sm:inline">Drag to reposition</span>
+                      <span className="sm:hidden">Drag</span>
                     </p>
                   </div>
                   
-                  {/* Size label */}
-                  <div className="absolute bottom-2 left-2 bg-card/90 backdrop-blur-sm border border-border rounded px-2.5 py-1 z-10">
-                    <span className="text-sm font-body text-primary font-semibold">{displayLabel}</span>
+                  {/* Size label - MOBILE OPTIMIZED */}
+                  <div className="absolute bottom-2 left-2 bg-card/90 backdrop-blur-sm border border-border rounded px-3 py-1.5 sm:px-2.5 sm:py-1 z-10">
+                    <span className="text-base sm:text-sm font-body text-primary font-bold">{displayLabel}</span>
                     {effectiveDpi > 0 && (
-                      <span className="text-[10px] text-muted-foreground font-body ml-1.5">
+                      <span className="text-xs sm:text-[10px] text-muted-foreground font-body ml-2 sm:ml-1.5">
                         {Math.round(effectiveDpi)} DPI
                       </span>
                     )}
                   </div>
                 </div>
                 
-                {/* Room backdrop preview (optional visual context) */}
+                {/* Room backdrop preview (optional visual context) - MOBILE: LARGER */}
                 <div 
                   className="relative w-full overflow-hidden rounded-lg border border-border" 
                   style={{ 
                     aspectRatio: containerAspect,
-                    maxHeight: "200px"
+                    maxHeight: "300px",
+                    minHeight: "200px"
                   }}
                 >
                   <img src={backdropImg} alt="Room backdrop" className="absolute inset-0 w-full h-full object-cover" />

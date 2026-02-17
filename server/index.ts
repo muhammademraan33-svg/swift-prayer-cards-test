@@ -67,8 +67,9 @@ app.post(
   }
 );
 
-// Regular JSON middleware for other routes
-app.use(express.json());
+// Regular JSON middleware for other routes - Increased limit for base64 images
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Health check
 app.get('/api/health', (req: Request, res: Response) => {

@@ -150,27 +150,61 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
 
   const handleSlotSelect = (slotIndex: number, image: SelectedImage) => {
     const updated = [...additionalPrints];
-    while (updated.length <= slotIndex) updated.push(createAdditionalPrint(sizeIdx, customWidth, customHeight));
-    updated[slotIndex] = { ...updated[slotIndex], image, uploadedFile: null };
+    // When creating new additional prints, ensure they get their own sizeIdx set
+    while (updated.length <= slotIndex) {
+      // Use the current main print size as the initial size, but it will be independent
+      const newPrint = createAdditionalPrint(sizeIdx, customWidth, customHeight);
+      // Ensure sizeIdx is explicitly set (not undefined)
+      updated.push({ ...newPrint, sizeIdx: sizeIdx });
+    }
+    // Ensure the selected slot has its own sizeIdx
+    const existing = updated[slotIndex];
+    if (existing.sizeIdx === undefined) {
+      updated[slotIndex] = { ...existing, sizeIdx: sizeIdx, image, uploadedFile: null };
+    } else {
+      updated[slotIndex] = { ...existing, image, uploadedFile: null };
+    }
     onAdditionalPrints(updated);
     setViewingPrintIndex(slotIndex + 1); // Switch to viewing the newly added print
   };
 
   const handleSlotUpload = (slotIndex: number, dataUrl: string) => {
     const updated = [...additionalPrints];
-    while (updated.length <= slotIndex) updated.push(createAdditionalPrint(sizeIdx, customWidth, customHeight));
+    // When creating new additional prints, ensure they get their own sizeIdx set
+    while (updated.length <= slotIndex) {
+      const newPrint = createAdditionalPrint(sizeIdx, customWidth, customHeight);
+      // Ensure sizeIdx is explicitly set (not undefined)
+      updated.push({ ...newPrint, sizeIdx: sizeIdx });
+    }
     // Load image to get natural dimensions
     const img = new Image();
     img.onload = () => {
       const finalUpdated = [...additionalPrints];
-      while (finalUpdated.length <= slotIndex) finalUpdated.push(createAdditionalPrint(sizeIdx, customWidth, customHeight));
-      finalUpdated[slotIndex] = { 
-        ...finalUpdated[slotIndex], 
-        image: null, 
-        uploadedFile: dataUrl,
-        imageNaturalWidth: img.naturalWidth,
-        imageNaturalHeight: img.naturalHeight
-      };
+      // Ensure array is long enough and each print has its own sizeIdx
+      while (finalUpdated.length <= slotIndex) {
+        const newPrint = createAdditionalPrint(sizeIdx, customWidth, customHeight);
+        finalUpdated.push({ ...newPrint, sizeIdx: sizeIdx });
+      }
+      // Ensure the uploaded slot has its own sizeIdx
+      const existing = finalUpdated[slotIndex];
+      if (existing.sizeIdx === undefined) {
+        finalUpdated[slotIndex] = { 
+          ...existing, 
+          sizeIdx: sizeIdx,
+          image: null, 
+          uploadedFile: dataUrl,
+          imageNaturalWidth: img.naturalWidth,
+          imageNaturalHeight: img.naturalHeight
+        };
+      } else {
+        finalUpdated[slotIndex] = { 
+          ...existing, 
+          image: null, 
+          uploadedFile: dataUrl,
+          imageNaturalWidth: img.naturalWidth,
+          imageNaturalHeight: img.naturalHeight
+        };
+      }
       onAdditionalPrints(finalUpdated);
       setViewingPrintIndex(slotIndex + 1); // Switch to viewing the newly added print
     };
@@ -266,10 +300,32 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
       : standardSizes[printSizeIdx] || selected;
   }, [viewingPrintIndex, additionalPrints, selected, sizeIdx]);
 
-  // Use current print size for calculations
+  // Get the sizeIdx for the currently viewing print (for groupHasSelection check)
+  const currentPrintSizeIdx = useMemo(() => {
+    if (viewingPrintIndex === 0) {
+      return sizeIdx;
+    }
+    const additionalPrint = additionalPrints[viewingPrintIndex - 1];
+    if (!additionalPrint) return sizeIdx;
+    return additionalPrint.sizeIdx !== undefined ? additionalPrint.sizeIdx : sizeIdx;
+  }, [viewingPrintIndex, additionalPrints, sizeIdx]);
+
+  // Check if current print is custom size
+  const currentPrintIsCustom = useMemo(() => {
+    return currentPrintSizeIdx === CUSTOM_SIZE_IDX;
+  }, [currentPrintSizeIdx]);
+
+  // Use current print size for calculations (for the currently viewing print)
   const isSquare = currentPrintSize.w === currentPrintSize.h;
   const displayW = orientation === "portrait" ? Math.min(currentPrintSize.w, currentPrintSize.h) : Math.max(currentPrintSize.w, currentPrintSize.h);
   const displayH = orientation === "portrait" ? Math.max(currentPrintSize.w, currentPrintSize.h) : Math.min(currentPrintSize.w, currentPrintSize.h);
+  
+  // CRITICAL: Get Print 1's size separately (always use main print's size, not current viewing print)
+  const print1Size = selected; // This is always the main print's size
+  const print1IsSquare = print1Size.w === print1Size.h;
+  const print1DisplayW = orientation === "portrait" ? Math.min(print1Size.w, print1Size.h) : Math.max(print1Size.w, print1Size.h);
+  const print1DisplayH = orientation === "portrait" ? Math.max(print1Size.w, print1Size.h) : Math.min(print1Size.w, print1Size.h);
+  const print1Aspect = print1DisplayW / print1DisplayH;
 
   const requiredPxW = displayW * 300;
   const requiredPxH = displayH * 300;
@@ -309,22 +365,25 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
             const backdropImg = isDesk ? shelfBackdrop : couchWall;
             const WALL_W = isDesk ? 48 : 60;
             const containerAspect = "16/10";
-            const maxDim = Math.max(displayW, displayH);
-            const printWPct = Math.max((maxDim / WALL_W) * 100, 10);
-            const printAspect = displayW / displayH;
+            // CRITICAL: For room backdrop, use Print 1's dimensions for backdrop calculations
+            // This ensures Print 1 always shows correctly regardless of which print is being viewed
+            const backdropMaxDim = Math.max(print1DisplayW, print1DisplayH);
+            const printWPct = Math.max((backdropMaxDim / WALL_W) * 100, 10);
+            const printAspect = print1Aspect; // Use Print 1's aspect for backdrop
             const printBottom = isDesk ? "38%" : undefined;
             const printTop = isDesk ? undefined : "35%";
 
             if (quantity >= 2) {
               // Calculate sizes for all prints
+              // CRITICAL: Print 1 always uses its own size (selected), NOT the currently viewing print's size
               const printSizes = [
-                    // Print 1
+                    // Print 1 - ALWAYS use main print's size, regardless of viewingPrintIndex
                     {
-                      size: selected,
+                      size: selected, // Main print's size
                       orientation: orientation,
-                      w: displayW,
-                      h: displayH,
-                      aspect: printAspect,
+                      w: print1DisplayW, // Use Print 1's dimensions, not current viewing print
+                      h: print1DisplayH,
+                      aspect: print1Aspect,
                       imageUrl: imageUrl,
                       transform: { rotation, zoom, panX, panY }
                     },
@@ -377,87 +436,128 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
                 : printWidths;
 
               return (
+                <div className="space-y-3 w-full">
+                  {/* Print Toggle Tabs - ALWAYS SHOW WHEN QUANTITY >= 2 */}
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 bg-card border-2 border-primary/30 rounded-lg p-3 shadow-lg">
+                    <p className="text-sm font-body font-bold text-primary flex items-center gap-1.5">
+                      <span className="hidden sm:inline">Editing:</span>
+                      <span className="sm:hidden">Edit Print:</span>
+                    </p>
+                    <div className="grid grid-cols-3 sm:flex gap-2 flex-1">
+                      <button
+                        onClick={() => setViewingPrintIndex(0)}
+                        className={`px-4 py-2.5 sm:px-3 sm:py-1.5 rounded-lg text-sm sm:text-xs font-body font-bold transition-all ${
+                          viewingPrintIndex === 0
+                            ? "bg-gradient-gold text-primary-foreground shadow-md ring-2 ring-primary/50"
+                            : "bg-secondary text-muted-foreground hover:bg-primary/10 hover:text-primary border border-border"
+                        }`}
+                      >
+                        Print 1
+                      </button>
+                      {Array.from({ length: quantity - 1 }).map((_, idx) => {
+                        const hasImage = getSlotImg(idx);
+                        return (
+                          <button
+                            key={idx}
+                            onClick={() => setViewingPrintIndex(idx + 1)}
+                            className={`px-4 py-2.5 sm:px-3 sm:py-1.5 rounded-lg text-sm sm:text-xs font-body font-bold transition-all ${
+                              viewingPrintIndex === idx + 1
+                                ? "bg-gradient-gold text-primary-foreground shadow-md ring-2 ring-primary/50"
+                                : hasImage
+                                  ? "bg-secondary text-muted-foreground hover:bg-primary/10 hover:text-primary border border-border"
+                                  : "bg-secondary/50 text-muted-foreground/50 hover:bg-primary/5 border border-dashed border-border"
+                            }`}
+                          >
+                            Print {idx + 2}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Room backdrop preview */}
                 <div className="relative w-full overflow-hidden rounded-lg border border-border" style={{ aspectRatio: containerAspect }}>
                   <img src={backdropImg} alt="Room backdrop" className="absolute inset-0 w-full h-full object-cover" />
                   <div className="absolute left-1/2 -translate-x-1/2 flex items-end" style={{ bottom: isDesk ? "38%" : "30%", gap: `${gapPct}%` }}>
-                    {/* Print 1 */}
-                    <div 
-                      className="relative shadow-[0_4px_20px_rgba(0,0,0,0.3)] overflow-hidden shrink-0 cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all" 
-                      style={{ width: `${normalizedWidths[0]}%`, aspectRatio: `${printSizes[0].aspect}` }}
-                      onClick={() => setViewingPrintIndex(0)}
-                      title="Click to edit Print 1"
-                    >
-                      {imageUrl ? (
-                        <img 
-                          src={imageUrl} 
-                          alt="Print 1" 
-                          className="w-full h-full object-cover" 
-                          style={{ transform: `scale(${zoom}) translate(${panX / zoom}px, ${panY / zoom}px) rotate(${rotation}deg)`, transformOrigin: "center center" }} 
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-muted/30 flex items-center justify-center">
-                          <span className="text-xs text-muted-foreground">Print 1</span>
-                        </div>
-                      )}
-                      {/* Size label for Print 1 */}
-                      <div className="absolute bottom-1 left-1 bg-card/90 backdrop-blur-sm border border-border rounded px-1.5 py-0.5 z-10">
-                        <span className="text-[9px] sm:text-[8px] font-body text-primary font-bold">{selected.label}</span>
-                      </div>
+                      {/* Print 1 */}
+                      <div 
+                        className={`relative shadow-[0_4px_20px_rgba(0,0,0,0.3)] overflow-hidden shrink-0 cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all ${viewingPrintIndex === 0 ? "ring-2 ring-primary" : ""}`}
+                        style={{ width: `${normalizedWidths[0]}%`, aspectRatio: `${printSizes[0].aspect}` }}
+                        onClick={() => setViewingPrintIndex(0)}
+                        title="Click to edit Print 1"
+                      >
+                        {imageUrl ? (
+                          <img 
+                            src={imageUrl} 
+                            alt="Print 1" 
+                            className="w-full h-full object-cover" 
+                            style={{ transform: `scale(${zoom}) translate(${panX / zoom}px, ${panY / zoom}px) rotate(${rotation}deg)`, transformOrigin: "center center" }} 
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-muted/30 flex items-center justify-center">
+                            <span className="text-xs text-muted-foreground">Print 1</span>
                     </div>
-                    
-                    {/* Additional prints */}
+                        )}
+                        {/* Size label for Print 1 */}
+                        <div className="absolute bottom-1 left-1 bg-card/90 backdrop-blur-sm border border-border rounded px-1.5 py-0.5 z-10">
+                          <span className="text-[9px] sm:text-[8px] font-body text-primary font-bold">{selected.label}</span>
+                        </div>
+                      </div>
+                      
+                      {/* Additional prints */}
                     {Array.from({ length: quantity - 1 }).map((_, idx) => {
-                      const printData = printSizes[idx + 1];
-                      const slotImg = printData.imageUrl;
+                        const printData = printSizes[idx + 1];
+                        const slotImg = printData.imageUrl;
                       return (
-                        <div 
-                          key={idx} 
-                          className="relative shadow-[0_4px_20px_rgba(0,0,0,0.3)] overflow-hidden shrink-0 bg-muted/50 cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all" 
-                          style={{ width: `${normalizedWidths[idx + 1]}%`, aspectRatio: `${printData.aspect}` }} 
-                          onClick={() => slotImg ? setViewingPrintIndex(idx + 1) : setPickerSlot(idx)}
-                          title={slotImg ? `Click to edit Print ${idx + 2}` : `Click to add image for Print ${idx + 2}`}
-                        >
+                          <div 
+                            key={idx} 
+                            className={`relative shadow-[0_4px_20px_rgba(0,0,0,0.3)] overflow-hidden shrink-0 bg-muted/50 cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all ${viewingPrintIndex === idx + 1 ? "ring-2 ring-primary" : ""}`}
+                            style={{ width: `${normalizedWidths[idx + 1]}%`, aspectRatio: `${printData.aspect}` }} 
+                            onClick={() => slotImg ? setViewingPrintIndex(idx + 1) : setPickerSlot(idx)}
+                            title={slotImg ? `Click to edit Print ${idx + 2}` : `Click to add image for Print ${idx + 2}`}
+                          >
                           {slotImg ? (
-                            <img 
-                              src={slotImg} 
-                              alt={`Print ${idx + 2}`} 
-                              className="w-full h-full object-cover" 
-                              style={{ transform: `scale(${printData.transform.zoom}) translate(${printData.transform.panX / printData.transform.zoom}px, ${printData.transform.panY / printData.transform.zoom}px) rotate(${printData.transform.rotation}deg)`, transformOrigin: "center center" }}
-                            />
+                              <img 
+                                src={slotImg} 
+                                alt={`Print ${idx + 2}`} 
+                                className="w-full h-full object-cover" 
+                                style={{ transform: `scale(${printData.transform.zoom}) translate(${printData.transform.panX / printData.transform.zoom}px, ${printData.transform.panY / printData.transform.zoom}px) rotate(${printData.transform.rotation}deg)`, transformOrigin: "center center" }}
+                              />
                           ) : (
                             <div className="w-full h-full flex flex-col items-center justify-center gap-1 hover:bg-muted/70 transition-colors">
                               <Plus className="w-5 h-5 text-muted-foreground" />
                               <span className="text-[9px] text-muted-foreground font-body">Print {idx + 2}</span>
                             </div>
                           )}
-                          {/* Size label for each print */}
-                          <div className="absolute bottom-1 left-1 bg-card/90 backdrop-blur-sm border border-border rounded px-1.5 py-0.5 z-10">
-                            <span className="text-[9px] sm:text-[8px] font-body text-primary font-bold">{printData.size.label}</span>
-                          </div>
+                            {/* Size label for each print */}
+                            <div className="absolute bottom-1 left-1 bg-card/90 backdrop-blur-sm border border-border rounded px-1.5 py-0.5 z-10">
+                              <span className="text-[9px] sm:text-[8px] font-body text-primary font-bold">{printData.size.label}</span>
+                            </div>
                         </div>
                       );
                     })}
                   </div>
-                  {/* Size labels for all prints in room backdrop */}
-                  <div className="absolute bottom-2 left-2 flex flex-col gap-1 z-10">
-                    <div className="bg-card/90 backdrop-blur-sm border border-border rounded px-2.5 py-1">
-                      <span className="text-xs sm:text-sm font-body text-primary font-semibold">{selected.label}</span>
-                      <span className="text-[9px] sm:text-[10px] text-muted-foreground font-body ml-1">Print 1</span>
+                    {/* Size labels for all prints in room backdrop */}
+                    <div className="absolute bottom-2 left-2 flex flex-col gap-1 z-10">
+                      <div className="bg-card/90 backdrop-blur-sm border border-border rounded px-2.5 py-1">
+                        <span className="text-xs sm:text-sm font-body text-primary font-semibold">{selected.label}</span>
+                        <span className="text-[9px] sm:text-[10px] text-muted-foreground font-body ml-1">Print 1</span>
+                      </div>
+                      {Array.from({ length: quantity - 1 }).map((_, idx) => {
+                        const slotPrint = additionalPrints[idx];
+                        const slotSizeIdx = slotPrint?.sizeIdx !== undefined ? slotPrint.sizeIdx : sizeIdx;
+                        const slotIsCustom = slotSizeIdx === CUSTOM_SIZE_IDX;
+                        const slotSize = slotIsCustom 
+                          ? { label: `${slotPrint?.customWidth ?? customWidth}"×${slotPrint?.customHeight ?? customHeight}"` }
+                          : standardSizes[slotSizeIdx] || selected;
+                        return (
+                          <div key={idx} className="bg-card/90 backdrop-blur-sm border border-border rounded px-2.5 py-1">
+                            <span className="text-xs sm:text-sm font-body text-primary font-semibold">{slotSize.label}</span>
+                            <span className="text-[9px] sm:text-[10px] text-muted-foreground font-body ml-1">Print {idx + 2}</span>
+                          </div>
+                        );
+                      })}
                     </div>
-                    {Array.from({ length: quantity - 1 }).map((_, idx) => {
-                      const slotPrint = additionalPrints[idx];
-                      const slotSizeIdx = slotPrint?.sizeIdx !== undefined ? slotPrint.sizeIdx : sizeIdx;
-                      const slotIsCustom = slotSizeIdx === CUSTOM_SIZE_IDX;
-                      const slotSize = slotIsCustom 
-                        ? { label: `${slotPrint?.customWidth ?? customWidth}"×${slotPrint?.customHeight ?? customHeight}"` }
-                        : standardSizes[slotSizeIdx] || selected;
-                      return (
-                        <div key={idx} className="bg-card/90 backdrop-blur-sm border border-border rounded px-2.5 py-1">
-                          <span className="text-xs sm:text-sm font-body text-primary font-semibold">{slotSize.label}</span>
-                          <span className="text-[9px] sm:text-[10px] text-muted-foreground font-body ml-1">Print {idx + 2}</span>
-                        </div>
-                      );
-                    })}
                   </div>
                 </div>
               );
@@ -509,7 +609,7 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
                 <div 
                   className="relative w-full bg-secondary/30 rounded-lg border-2 border-primary/30 overflow-hidden shadow-xl"
                   style={{ 
-                    aspectRatio: `${printAspect}`,
+                    aspectRatio: `${displayW / displayH}`, // Use current viewing print's aspect
                     maxWidth: "100%",
                     maxHeight: "600px",
                     minHeight: "300px",
@@ -560,7 +660,7 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
                               panY: currentPrintData.panY 
                             })}
                           />
-                        </div>
+                </div>
                       </div>
                     </>
                   ) : (
@@ -584,7 +684,7 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
                         <AlertTriangle className="w-3 h-3 sm:w-2.5 sm:h-2.5 mr-1" />
                         Low Quality: {Math.round(effectiveDpi)} DPI
                       </Badge>
-                    </div>
+                </div>
                   )}
                   
                   {/* Replace Image button - Always show for Print 1 when onReplaceImage is available */}
@@ -709,7 +809,12 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
                   <img src={backdropImg} alt="Room backdrop" className="absolute inset-0 w-full h-full object-cover" />
                   <div
                     className={`absolute left-1/2 -translate-x-1/2 shadow-[0_4px_30px_rgba(0,0,0,0.3)] transition-all duration-500 ease-out overflow-hidden ${printTop ? '-translate-y-1/2' : ''}`}
-                    style={{ width: `${printWPct}%`, paddingBottom: `${printWPct / printAspect}%`, height: 0, ...(printTop ? { top: printTop } : { bottom: printBottom }) }}
+                    style={{ 
+                      width: `${printWPct}%`, 
+                      paddingBottom: `${printWPct / (displayW / displayH)}%`, // Use current viewing print's aspect
+                      height: 0, 
+                      ...(printTop ? { top: printTop } : { bottom: printBottom }) 
+                    }}
                   >
                     <div className="absolute inset-0 overflow-hidden">
                       <img 
@@ -740,9 +845,56 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
 
         {/* RIGHT: Size + Material selection */}
         <div className="space-y-4">
+          {/* Quantity selector - Show at top when a small size is selected */}
+          {!currentPrintIsCustom && currentPrintSizeIdx >= 0 && currentPrintSizeIdx < 10 && (
+            <div className="flex items-center gap-2 bg-primary/5 border border-primary/20 rounded-lg px-3 py-2">
+              <Sparkles className="w-3.5 h-3.5 text-primary shrink-0" />
+              <span className="text-xs font-body text-foreground font-semibold whitespace-nowrap">{currentPrintSizeIdx < 4 ? "Great in sets!" : "Gallery wall?"}</span>
+              <span className="text-[10px] text-muted-foreground font-body hidden sm:inline">Qty:</span>
+              <div className="flex items-center gap-0.5 ml-auto">
+                {[1, 2, 3, 4, 5, 6].map((q) => (
+                  <button
+                    key={q}
+                    onClick={() => {
+                      onQuantity(q);
+                      if (q >= 2) {
+                        const current = [...additionalPrints];
+                        // When increasing quantity, preserve existing prints and create new ones with their own size
+                        while (current.length < q - 1) {
+                          // New prints get the current main print size as initial value, but they will maintain it independently
+                          const newPrint = createAdditionalPrint(sizeIdx, customWidth, customHeight);
+                          // CRITICAL: Ensure sizeIdx is ALWAYS explicitly set so prints are independent
+                          current.push({ ...newPrint, sizeIdx: sizeIdx });
+                        }
+                        // CRITICAL: Ensure ALL existing prints have their sizeIdx explicitly set (never undefined)
+                        // This ensures they remain independent even if main print size changes
+                        const ensured = current.map((ap, i) => {
+                          if (ap.sizeIdx === undefined) {
+                            // If somehow sizeIdx is undefined, set it to current main print size
+                            // But from now on, this print will maintain its own size independently
+                            return { ...ap, sizeIdx: sizeIdx, customWidth: ap.customWidth || customWidth, customHeight: ap.customHeight || customHeight };
+                          }
+                          // Print already has its own sizeIdx - keep it as is (fully independent)
+                          return ap;
+                        });
+                        onAdditionalPrints(ensured.slice(0, q - 1));
+                      } else {
+                        onAdditionalPrints([]);
+                      }
+                    }}
+                    className={`w-7 h-7 rounded-md text-xs font-body font-bold transition-all ${quantity === q ? "bg-gradient-gold text-primary-foreground shadow-sm" : "bg-secondary text-muted-foreground hover:bg-primary/10 hover:text-primary"}`}
+                  >
+                    {q}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {sizeGroups.map((group) => {
             const items = standardSizes.slice(group.range[0], group.range[1]);
-            const groupHasSelection = !isCustom && sizeIdx >= group.range[0] && sizeIdx < group.range[1];
+            // Use CURRENTLY VIEWING print's size for groupHasSelection, not main print's size
+            const groupHasSelection = !currentPrintIsCustom && currentPrintSizeIdx >= group.range[0] && currentPrintSizeIdx < group.range[1];
             const isSmallGroup = group.range[1] <= 10;
 
             return (
@@ -751,20 +903,58 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
                 <div className="flex gap-1.5 flex-wrap">
                   {items.map((size, i) => {
                     const idx = group.range[0] + i;
-                    const isSelected = idx === sizeIdx;
+                    // Check if this size is selected for the CURRENTLY VIEWING print
+                    let isSelected = false;
+                    if (viewingPrintIndex === 0) {
+                      // Viewing main print - check main print size
+                      isSelected = idx === sizeIdx;
+                    } else {
+                      // Viewing additional print - check that print's size
+                      const additionalPrint = additionalPrints[viewingPrintIndex - 1];
+                      const printSizeIdx = additionalPrint?.sizeIdx !== undefined ? additionalPrint.sizeIdx : sizeIdx;
+                      isSelected = idx === printSizeIdx;
+                    }
                     return (
                       <Card
                         key={idx}
                         className={`px-2.5 py-1.5 sm:px-2.5 sm:py-1.5 text-center cursor-pointer transition-all duration-200 shrink-0 touch-manipulation min-h-[44px] sm:min-h-0 flex items-center justify-center ${isSelected ? "ring-2 ring-primary border-primary bg-primary/5" : "border-border hover:border-primary/40 active:bg-primary/10"}`}
-                        onClick={() => {
-                          onSelect(idx);
-                          // Only reset additional prints for large sizes (idx >= 10)
-                          // For regular sizes, keep all additional prints completely independent
-                          if (idx >= 10) { 
-                            onQuantity(1); 
-                            onAdditionalPrints([]); 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (viewingPrintIndex === 0) {
+                            // Updating main print (Print 1) - ONLY affects Print 1
+                            // Print 1 should work independently like Print 2/3/etc.
+                            // No longer resetting quantity or additional prints for large sizes
+                            onSelect(idx);
+                          } else {
+                            // Updating additional print - update that specific print's size ONLY
+                            const updated = [...additionalPrints];
+                            const printIdx = viewingPrintIndex - 1;
+                            // Ensure array is long enough - preserve existing sizes when creating new prints
+                            while (updated.length <= printIdx) {
+                              // Use the current print's size if it exists, otherwise use main print size
+                              const prevPrint = updated.length > 0 ? updated[updated.length - 1] : null;
+                              const newSizeIdx = prevPrint?.sizeIdx !== undefined ? prevPrint.sizeIdx : sizeIdx;
+                              const newCustomW = prevPrint?.customWidth || customWidth;
+                              const newCustomH = prevPrint?.customHeight || customHeight;
+                              updated.push(createAdditionalPrint(newSizeIdx, newCustomW, newCustomH));
+                            }
+                            // CRITICAL: Get existing print and preserve ALL its properties, only update sizeIdx
+                            const existing = updated[printIdx];
+                            if (!existing) {
+                              // Should never happen, but defensive
+                              updated[printIdx] = createAdditionalPrint(idx, customWidth, customHeight);
+                            } else {
+                              // Update ONLY the sizeIdx - preserve everything else
+                              updated[printIdx] = { 
+                                ...existing, 
+                                sizeIdx: idx, // Explicitly set the new size
+                                // Preserve custom dimensions (they'll be used if switching to custom size later)
+                                customWidth: existing.customWidth || customWidth,
+                                customHeight: existing.customHeight || customHeight
+                              };
+                            }
+                            onAdditionalPrints(updated);
                           }
-                          // DO NOT touch additionalPrints for regular sizes - they are completely independent
                         }}
                       >
                         <p className="text-xs sm:text-xs font-display font-bold text-foreground leading-tight whitespace-nowrap">{size.label}</p>
@@ -773,43 +963,20 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
                   })}
                 </div>
 
-                {/* Qty picker for small sizes */}
-                {groupHasSelection && isSmallGroup && (
-                  <div className="mt-2 flex items-center gap-2 bg-primary/5 border border-primary/20 rounded-lg px-3 py-2">
-                    <Sparkles className="w-3.5 h-3.5 text-primary shrink-0" />
-                    <span className="text-xs font-body text-foreground font-semibold whitespace-nowrap">{group.range[1] <= 4 ? "Great in sets!" : "Gallery wall?"}</span>
-                    <span className="text-[10px] text-muted-foreground font-body hidden sm:inline">Qty:</span>
-                    <div className="flex items-center gap-0.5 ml-auto">
-                      {[1, 2, 3, 4, 5, 6].map((q) => (
-                        <button
-                          key={q}
-                          onClick={() => {
-                            onQuantity(q);
-                            if (q >= 2) {
-                              const current = [...additionalPrints];
-                              while (current.length < q - 1) current.push(createAdditionalPrint(sizeIdx, customWidth, customHeight));
-                              onAdditionalPrints(current.slice(0, q - 1));
-                            } else {
-                              onAdditionalPrints([]);
-                            }
-                          }}
-                          className={`w-7 h-7 rounded-md text-xs font-body font-bold transition-all ${quantity === q ? "bg-gradient-gold text-primary-foreground shadow-sm" : "bg-secondary text-muted-foreground hover:bg-primary/10 hover:text-primary"}`}
-                        >
-                          {q}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Per-print image slots with size selection */}
-                {groupHasSelection && isSmallGroup && quantity >= 2 && (
+                {/* Per-print image slots with size selection (OLD UI)
+                    Now that we have clear tabs for Print 1 / Print 2 / etc. and
+                    the main preview is where editing happens, this extra UI
+                    is no longer needed. We keep the code for now (for safety),
+                    but hide it from the UI so it doesn't confuse users. */}
+                {false && groupHasSelection && isSmallGroup && quantity >= 2 && (
                   <div className="mt-1.5 grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {Array.from({ length: quantity - 1 }).map((_, idx) => {
                       const slotImg = getSlotImg(idx);
                       const slotPrint = additionalPrints[idx];
                       const slotOri = slotPrint?.orientation || "landscape";
-                      const slotSizeIdx = slotPrint?.sizeIdx ?? sizeIdx;
+                      // Use the print's own sizeIdx if explicitly set, otherwise use main print size
+                      // Check !== undefined (not ??) because sizeIdx can be 0 which is falsy
+                      const slotSizeIdx = slotPrint?.sizeIdx !== undefined ? slotPrint.sizeIdx : sizeIdx;
                       const slotIsCustom = slotSizeIdx === CUSTOM_SIZE_IDX;
                       const slotSize = slotIsCustom 
                         ? { label: `${slotPrint?.customWidth ?? customWidth}"×${slotPrint?.customHeight ?? customHeight}"`, w: slotPrint?.customWidth ?? customWidth, h: slotPrint?.customHeight ?? customHeight }
@@ -863,30 +1030,30 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
                                     key={itemIdx}
                                     onClick={(e) => {
                                       e.stopPropagation();
+                                      // CRITICAL: This button is in the per-print slot section, so it updates Print (idx + 2)
+                                      // NOT the currently viewing print - it updates the specific slot print
                                       const updated = [...additionalPrints];
-                                      // Ensure array is long enough
+                                      // Ensure array is long enough - preserve existing sizes
                                       while (updated.length <= idx) {
-                                        // Use existing size if available, otherwise use main print size
-                                        const existingSizeIdx = updated.length > 0 && updated[updated.length - 1]?.sizeIdx !== undefined 
-                                          ? updated[updated.length - 1].sizeIdx 
-                                          : sizeIdx;
-                                        const existingCustomW = updated.length > 0 && updated[updated.length - 1]?.customWidth 
-                                          ? updated[updated.length - 1].customWidth 
-                                          : customWidth;
-                                        const existingCustomH = updated.length > 0 && updated[updated.length - 1]?.customHeight 
-                                          ? updated[updated.length - 1].customHeight 
-                                          : customHeight;
-                                        updated.push(createAdditionalPrint(existingSizeIdx, existingCustomW, existingCustomH));
+                                        const prevPrint = updated.length > 0 ? updated[updated.length - 1] : null;
+                                        const newSizeIdx = prevPrint?.sizeIdx !== undefined ? prevPrint.sizeIdx : sizeIdx;
+                                        const newCustomW = prevPrint?.customWidth || customWidth;
+                                        const newCustomH = prevPrint?.customHeight || customHeight;
+                                        updated.push(createAdditionalPrint(newSizeIdx, newCustomW, newCustomH));
                                       }
-                                      // Preserve all existing properties when updating size
-                                      const existing = updated[idx] || createAdditionalPrint(sizeIdx, customWidth, customHeight);
-                                      updated[idx] = { 
-                                        ...existing, 
-                                        sizeIdx: itemIdx,
-                                        // Reset custom dimensions if switching to standard size
-                                        customWidth: itemIdx === CUSTOM_SIZE_IDX ? (existing.customWidth || customWidth) : (existing.customWidth || customWidth),
-                                        customHeight: itemIdx === CUSTOM_SIZE_IDX ? (existing.customHeight || customHeight) : (existing.customHeight || customHeight)
-                                      };
+                                      // Get existing print for THIS specific slot (idx)
+                                      const existing = updated[idx];
+                                      if (!existing) {
+                                        updated[idx] = createAdditionalPrint(itemIdx, customWidth, customHeight);
+                                      } else {
+                                        // Update ONLY this slot's sizeIdx - preserve everything else
+                                        updated[idx] = { 
+                                          ...existing, 
+                                          sizeIdx: itemIdx, // Explicitly set the new size for THIS print only
+                                          customWidth: existing.customWidth || customWidth,
+                                          customHeight: existing.customHeight || customHeight
+                                        };
+                                      }
                                       onAdditionalPrints(updated);
                                     }}
                                     className={`px-2 py-1 sm:px-2 sm:py-1 text-[9px] sm:text-[9px] font-body font-semibold rounded transition-all touch-manipulation min-h-[36px] sm:min-h-0 flex items-center justify-center ${isSelected 
@@ -902,26 +1069,28 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
+                                  // CRITICAL: This button is in the per-print slot section, so it updates Print (idx + 2)
+                                  // NOT the currently viewing print - it updates the specific slot print
                                   const updated = [...additionalPrints];
                                   while (updated.length <= idx) {
-                                    const existingSizeIdx = updated.length > 0 && updated[updated.length - 1]?.sizeIdx !== undefined 
-                                      ? updated[updated.length - 1].sizeIdx 
-                                      : sizeIdx;
-                                    const existingCustomW = updated.length > 0 && updated[updated.length - 1]?.customWidth 
-                                      ? updated[updated.length - 1].customWidth 
-                                      : customWidth;
-                                    const existingCustomH = updated.length > 0 && updated[updated.length - 1]?.customHeight 
-                                      ? updated[updated.length - 1].customHeight 
-                                      : customHeight;
-                                    updated.push(createAdditionalPrint(existingSizeIdx, existingCustomW, existingCustomH));
+                                    const prevPrint = updated.length > 0 ? updated[updated.length - 1] : null;
+                                    const newSizeIdx = prevPrint?.sizeIdx !== undefined ? prevPrint.sizeIdx : sizeIdx;
+                                    const newCustomW = prevPrint?.customWidth || customWidth;
+                                    const newCustomH = prevPrint?.customHeight || customHeight;
+                                    updated.push(createAdditionalPrint(newSizeIdx, newCustomW, newCustomH));
                                   }
-                                  const existing = updated[idx] || createAdditionalPrint(sizeIdx, customWidth, customHeight);
-                                  updated[idx] = { 
-                                    ...existing, 
-                                    sizeIdx: CUSTOM_SIZE_IDX,
-                                    customWidth: existing.customWidth || customWidth,
-                                    customHeight: existing.customHeight || customHeight
-                                  };
+                                  const existing = updated[idx];
+                                  if (!existing) {
+                                    updated[idx] = createAdditionalPrint(CUSTOM_SIZE_IDX, customWidth, customHeight);
+                                  } else {
+                                    // Update ONLY this slot's sizeIdx to custom - preserve everything else
+                                    updated[idx] = { 
+                                      ...existing, 
+                                      sizeIdx: CUSTOM_SIZE_IDX, // Explicitly set to custom for THIS print only
+                                      customWidth: existing.customWidth || customWidth,
+                                      customHeight: existing.customHeight || customHeight
+                                    };
+                                  }
                                   onAdditionalPrints(updated);
                                 }}
                                 className={`px-2 py-1 sm:px-2 sm:py-1 text-[9px] sm:text-[9px] font-body font-semibold rounded transition-all flex items-center gap-1 touch-manipulation min-h-[36px] sm:min-h-0 justify-center ${
@@ -943,11 +1112,23 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
                                   max={96} 
                                   value={slotPrint?.customWidth ?? customWidth} 
                                   onChange={(e) => {
+                                    // CRITICAL: This input is in the per-print slot section, so it updates Print (idx + 2)
+                                    // NOT the currently viewing print - it updates the specific slot print
                                     const updated = [...additionalPrints];
-                                    while (updated.length <= idx) updated.push(createAdditionalPrint(CUSTOM_SIZE_IDX, customWidth, customHeight));
+                                    while (updated.length <= idx) {
+                                      const prevPrint = updated.length > 0 ? updated[updated.length - 1] : null;
+                                      const newSizeIdx = prevPrint?.sizeIdx !== undefined ? prevPrint.sizeIdx : CUSTOM_SIZE_IDX;
+                                      const newCustomW = prevPrint?.customWidth || customWidth;
+                                      const newCustomH = prevPrint?.customHeight || customHeight;
+                                      updated.push(createAdditionalPrint(newSizeIdx, newCustomW, newCustomH));
+                                    }
+                                    const existing = updated[idx] || createAdditionalPrint(CUSTOM_SIZE_IDX, customWidth, customHeight);
+                                    // Update ONLY this slot's customWidth - preserve everything else
                                     updated[idx] = { 
-                                      ...(updated[idx] || createAdditionalPrint(CUSTOM_SIZE_IDX, customWidth, customHeight)), 
-                                      customWidth: Math.max(4, Math.min(96, Number(e.target.value) || 4))
+                                      ...existing, 
+                                      sizeIdx: CUSTOM_SIZE_IDX, // Ensure it's custom size
+                                      customWidth: Math.max(4, Math.min(96, Number(e.target.value) || 4)),
+                                      customHeight: existing.customHeight || customHeight
                                     };
                                     onAdditionalPrints(updated);
                                   }} 
@@ -960,10 +1141,22 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
                                   max={96} 
                                   value={slotPrint?.customHeight ?? customHeight} 
                                   onChange={(e) => {
+                                    // CRITICAL: This input is in the per-print slot section, so it updates Print (idx + 2)
+                                    // NOT the currently viewing print - it updates the specific slot print
                                     const updated = [...additionalPrints];
-                                    while (updated.length <= idx) updated.push(createAdditionalPrint(CUSTOM_SIZE_IDX, customWidth, customHeight));
+                                    while (updated.length <= idx) {
+                                      const prevPrint = updated.length > 0 ? updated[updated.length - 1] : null;
+                                      const newSizeIdx = prevPrint?.sizeIdx !== undefined ? prevPrint.sizeIdx : CUSTOM_SIZE_IDX;
+                                      const newCustomW = prevPrint?.customWidth || customWidth;
+                                      const newCustomH = prevPrint?.customHeight || customHeight;
+                                      updated.push(createAdditionalPrint(newSizeIdx, newCustomW, newCustomH));
+                                    }
+                                    const existing = updated[idx] || createAdditionalPrint(CUSTOM_SIZE_IDX, customWidth, customHeight);
+                                    // Update ONLY this slot's customHeight - preserve everything else
                                     updated[idx] = { 
-                                      ...(updated[idx] || createAdditionalPrint(CUSTOM_SIZE_IDX, customWidth, customHeight)), 
+                                      ...existing, 
+                                      sizeIdx: CUSTOM_SIZE_IDX, // Ensure it's custom size
+                                      customWidth: existing.customWidth || customWidth,
                                       customHeight: Math.max(4, Math.min(96, Number(e.target.value) || 4))
                                     };
                                     onAdditionalPrints(updated);
@@ -1007,11 +1200,38 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
             <h3 className="text-xs font-body font-semibold tracking-[0.2em] uppercase text-primary mb-1.5">Custom Size</h3>
             <div className="flex gap-1.5 items-center flex-wrap">
               <Card
-                className={`px-2.5 py-1.5 text-center cursor-pointer transition-all duration-200 shrink-0 ${isCustom ? "ring-2 ring-primary border-primary bg-primary/5" : "border-border hover:border-primary/40"}`}
-                onClick={() => {
-                  onSelect(CUSTOM_SIZE_IDX);
-                  // DO NOT touch additionalPrints - they are completely independent
-                  // Main print size changes should NEVER affect additional prints
+                className={`px-2.5 py-1.5 text-center cursor-pointer transition-all duration-200 shrink-0 ${(viewingPrintIndex === 0 ? isCustom : (additionalPrints[viewingPrintIndex - 1]?.sizeIdx === CUSTOM_SIZE_IDX)) ? "ring-2 ring-primary border-primary bg-primary/5" : "border-border hover:border-primary/40"}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (viewingPrintIndex === 0) {
+                    // Updating main print (Print 1) - ONLY affects Print 1
+                    onSelect(CUSTOM_SIZE_IDX);
+                  } else {
+                    // Updating additional print - update that specific print's size ONLY
+                    const updated = [...additionalPrints];
+                    const printIdx = viewingPrintIndex - 1;
+                    // Ensure array is long enough - preserve existing sizes when creating new prints
+                    while (updated.length <= printIdx) {
+                      const prevPrint = updated.length > 0 ? updated[updated.length - 1] : null;
+                      const newSizeIdx = prevPrint?.sizeIdx !== undefined ? prevPrint.sizeIdx : sizeIdx;
+                      const newCustomW = prevPrint?.customWidth || customWidth;
+                      const newCustomH = prevPrint?.customHeight || customHeight;
+                      updated.push(createAdditionalPrint(newSizeIdx, newCustomW, newCustomH));
+                    }
+                    // CRITICAL: Get existing print and preserve ALL its properties, only update sizeIdx to custom
+                    const existing = updated[printIdx];
+                    if (!existing) {
+                      updated[printIdx] = createAdditionalPrint(CUSTOM_SIZE_IDX, customWidth, customHeight);
+                    } else {
+                      updated[printIdx] = { 
+                        ...existing, 
+                        sizeIdx: CUSTOM_SIZE_IDX, // Explicitly set to custom
+                        customWidth: existing.customWidth || customWidth,
+                        customHeight: existing.customHeight || customHeight
+                      };
+                    }
+                    onAdditionalPrints(updated);
+                  }
                 }}
               >
                 <div className="flex items-center gap-1.5">
@@ -1019,19 +1239,32 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
                   <p className="text-xs font-display font-bold text-foreground leading-tight whitespace-nowrap">Custom</p>
                 </div>
               </Card>
-              {isCustom && (
+              {((viewingPrintIndex === 0 && isCustom) || (viewingPrintIndex > 0 && additionalPrints[viewingPrintIndex - 1]?.sizeIdx === CUSTOM_SIZE_IDX)) && (
                 <div className="flex items-center gap-1.5">
                   <div className="flex items-center gap-1">
                     <Input 
                       type="number" 
                       min={4} 
                       max={96} 
-                      value={customWidth} 
+                      value={viewingPrintIndex === 0 ? customWidth : (additionalPrints[viewingPrintIndex - 1]?.customWidth || customWidth)} 
                       onChange={(e) => {
                         const newWidth = Math.max(4, Math.min(96, Number(e.target.value) || 4));
-                        onCustomSize(newWidth, customHeight);
-                        // DO NOT update additional prints - they are completely independent
-                        // Main print custom size changes should NEVER affect additional prints
+                        if (viewingPrintIndex === 0) {
+                          onCustomSize(newWidth, customHeight);
+                        } else {
+                          const updated = [...additionalPrints];
+                          const printIdx = viewingPrintIndex - 1;
+                          while (updated.length <= printIdx) {
+                            updated.push(createAdditionalPrint(sizeIdx, customWidth, customHeight));
+                          }
+                          const existing = updated[printIdx] || createAdditionalPrint(sizeIdx, customWidth, customHeight);
+                          updated[printIdx] = { 
+                            ...existing, 
+                            customWidth: newWidth,
+                            sizeIdx: CUSTOM_SIZE_IDX
+                          };
+                          onAdditionalPrints(updated);
+                        }
                       }} 
                       className="w-16 h-7 text-xs text-center font-body" 
                     />
@@ -1040,12 +1273,25 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
                       type="number" 
                       min={4} 
                       max={96} 
-                      value={customHeight} 
+                      value={viewingPrintIndex === 0 ? customHeight : (additionalPrints[viewingPrintIndex - 1]?.customHeight || customHeight)} 
                       onChange={(e) => {
                         const newHeight = Math.max(4, Math.min(96, Number(e.target.value) || 4));
-                        onCustomSize(customWidth, newHeight);
-                        // DO NOT update additional prints - they are completely independent
-                        // Main print custom size changes should NEVER affect additional prints
+                        if (viewingPrintIndex === 0) {
+                          onCustomSize(customWidth, newHeight);
+                        } else {
+                          const updated = [...additionalPrints];
+                          const printIdx = viewingPrintIndex - 1;
+                          while (updated.length <= printIdx) {
+                            updated.push(createAdditionalPrint(sizeIdx, customWidth, customHeight));
+                          }
+                          const existing = updated[printIdx] || createAdditionalPrint(sizeIdx, customWidth, customHeight);
+                          updated[printIdx] = { 
+                            ...existing, 
+                            customHeight: newHeight,
+                            sizeIdx: CUSTOM_SIZE_IDX
+                          };
+                          onAdditionalPrints(updated);
+                        }
                       }} 
                       className="w-16 h-7 text-xs text-center font-body" 
                     />

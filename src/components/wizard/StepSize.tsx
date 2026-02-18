@@ -55,9 +55,10 @@ interface PrintData {
   naturalHeight: number;
 }
 
+// Material options (no longer displayed in StepSize - moved to separate StepMaterial step)
 const materialOpts: { id: MaterialChoice; label: string; subtitle: string; img: string; cornerImg: string; icon: React.ReactNode; benefits: string[] }[] = [
-  { id: "metal-designer", label: "Lux Metal", subtitle: '.040" Lightweight', img: metalImg, cornerImg: cornerLuxMetal, icon: <Gem className="w-4 h-4" />, benefits: ["Ultra-lightweight & easy to hang", "Scratch-resistant HD finish", "Best value for vibrant color"] },
-  { id: "metal-museum", label: "Designer Metal", subtitle: '.080" Heirloom', img: metalMuseumImg, cornerImg: cornerDesignerMetal, icon: <Shield className="w-4 h-4" />, benefits: ["2× thicker for gallery-grade rigidity", "Zero warp guaranteed for life", "Museum archival pigments"] },
+  { id: "metal-designer", label: "Lux Metal", subtitle: '.040" Lightweight', img: metalImg, cornerImg: cornerLuxMetal, icon: <Gem className="w-4 h-4" />, benefits: ["Ultra-lightweight & easy to hang", "Double-sided option available", "Best value for vibrant color"] },
+  { id: "metal-museum", label: "Designer Metal", subtitle: '.080" Heirloom', img: metalMuseumImg, cornerImg: cornerDesignerMetal, icon: <Shield className="w-4 h-4" />, benefits: ["2× thicker for gallery-grade rigidity", "Double-sided option available", "Museum archival pigments"] },
   { id: "acrylic", label: "Acrylic", subtitle: "Vivid & Luminous", img: acrylicImg, cornerImg: cornerAcrylic, icon: <Sparkles className="w-4 h-4" />, benefits: ["Backlit glow & glass-like depth", "Highest color saturation", "Stunning modern statement piece"] },
 ];
 
@@ -605,14 +606,14 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
                   </div>
                 )}
 
-                {/* WYSIWYG Crop Preview - MOBILE OPTIMIZED */}
+                {/* Compact Preview with Ratio - No scrolling needed */}
                 <div 
                   className="relative w-full bg-secondary/30 rounded-lg border-2 border-primary/30 overflow-hidden shadow-xl"
                   style={{ 
                     aspectRatio: `${displayW / displayH}`, // Use current viewing print's aspect
                     maxWidth: "100%",
-                    maxHeight: "600px",
-                    minHeight: "300px",
+                    maxHeight: "250px",
+                    minHeight: "200px",
                     height: "auto",
                     width: "100%"
                   }}
@@ -783,61 +784,23 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
                     </div>
                   )}
                   
-                  {/* Size label - MOBILE OPTIMIZED */}
+                  {/* Size label with Ratio - Prominently displayed */}
                   <div className="absolute bottom-2 left-2 bg-card/90 backdrop-blur-sm border border-border rounded px-3 py-1.5 sm:px-2.5 sm:py-1 z-10">
-                    <span className="text-base sm:text-sm font-body text-primary font-bold">
-                      {currentPrintSize.label}
-                      {viewingPrintIndex > 0 && <span className="text-xs text-muted-foreground ml-1">(Print {viewingPrintIndex + 1})</span>}
-                    </span>
-                    {effectiveDpi > 0 && !isLowQuality && (
-                      <span className="text-xs sm:text-[10px] text-muted-foreground font-body ml-2 sm:ml-1.5">
-                        {Math.round(effectiveDpi)} DPI
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-base sm:text-sm font-body text-primary font-bold">
+                        {currentPrintSize.label}
+                        {viewingPrintIndex > 0 && <span className="text-xs text-muted-foreground ml-1">(Print {viewingPrintIndex + 1})</span>}
                       </span>
-                    )}
+                      <div className="flex items-center gap-2 text-xs sm:text-[10px] text-muted-foreground font-body">
+                        <span className="font-semibold text-primary">Ratio: {displayW}:{displayH}</span>
+                        {effectiveDpi > 0 && !isLowQuality && (
+                          <span className="text-primary">• {Math.round(effectiveDpi)} DPI</span>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
                 
-                {/* Room backdrop preview (optional visual context) - MOBILE: LARGER */}
-                <div 
-                  className="relative w-full overflow-hidden rounded-lg border border-border" 
-                  style={{ 
-                    aspectRatio: containerAspect,
-                    maxHeight: "300px",
-                    minHeight: "200px"
-                  }}
-                >
-                  <img src={backdropImg} alt="Room backdrop" className="absolute inset-0 w-full h-full object-cover" />
-                  <div
-                    className={`absolute left-1/2 -translate-x-1/2 shadow-[0_4px_30px_rgba(0,0,0,0.3)] transition-all duration-500 ease-out overflow-hidden ${printTop ? '-translate-y-1/2' : ''}`}
-                    style={{ 
-                      width: `${printWPct}%`, 
-                      paddingBottom: `${printWPct / (displayW / displayH)}%`, // Use current viewing print's aspect
-                      height: 0, 
-                      ...(printTop ? { top: printTop } : { bottom: printBottom }) 
-                    }}
-                  >
-                    <div className="absolute inset-0 overflow-hidden">
-                      <img 
-                        src={currentPrintData.imageUrl || imageUrl} 
-                        alt="Print preview" 
-                        className="absolute inset-0 w-full h-full object-cover select-none pointer-events-none" 
-                        draggable={false}
-                        style={getImageTransformStyle({ 
-                          rotation: currentPrintData.rotation, 
-                          zoom: currentPrintData.zoom, 
-                          panX: currentPrintData.panX, 
-                          panY: currentPrintData.panY 
-                        })}
-                      />
-                    </div>
-                  </div>
-                  {!isSquare && (
-                    <div className="absolute bottom-2 right-2 flex bg-card/80 backdrop-blur-sm border border-border rounded overflow-hidden">
-                      <button onClick={() => setOrientation("landscape")} className={`p-1.5 transition-colors ${orientation === "landscape" ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"}`} title="Landscape"><RectangleHorizontal className="w-4 h-4" /></button>
-                      <button onClick={() => setOrientation("portrait")} className={`p-1.5 transition-colors ${orientation === "portrait" ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"}`} title="Portrait"><RectangleVertical className="w-4 h-4" /></button>
-                    </div>
-                  )}
-                </div>
               </div>
             );
           })()}
@@ -1319,79 +1282,11 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
         </div>
       </div>
 
-      {/* Material selection */}
-      <div>
-        <h3 className="text-xs font-body font-semibold tracking-[0.2em] uppercase text-primary mb-2">Choose Your Medium</h3>
-        <div className="grid grid-cols-2 gap-3 mb-3">
-          {materialOpts.filter(m => m.id !== "acrylic").map((mat) => {
-            const isSelected = material === mat.id;
-            const size = selected;
-            const unitPrice = mat.id === "metal-designer"
-              ? calcMetalPrice(size.w, size.h, metalOptions[0])
-              : calcMetalPrice(size.w, size.h, metalOptions[2]);
-            const total = totalPrice(unitPrice);
-
-            return (
-              <Card key={mat.id} className={`overflow-hidden cursor-pointer transition-all duration-200 ${isSelected ? "ring-2 ring-primary border-primary" : "border-border hover:border-primary/40"}`} onClick={() => onSelectMaterial(mat.id)}>
-                <div className="aspect-[16/9] relative overflow-hidden">
-                  <img src={mat.img} alt={mat.label} className="w-full h-full object-cover" />
-                  {isSelected && <div className="absolute top-1.5 right-1.5 w-5 h-5 bg-primary rounded-full flex items-center justify-center"><Check className="w-3 h-3 text-primary-foreground" /></div>}
-                  <div className="absolute bottom-1 left-1 w-10 h-10 rounded border border-border/50 overflow-hidden shadow-md"><img src={mat.cornerImg} alt={`${mat.label} corner detail`} className="w-full h-full object-cover" /></div>
-                </div>
-                <div className="p-3">
-                  <div className="flex items-center justify-center gap-1.5 text-primary">{mat.icon}<span className="text-sm font-display font-bold text-foreground">{mat.label}</span></div>
-                  <p className="text-xs text-muted-foreground font-body text-center">{mat.subtitle}</p>
-                  <ul className="mt-2 space-y-1">
-                    {mat.benefits.map((b) => (<li key={b} className="flex items-start gap-1.5 text-xs text-muted-foreground font-body"><Check className="w-3.5 h-3.5 text-primary shrink-0 mt-[1px]" /><span>{b}</span></li>))}
-                  </ul>
-                  <p className="text-base font-display font-bold text-gradient-gold mt-2 text-center">
-                    ${total}
-                    {quantity > 1 && <span className="text-xs text-muted-foreground font-body ml-1">({quantity} prints)</span>}
-                  </p>
-                </div>
-              </Card>
-            );
-          })}
-        </div>
-
-        {/* Acrylic option */}
-        {(() => {
-          const mat = materialOpts.find(m => m.id === "acrylic")!;
-          const isSelected = material === mat.id;
-          const size = selected;
-          const unitPrice = calcAcrylicPrice(size.w, size.h);
-          const total = totalPrice(unitPrice);
-
-          return (
-            <Card className={`overflow-hidden cursor-pointer transition-all duration-200 ${isSelected ? "ring-2 ring-primary border-primary" : "border-border hover:border-primary/40"}`} onClick={() => onSelectMaterial(mat.id)}>
-              <div className="grid grid-cols-[1fr_1.5fr]">
-                <div className="aspect-[4/3] relative overflow-hidden">
-                  <img src={mat.img} alt={mat.label} className="w-full h-full object-cover" />
-                  {isSelected && <div className="absolute top-1.5 right-1.5 w-5 h-5 bg-primary rounded-full flex items-center justify-center"><Check className="w-3 h-3 text-primary-foreground" /></div>}
-                  <div className="absolute bottom-1 left-1 w-10 h-10 rounded border border-border/50 overflow-hidden shadow-md"><img src={mat.cornerImg} alt={`${mat.label} corner detail`} className="w-full h-full object-cover" /></div>
-                </div>
-                <div className="p-3 flex flex-col justify-center">
-                  <div className="flex items-center gap-1.5 text-primary">{mat.icon}<span className="text-sm font-display font-bold text-foreground">{mat.label}</span></div>
-                  <p className="text-xs text-muted-foreground font-body">{mat.subtitle}</p>
-                  <ul className="mt-2 space-y-1">
-                    {mat.benefits.map((b) => (<li key={b} className="flex items-start gap-1.5 text-xs text-muted-foreground font-body"><Check className="w-3.5 h-3.5 text-primary shrink-0 mt-[1px]" /><span>{b}</span></li>))}
-                  </ul>
-                  <p className="text-base font-display font-bold text-gradient-gold mt-2">
-                    ${total}
-                    {quantity > 1 && <span className="text-xs text-muted-foreground font-body ml-1">({quantity} prints)</span>}
-                  </p>
-                </div>
-              </div>
-            </Card>
-          );
-        })()}
-      </div>
-
       {/* Navigation */}
       <div className="flex justify-between pt-4">
         <Button variant="outline" onClick={onBack} className="font-body gap-2"><ArrowLeft className="w-4 h-4" /> Back</Button>
         <Button onClick={onNext} className="bg-gradient-gold text-primary-foreground font-body font-semibold hover:opacity-90 gap-2">
-          {material.startsWith("metal") ? "Personalize" : "Finishing"} <ArrowRight className="w-4 h-4" />
+          Choose Material <ArrowRight className="w-4 h-4" />
         </Button>
       </div>
     </div>

@@ -4,11 +4,12 @@ import { recommendStandOffs } from "@/lib/pricing";
 import { resolveSize } from "@/lib/sizeHelpers";
 import StepArt from "./StepArt";
 import StepSize from "./StepSize";
+import StepMaterial from "./StepMaterial";
 import StepUpsell from "./StepUpsell";
 import StepMounting from "./StepMounting";
 import StepReview from "./StepReview";
 
-const stepLabels = ["Artwork", "Size & Material", "Personalize", "Finishing", "Review"];
+const stepLabels = ["Artwork", "Size", "Material", "Personalize", "Finishing", "Review"];
 
 interface Props {
   onStepChange?: (step: number) => void;
@@ -36,14 +37,16 @@ const PrintWizard = ({ onStepChange }: Props) => {
 
   const nextStep = () => {
     let next = state.step + 1;
-    if (!isMetal && next === 3) next = 4; // skip upsell for acrylic
-    if (next > TOTAL_STEPS) next = TOTAL_STEPS;
+    // Skip upsell (step 4) for acrylic, but material is now step 3
+    if (!isMetal && next === 4) next = 5; // skip upsell for acrylic
+    if (next > TOTAL_STEPS + 1) next = TOTAL_STEPS + 1; // +1 because we added a step
     update({ step: next });
   };
 
   const prevStep = () => {
     let prev = state.step - 1;
-    if (!isMetal && prev === 3) prev = 2;
+    // Skip upsell (step 4) for acrylic when going back
+    if (!isMetal && prev === 4) prev = 3;
     if (prev < 1) prev = 1;
     update({ step: prev });
   };
@@ -68,7 +71,7 @@ const PrintWizard = ({ onStepChange }: Props) => {
               const stepNum = i + 1;
               const isActive = state.step === stepNum;
               const isDone = state.step > stepNum;
-              const isSkipped = !isMetal && stepNum === 3;
+              const isSkipped = !isMetal && stepNum === 4; // Skip upsell (step 4) for acrylic
 
               if (isSkipped) return null;
 
@@ -96,7 +99,7 @@ const PrintWizard = ({ onStepChange }: Props) => {
           <div className="h-0.5 bg-secondary rounded-full overflow-hidden">
             <div
               className="h-full bg-gradient-gold transition-all duration-500"
-              style={{ width: `${((state.step - 1) / (isMetal ? TOTAL_STEPS - 1 : TOTAL_STEPS - 2)) * 100}%` }}
+              style={{ width: `${((state.step - 1) / (isMetal ? TOTAL_STEPS : TOTAL_STEPS - 1)) * 100}%` }}
             />
           </div>
         </div>
@@ -141,7 +144,18 @@ const PrintWizard = ({ onStepChange }: Props) => {
           />
         )}
 
-        {state.step === 3 && isMetal && (
+        {state.step === 3 && imageUrl && (
+          <StepMaterial
+            imageUrl={imageUrl}
+            sizeIdx={state.sizeIdx}
+            material={state.material}
+            onSelect={(m) => update({ material: m, doubleSided: false, backImage: null, backUploadedFile: null })}
+            onNext={nextStep}
+            onBack={prevStep}
+          />
+        )}
+
+        {state.step === 4 && isMetal && (
           <StepUpsell
             frontImage={imageUrl}
             backImage={state.backImage}
@@ -160,7 +174,7 @@ const PrintWizard = ({ onStepChange }: Props) => {
           />
         )}
 
-        {state.step === 4 && (
+        {state.step === 5 && (
           <StepMounting
             sizeIdx={state.sizeIdx}
             customWidth={state.customWidth}
@@ -179,7 +193,7 @@ const PrintWizard = ({ onStepChange }: Props) => {
           />
         )}
 
-        {state.step === 5 && (
+        {state.step === 6 && (
           <StepReview
             state={state}
             onBack={prevStep}

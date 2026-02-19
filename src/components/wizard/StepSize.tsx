@@ -71,6 +71,31 @@ const sizeGroups = [
 
 const DESK_SHELF_MAX_IDX = 4;
 
+// Helper function to calculate and simplify aspect ratio (e.g., 8:10 = 4:5)
+function getAspectRatio(w: number, h: number): string {
+  // Find GCD to simplify the ratio
+  const gcd = (a: number, b: number): number => b === 0 ? a : gcd(b, a % b);
+  const divisor = gcd(w, h);
+  const simplifiedW = w / divisor;
+  const simplifiedH = h / divisor;
+  
+  // For common ratios, use standard notation
+  if (simplifiedW === 1 && simplifiedH === 1) return "1:1";
+  if (simplifiedW === 4 && simplifiedH === 5) return "4:5";
+  if (simplifiedW === 3 && simplifiedH === 4) return "3:4";
+  if (simplifiedW === 2 && simplifiedH === 3) return "2:3";
+  if (simplifiedW === 5 && simplifiedH === 7) return "5:7";
+  if (simplifiedW === 16 && simplifiedH === 9) return "16:9";
+  
+  // Return simplified ratio
+  return `${simplifiedW}:${simplifiedH}`;
+}
+
+// Helper to get minimum price for a size (using cheapest material - Lux Metal)
+function getMinPrice(w: number, h: number): number {
+  return calcMetalPrice(w, h, metalOptions[0]);
+}
+
 const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, material, additionalPrints, imageNaturalWidth, imageNaturalHeight, rotation, zoom, panX, panY, onSelect, onCustomSize, onQuantity, onAdditionalPrints, onSelectMaterial, onRotate, onZoom, onPan, onReplaceImage, onNext, onBack }: Props) => {
   const isCustom = sizeIdx === CUSTOM_SIZE_IDX;
   const selected = isCustom ? { label: `${customWidth}"×${customHeight}"`, w: customWidth, h: customHeight } : standardSizes[sizeIdx];
@@ -607,10 +632,11 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
                 )}
 
                 {/* Compact Preview with Ratio - No scrolling needed */}
+                {/* Use exact aspect ratio from print size dimensions */}
                 <div 
                   className="relative w-full bg-secondary/30 rounded-lg border-2 border-primary/30 overflow-hidden shadow-xl"
                   style={{ 
-                    aspectRatio: `${displayW / displayH}`, // Use current viewing print's aspect
+                    aspectRatio: `${currentPrintSize.w / currentPrintSize.h}`, // Exact ratio of the print itself
                     maxWidth: "100%",
                     maxHeight: "250px",
                     minHeight: "200px",
@@ -877,10 +903,13 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
                       const printSizeIdx = additionalPrint?.sizeIdx !== undefined ? additionalPrint.sizeIdx : sizeIdx;
                       isSelected = idx === printSizeIdx;
                     }
+                    const aspectRatio = getAspectRatio(size.w, size.h);
+                    const minPrice = getMinPrice(size.w, size.h);
+                    
                     return (
                       <Card
                         key={idx}
-                        className={`px-2.5 py-1.5 sm:px-2.5 sm:py-1.5 text-center cursor-pointer transition-all duration-200 shrink-0 touch-manipulation min-h-[44px] sm:min-h-0 flex items-center justify-center ${isSelected ? "ring-2 ring-primary border-primary bg-primary/5" : "border-border hover:border-primary/40 active:bg-primary/10"}`}
+                        className={`px-2.5 py-2 sm:px-2.5 sm:py-2 text-center cursor-pointer transition-all duration-200 shrink-0 touch-manipulation min-h-[44px] sm:min-h-0 flex flex-col items-center justify-center gap-1 ${isSelected ? "ring-2 ring-primary border-primary bg-primary/5" : "border-border hover:border-primary/40 active:bg-primary/10"}`}
                         onClick={(e) => {
                           e.stopPropagation();
                           if (viewingPrintIndex === 0) {
@@ -920,7 +949,14 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
                           }
                         }}
                       >
+                        {/* Aspect ratio box above size label */}
+                        <div className="border border-primary/30 rounded px-1.5 py-0.5 bg-primary/5">
+                          <span className="text-[9px] sm:text-[8px] font-body font-semibold text-primary">{aspectRatio}</span>
+                        </div>
+                        {/* Size label */}
                         <p className="text-xs sm:text-xs font-display font-bold text-foreground leading-tight whitespace-nowrap">{size.label}</p>
+                        {/* Pricing */}
+                        <p className="text-[9px] sm:text-[8px] font-body text-muted-foreground leading-tight">from ${minPrice}</p>
                       </Card>
                     );
                   })}

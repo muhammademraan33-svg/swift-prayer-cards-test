@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useMemo } from "react";
+import { useState, useRef, useCallback, useMemo, useEffect } from "react";
 import { standardSizes, calcMetalPrice, calcAcrylicPrice, metalOptions } from "@/lib/pricing";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -92,6 +92,49 @@ function getAspectRatio(w: number, h: number): string {
 }
 
 // Helper to get minimum price for a size (using cheapest material - Lux Metal)
+/**
+ * Calculate initial zoom to show the full image within the frame (not cropped)
+ * With object-cover, at zoom 1 the image fills the container (may be cropped)
+ * To show full image, we need to zoom out so the image fits within the container
+ * 
+ * The zoom needed is the ratio that makes the image fit (object-contain behavior)
+ * while still allowing panning to see other parts
+ */
+function calculateInitialZoom(
+  imageWidth: number,
+  imageHeight: number,
+  containerWidth: number,
+  containerHeight: number
+): number {
+  if (imageWidth <= 0 || imageHeight <= 0 || containerWidth <= 0 || containerHeight <= 0) {
+    return 1;
+  }
+
+  const imageAspect = imageWidth / imageHeight;
+  const containerAspect = containerWidth / containerHeight;
+
+  // Calculate scale factors for both cover and contain
+  let coverScale: number; // Scale to fill container (object-cover)
+  let containScale: number; // Scale to fit container (object-contain)
+  
+  if (imageAspect > containerAspect) {
+    // Image is wider than container
+    coverScale = containerHeight / imageHeight; // Fills height, width extends
+    containScale = containerWidth / imageWidth; // Fits width, height fits
+  } else {
+    // Image is taller than container
+    coverScale = containerWidth / imageWidth; // Fills width, height extends
+    containScale = containerHeight / imageHeight; // Fits height, width fits
+  }
+  
+  // Initial zoom = containScale / coverScale
+  // This makes the image fit within container (like object-contain) while using object-cover CSS
+  const initialZoom = containScale / coverScale;
+  
+  // Clamp zoom between 0.1 and 1 (never zoom in beyond fill, never zoom out too much)
+  return Math.max(0.1, Math.min(1, initialZoom));
+}
+
 function getMinPrice(w: number, h: number): number {
   return calcMetalPrice(w, h, metalOptions[0]);
 }
@@ -105,6 +148,7 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
   const [pickerSlot, setPickerSlot] = useState<number | null>(null);
   const [viewingPrintIndex, setViewingPrintIndex] = useState<number>(0); // 0 = main print, 1+ = additional prints
   const mainImageInputRef = useRef<HTMLInputElement>(null);
+  const previewContainerRef = useRef<HTMLDivElement>(null);
 
   // Update transformations for the currently viewing print (defined early to be used in pointer handlers)
   const handleRotateCurrentPrint = useCallback((deg: number) => {
@@ -158,11 +202,57 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
     const dx = e.clientX - dragStart.current.x;
     const dy = e.clientY - dragStart.current.y;
     const currentZoom = viewingPrintIndex === 0 ? zoom : (additionalPrints[viewingPrintIndex - 1]?.zoom || 1);
-    const maxPan = (currentZoom - 1) * 50;
-    const newPanX = Math.max(-maxPan, Math.min(maxPan, dragStart.current.panX + dx));
-    const newPanY = Math.max(-maxPan, Math.min(maxPan, dragStart.current.panY + dy));
+    
+    // Get current print data for image dimensions
+    const currentData = viewingPrintIndex === 0 
+      ? { naturalWidth: imageNaturalWidth, naturalHeight: imageNaturalHeight }
+      : { 
+          naturalWidth: additionalPrints[viewingPrintIndex - 1]?.imageNaturalWidth || imageNaturalWidth,
+          naturalHeight: additionalPrints[viewingPrintIndex - 1]?.imageNaturalHeight || imageNaturalHeight
+        };
+    
+    // Get actual container dimensions
+    let containerWidth = 500; // Default fallback
+    let containerHeight = 500; // Default fallback
+    
+    if (previewContainerRef.current) {
+      const rect = previewContainerRef.current.getBoundingClientRect();
+      containerWidth = rect.width;
+      containerHeight = rect.height;
+    }
+    
+    // Calculate pan limits for object-contain in 200% wrapper
+    // The wrapper is 200% of container size, so we can pan up to 50% of container in each direction
+    // Transform: translate(panX/zoom, panY/zoom) - so panX needs to be multiplied by zoom
+    let maxPanX = Infinity;
+    let maxPanY = Infinity;
+    
+    if (containerWidth > 0 && containerHeight > 0) {
+      // Wrapper is 200% of container, so max pan is 50% of container (half the overflow)
+      // At zoom 1: max pan = containerSize / 2
+      // At zoom > 1: image is larger, so pan range increases
+      const basePanX = containerWidth / 2;
+      const basePanY = containerHeight / 2;
+      
+      // Scale by zoom (when zoomed, image is larger, so pan range increases)
+      // Transform divides by zoom, so we multiply by zoom to get pixel movement
+      maxPanX = basePanX * currentZoom;
+      maxPanY = basePanY * currentZoom;
+      
+      // Add buffer to ensure full range of movement
+      maxPanX *= 1.2;
+      maxPanY *= 1.2;
+    } else {
+      // Fallback: generous panning when dimensions aren't available
+      const generousPan = 500 * currentZoom;
+      maxPanX = generousPan;
+      maxPanY = generousPan;
+    }
+    
+    const newPanX = Math.max(-maxPanX, Math.min(maxPanX, dragStart.current.panX + dx));
+    const newPanY = Math.max(-maxPanY, Math.min(maxPanY, dragStart.current.panY + dy));
     handlePanCurrentPrint(newPanX, newPanY);
-  }, [zoom, viewingPrintIndex, additionalPrints, handlePanCurrentPrint]);
+  }, [zoom, viewingPrintIndex, additionalPrints, handlePanCurrentPrint, imageNaturalWidth, imageNaturalHeight]);
 
   const handlePointerUp = useCallback(() => {
     isDragging.current = false;
@@ -351,6 +441,10 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
   const currentPrintIsCustom = useMemo(() => {
     return currentPrintSizeIdx === CUSTOM_SIZE_IDX;
   }, [currentPrintSizeIdx]);
+
+  // With object-contain in 200% wrapper, zoom 1 shows full image
+  // No need to calculate initial zoom - start at 1 to show full image
+  // Users can zoom in from there if they want
 
   // Use current print size for calculations (for the currently viewing print)
   const isSquare = currentPrintSize.w === currentPrintSize.h;
@@ -649,6 +743,7 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
                 {/* Use exact aspect ratio from print size dimensions */}
                 {/* Key forces re-render when size changes - includes sizeIdx to ensure Print 1 updates */}
                 <div 
+                  ref={previewContainerRef}
                   key={`preview-container-${viewingPrintIndex}-${viewingPrintIndex === 0 ? sizeIdx : currentPrintSizeIdx}`}
                   className="relative w-full"
                   style={{ 
@@ -687,18 +782,25 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
                         
                         {/* Transformed image inside crop boundary - this is what will be printed */}
                         <div className="absolute inset-0 overflow-hidden">
-                          <img 
-                            src={currentPrintData.imageUrl || imageUrl} 
-                            alt="Print preview" 
-                            className="absolute inset-0 w-full h-full object-cover select-none pointer-events-none" 
-                            draggable={false}
-                            style={getImageTransformStyle({ 
-                              rotation: currentPrintData.rotation, 
-                              zoom: currentPrintData.zoom, 
-                              panX: currentPrintData.panX, 
-                              panY: currentPrintData.panY 
-                            })}
-                          />
+                          {/* Wrapper div that's larger than container to allow panning with object-contain */}
+                          <div
+                            className="absolute"
+                            style={{
+                              width: '200%',
+                              height: '200%',
+                              left: '50%',
+                              top: '50%',
+                              transform: `translate(-50%, -50%) scale(${currentPrintData.zoom}) translate(${currentPrintData.panX / currentPrintData.zoom}px, ${currentPrintData.panY / currentPrintData.zoom}px) rotate(${currentPrintData.rotation}deg)`,
+                              transformOrigin: 'center center',
+                            }}
+                          >
+                            <img 
+                              src={currentPrintData.imageUrl || imageUrl} 
+                              alt="Print preview" 
+                              className="w-full h-full object-contain select-none pointer-events-none" 
+                              draggable={false}
+                            />
+                </div>
                 </div>
                       </div>
                     </>
@@ -753,7 +855,7 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
                           <span className="sm:hidden">Replace</span>
                         </Button>
                       </label>
-                    </div>
+                  </div>
                   ) : null}
 
                   {/* Transform controls - MOBILE OPTIMIZED - Larger buttons */}
@@ -798,7 +900,7 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
                           )}
                         </div>
                       </div>
-                </div>
+                    </div>
                   )}
                   
                   {/* Drag instruction - MOBILE OPTIMIZED - Moved down if Replace button is visible */}
@@ -809,7 +911,7 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
                         <span className="hidden sm:inline">Drag to reposition</span>
                         <span className="sm:hidden">Drag</span>
                       </p>
-                    </div>
+                </div>
                   )}
                   {/* Drag instruction - Positioned below Replace button when it's visible */}
                   {viewingPrintIndex === 0 && onReplaceImage && (
@@ -850,17 +952,17 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
           {/* Quantity selector - Show at top when a small size is selected */}
           {!currentPrintIsCustom && currentPrintSizeIdx >= 0 && currentPrintSizeIdx < 10 && (
             <div className="flex items-center gap-2 bg-primary/5 border border-primary/20 rounded-lg px-3 py-2">
-              <Sparkles className="w-3.5 h-3.5 text-primary shrink-0" />
+                    <Sparkles className="w-3.5 h-3.5 text-primary shrink-0" />
               <span className="text-xs font-body text-foreground font-semibold whitespace-nowrap">{currentPrintSizeIdx < 4 ? "Great in sets!" : "Gallery wall?"}</span>
-              <span className="text-[10px] text-muted-foreground font-body hidden sm:inline">Qty:</span>
-              <div className="flex items-center gap-0.5 ml-auto">
-                {[1, 2, 3, 4, 5, 6].map((q) => (
-                  <button
-                    key={q}
-                    onClick={() => {
-                      onQuantity(q);
-                      if (q >= 2) {
-                        const current = [...additionalPrints];
+                    <span className="text-[10px] text-muted-foreground font-body hidden sm:inline">Qty:</span>
+                    <div className="flex items-center gap-0.5 ml-auto">
+                      {[1, 2, 3, 4, 5, 6].map((q) => (
+                        <button
+                          key={q}
+                          onClick={() => {
+                            onQuantity(q);
+                            if (q >= 2) {
+                              const current = [...additionalPrints];
                         // When increasing quantity, preserve existing prints and create new ones with their own size
                         while (current.length < q - 1) {
                           // New prints get the current main print size as initial value, but they will maintain it independently
@@ -880,18 +982,18 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
                           return ap;
                         });
                         onAdditionalPrints(ensured.slice(0, q - 1));
-                      } else {
-                        onAdditionalPrints([]);
-                      }
-                    }}
-                    className={`w-7 h-7 rounded-md text-xs font-body font-bold transition-all ${quantity === q ? "bg-gradient-gold text-primary-foreground shadow-sm" : "bg-secondary text-muted-foreground hover:bg-primary/10 hover:text-primary"}`}
-                  >
-                    {q}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
+                            } else {
+                              onAdditionalPrints([]);
+                            }
+                          }}
+                          className={`w-7 h-7 rounded-md text-xs font-body font-bold transition-all ${quantity === q ? "bg-gradient-gold text-primary-foreground shadow-sm" : "bg-secondary text-muted-foreground hover:bg-primary/10 hover:text-primary"}`}
+                        >
+                          {q}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
           {sizeGroups.map((group) => {
             const items = standardSizes.slice(group.range[0], group.range[1]);

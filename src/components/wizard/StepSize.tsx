@@ -314,17 +314,28 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
   // Get size for the currently viewing print (must be defined before use)
   const currentPrintSize = useMemo(() => {
     if (viewingPrintIndex === 0) {
-      return selected;
+      // For Print 1, use sizeIdx directly to get the exact size from standardSizes
+      // This ensures the aspect ratio is always correct
+      if (isCustom) {
+        return { label: `${customWidth}"×${customHeight}"`, w: customWidth, h: customHeight };
+      }
+      return standardSizes[sizeIdx] || { label: '8"×10"', w: 8, h: 10 };
     }
     const additionalPrint = additionalPrints[viewingPrintIndex - 1];
-    if (!additionalPrint) return selected;
+    if (!additionalPrint) {
+      // Fallback to main print size
+      if (isCustom) {
+        return { label: `${customWidth}"×${customHeight}"`, w: customWidth, h: customHeight };
+      }
+      return standardSizes[sizeIdx] || { label: '8"×10"', w: 8, h: 10 };
+    }
     // Use the print's own size if set, otherwise fall back to main print size
     const printSizeIdx = additionalPrint.sizeIdx !== undefined ? additionalPrint.sizeIdx : sizeIdx;
-    const isCustom = printSizeIdx === CUSTOM_SIZE_IDX;
-    return isCustom 
+    const printIsCustom = printSizeIdx === CUSTOM_SIZE_IDX;
+    return printIsCustom 
       ? { label: `${additionalPrint.customWidth}"×${additionalPrint.customHeight}"`, w: additionalPrint.customWidth, h: additionalPrint.customHeight }
-      : standardSizes[printSizeIdx] || selected;
-  }, [viewingPrintIndex, additionalPrints, selected, sizeIdx]);
+      : standardSizes[printSizeIdx] || (isCustom ? { label: `${customWidth}"×${customHeight}"`, w: customWidth, h: customHeight } : standardSizes[sizeIdx] || { label: '8"×10"', w: 8, h: 10 });
+  }, [viewingPrintIndex, additionalPrints, sizeIdx, isCustom, customWidth, customHeight]);
 
   // Get the sizeIdx for the currently viewing print (for groupHasSelection check)
   const currentPrintSizeIdx = useMemo(() => {
@@ -345,6 +356,9 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
   const isSquare = currentPrintSize.w === currentPrintSize.h;
   const displayW = orientation === "portrait" ? Math.min(currentPrintSize.w, currentPrintSize.h) : Math.max(currentPrintSize.w, currentPrintSize.h);
   const displayH = orientation === "portrait" ? Math.max(currentPrintSize.w, currentPrintSize.h) : Math.min(currentPrintSize.w, currentPrintSize.h);
+  
+  // Calculate aspect ratio for preview container (always use actual print dimensions, not orientation-adjusted)
+  const previewAspectRatio = currentPrintSize.w / currentPrintSize.h;
   
   // CRITICAL: Get Print 1's size separately (always use main print's size, not current viewing print)
   const print1Size = selected; // This is always the main print's size
@@ -633,17 +647,15 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
 
                 {/* Compact Preview with Ratio - No scrolling needed */}
                 {/* Use exact aspect ratio from print size dimensions */}
+                {/* Key forces re-render when size changes - includes sizeIdx to ensure Print 1 updates */}
                 <div 
-                  className="relative w-full bg-secondary/30 rounded-lg border-2 border-primary/30 overflow-hidden shadow-xl"
+                  key={`preview-container-${viewingPrintIndex}-${viewingPrintIndex === 0 ? sizeIdx : currentPrintSizeIdx}`}
+                  className="relative w-full"
                   style={{ 
-                    aspectRatio: `${currentPrintSize.w / currentPrintSize.h}`, // Exact ratio of the print itself
-                    maxWidth: "100%",
-                    maxHeight: "250px",
-                    minHeight: "200px",
-                    height: "auto",
-                    width: "100%"
+                    aspectRatio: `${currentPrintSize.w} / ${currentPrintSize.h}`, // Exact ratio of the print itself
                   }}
                 >
+                  <div className="relative w-full h-full bg-secondary/30 rounded-lg border-2 border-primary/30 overflow-hidden shadow-xl">
                   {(currentPrintData.imageUrl || imageUrl) ? (
                     <>
                       {/* Full background image (dimmed/blurred to show crop boundaries) - shows full image extent */}
@@ -818,12 +830,13 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
                         {viewingPrintIndex > 0 && <span className="text-xs text-muted-foreground ml-1">(Print {viewingPrintIndex + 1})</span>}
                       </span>
                       <div className="flex items-center gap-2 text-xs sm:text-[10px] text-muted-foreground font-body">
-                        <span className="font-semibold text-primary">Ratio: {displayW}:{displayH}</span>
+                        <span className="font-semibold text-primary">Ratio: {currentPrintSize.w}:{currentPrintSize.h}</span>
                         {effectiveDpi > 0 && !isLowQuality && (
                           <span className="text-primary">• {Math.round(effectiveDpi)} DPI</span>
                         )}
                       </div>
                     </div>
+                  </div>
                   </div>
                 </div>
                 

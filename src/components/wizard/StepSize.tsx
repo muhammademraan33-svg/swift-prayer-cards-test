@@ -92,49 +92,6 @@ function getAspectRatio(w: number, h: number): string {
 }
 
 // Helper to get minimum price for a size (using cheapest material - Lux Metal)
-/**
- * Calculate initial zoom to show the full image within the frame (not cropped)
- * With object-cover, at zoom 1 the image fills the container (may be cropped)
- * To show full image, we need to zoom out so the image fits within the container
- * 
- * The zoom needed is the ratio that makes the image fit (object-contain behavior)
- * while still allowing panning to see other parts
- */
-function calculateInitialZoom(
-  imageWidth: number,
-  imageHeight: number,
-  containerWidth: number,
-  containerHeight: number
-): number {
-  if (imageWidth <= 0 || imageHeight <= 0 || containerWidth <= 0 || containerHeight <= 0) {
-    return 1;
-  }
-
-  const imageAspect = imageWidth / imageHeight;
-  const containerAspect = containerWidth / containerHeight;
-
-  // Calculate scale factors for both cover and contain
-  let coverScale: number; // Scale to fill container (object-cover)
-  let containScale: number; // Scale to fit container (object-contain)
-  
-  if (imageAspect > containerAspect) {
-    // Image is wider than container
-    coverScale = containerHeight / imageHeight; // Fills height, width extends
-    containScale = containerWidth / imageWidth; // Fits width, height fits
-  } else {
-    // Image is taller than container
-    coverScale = containerWidth / imageWidth; // Fills width, height extends
-    containScale = containerHeight / imageHeight; // Fits height, width fits
-  }
-  
-  // Initial zoom = containScale / coverScale
-  // This makes the image fit within container (like object-contain) while using object-cover CSS
-  const initialZoom = containScale / coverScale;
-  
-  // Clamp zoom between 0.1 and 1 (never zoom in beyond fill, never zoom out too much)
-  return Math.max(0.1, Math.min(1, initialZoom));
-}
-
 function getMinPrice(w: number, h: number): number {
   return calcMetalPrice(w, h, metalOptions[0]);
 }
@@ -194,11 +151,12 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
     };
     isDragging.current = true;
     dragStart.current = { x: e.clientX, y: e.clientY, panX: currentPan.panX, panY: currentPan.panY };
-    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    e.currentTarget.setPointerCapture(e.pointerId);
   }, [panX, panY, viewingPrintIndex, additionalPrints]);
 
   const handlePointerMove = useCallback((e: React.PointerEvent) => {
     if (!isDragging.current) return;
+    e.preventDefault();
     const dx = e.clientX - dragStart.current.x;
     const dy = e.clientY - dragStart.current.y;
     const currentZoom = viewingPrintIndex === 0 ? zoom : (additionalPrints[viewingPrintIndex - 1]?.zoom || 1);
@@ -257,6 +215,21 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
   const handlePointerUp = useCallback(() => {
     isDragging.current = false;
   }, []);
+
+  const handleOrientationCurrentPrint = useCallback((ori: "landscape" | "portrait") => {
+    if (viewingPrintIndex === 0) {
+      setOrientation(ori);
+      return;
+    }
+    const updated = [...additionalPrints];
+    const targetIdx = viewingPrintIndex - 1;
+    // Ensure target print exists (important for Print 3-6 when tabs are visible before slot init).
+    while (updated.length <= targetIdx) {
+      updated.push(createAdditionalPrint(sizeIdx, customWidth, customHeight));
+    }
+    updated[targetIdx] = { ...updated[targetIdx], orientation: ori };
+    onAdditionalPrints(updated);
+  }, [viewingPrintIndex, additionalPrints, onAdditionalPrints, sizeIdx, customWidth, customHeight]);
 
   const getSlotImg = (idx: number) => {
     const ap = additionalPrints[idx];
@@ -334,6 +307,13 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
       onAdditionalPrints(updated);
     }
   };
+
+  useEffect(() => {
+    // If quantity is reduced, keep editing index valid.
+    if (viewingPrintIndex > quantity - 1) {
+      setViewingPrintIndex(0);
+    }
+  }, [quantity, viewingPrintIndex]);
 
   const handleReplaceMainImage = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -442,17 +422,17 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
     return currentPrintSizeIdx === CUSTOM_SIZE_IDX;
   }, [currentPrintSizeIdx]);
 
-  // With object-contain in 200% wrapper, zoom 1 shows full image
-  // No need to calculate initial zoom - start at 1 to show full image
-  // Users can zoom in from there if they want
+  const currentOrientation = viewingPrintIndex === 0
+    ? orientation
+    : (additionalPrints[viewingPrintIndex - 1]?.orientation || "landscape");
 
   // Use current print size for calculations (for the currently viewing print)
   const isSquare = currentPrintSize.w === currentPrintSize.h;
-  const displayW = orientation === "portrait" ? Math.min(currentPrintSize.w, currentPrintSize.h) : Math.max(currentPrintSize.w, currentPrintSize.h);
-  const displayH = orientation === "portrait" ? Math.max(currentPrintSize.w, currentPrintSize.h) : Math.min(currentPrintSize.w, currentPrintSize.h);
+  const displayW = currentOrientation === "portrait" ? Math.min(currentPrintSize.w, currentPrintSize.h) : Math.max(currentPrintSize.w, currentPrintSize.h);
+  const displayH = currentOrientation === "portrait" ? Math.max(currentPrintSize.w, currentPrintSize.h) : Math.min(currentPrintSize.w, currentPrintSize.h);
   
-  // Calculate aspect ratio for preview container (always use actual print dimensions, not orientation-adjusted)
-  const previewAspectRatio = currentPrintSize.w / currentPrintSize.h;
+  // Preview frame follows current orientation so users can switch portrait/landscape visually.
+  const previewAspectRatio = displayW / displayH;
   
   // CRITICAL: Get Print 1's size separately (always use main print's size, not current viewing print)
   const print1Size = selected; // This is always the main print's size
@@ -469,7 +449,7 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
 
   const displayLabel = isSquare
     ? currentPrintSize.label
-    : orientation === "portrait"
+    : currentOrientation === "portrait"
       ? `${Math.min(currentPrintSize.w, currentPrintSize.h)}"×${Math.max(currentPrintSize.w, currentPrintSize.h)}"`
       : `${Math.max(currentPrintSize.w, currentPrintSize.h)}"×${Math.min(currentPrintSize.w, currentPrintSize.h)}"`;
 
@@ -609,6 +589,49 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
                     </div>
                   </div>
 
+                  {/* Replace image for currently selected print in set mode */}
+                  <div className="flex items-center justify-between gap-2 bg-card border border-primary/20 rounded-lg px-3 py-2">
+                    <span className="text-xs font-body text-muted-foreground">
+                      {`Print ${viewingPrintIndex + 1}`}
+                    </span>
+                    {viewingPrintIndex === 0 ? (
+                      <label className="cursor-pointer">
+                        <input
+                          ref={mainImageInputRef}
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={handleReplaceMainImage}
+                        />
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-xs font-body font-semibold touch-manipulation"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            mainImageInputRef.current?.click();
+                          }}
+                          type="button"
+                        >
+                          <Upload className="w-3.5 h-3.5 mr-1.5" />
+                          Replace Image
+                        </Button>
+                      </label>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-xs font-body font-semibold touch-manipulation"
+                        onClick={() => setPickerSlot(viewingPrintIndex - 1)}
+                        type="button"
+                      >
+                        <Upload className="w-3.5 h-3.5 mr-1.5" />
+                        Replace Image
+                      </Button>
+                    )}
+                  </div>
+
                   {/* Room backdrop preview */}
                 <div className="relative w-full overflow-hidden rounded-lg border border-border" style={{ aspectRatio: containerAspect }}>
                   <img src={backdropImg} alt="Room backdrop" className="absolute inset-0 w-full h-full object-cover" />
@@ -625,7 +648,11 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
                             src={imageUrl} 
                             alt="Print 1" 
                             className="w-full h-full object-cover" 
-                            style={{ transform: `scale(${zoom}) translate(${panX / zoom}px, ${panY / zoom}px) rotate(${rotation}deg)`, transformOrigin: "center center" }} 
+                            style={{
+                              // Backdrop cards are an overview; cap transform so image never disappears in set view.
+                              transform: `scale(${Math.max(1, Math.min(zoom, 1.6))}) rotate(${rotation}deg)`,
+                              transformOrigin: "center center"
+                            }}
                           />
                         ) : (
                           <div className="w-full h-full bg-muted/30 flex items-center justify-center">
@@ -655,7 +682,11 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
                                 src={slotImg} 
                                 alt={`Print ${idx + 2}`} 
                                 className="w-full h-full object-cover" 
-                                style={{ transform: `scale(${printData.transform.zoom}) translate(${printData.transform.panX / printData.transform.zoom}px, ${printData.transform.panY / printData.transform.zoom}px) rotate(${printData.transform.rotation}deg)`, transformOrigin: "center center" }}
+                                style={{
+                                  // Backdrop cards are an overview; cap transform so image never disappears in set view.
+                                  transform: `scale(${Math.max(1, Math.min(printData.transform.zoom, 1.6))}) rotate(${printData.transform.rotation}deg)`,
+                                  transformOrigin: "center center"
+                                }}
                               />
                           ) : (
                             <div className="w-full h-full flex flex-col items-center justify-center gap-1 hover:bg-muted/70 transition-colors">
@@ -744,10 +775,11 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
                 {/* Key forces re-render when size changes - includes sizeIdx to ensure Print 1 updates */}
                 <div 
                   ref={previewContainerRef}
-                  key={`preview-container-${viewingPrintIndex}-${viewingPrintIndex === 0 ? sizeIdx : currentPrintSizeIdx}`}
+                  key={`preview-container-${viewingPrintIndex}-${viewingPrintIndex === 0 ? sizeIdx : currentPrintSizeIdx}-${currentOrientation}`}
                   className="relative w-full"
                   style={{ 
-                    aspectRatio: `${currentPrintSize.w} / ${currentPrintSize.h}`, // Exact ratio of the print itself
+                    // Respect orientation in the live editing frame.
+                    aspectRatio: `${displayW} / ${displayH}`,
                   }}
                 >
                   <div className="relative w-full h-full bg-secondary/30 rounded-lg border-2 border-primary/30 overflow-hidden shadow-xl">
@@ -772,10 +804,12 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
                       
                       {/* Crop boundary container - this is the actual printable area */}
                       <div
-                        className="relative w-full h-full cursor-grab active:cursor-grabbing z-20"
+                        className="relative w-full h-full cursor-grab active:cursor-grabbing touch-none z-20"
                   onPointerDown={handlePointerDown}
                   onPointerMove={handlePointerMove}
                   onPointerUp={handlePointerUp}
+                  onPointerCancel={handlePointerUp}
+                  onPointerLeave={handlePointerUp}
                 >
                         {/* Crop boundary border - clearly marks the printable area */}
                         <div className="absolute inset-0 border-2 border-primary shadow-[0_0_0_2px_rgba(0,0,0,0.3)] pointer-events-none z-30"></div>
@@ -949,6 +983,34 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
 
         {/* RIGHT: Size + Material selection */}
         <div className="space-y-4">
+          <div className="space-y-1">
+            <div className="flex rounded-lg overflow-hidden border border-border">
+              <button
+                onClick={() => !isSquare && handleOrientationCurrentPrint("landscape")}
+                className={`flex-1 h-10 flex items-center justify-center gap-2 text-xs font-body transition-colors touch-manipulation ${currentOrientation === "landscape" ? "bg-primary/20 text-primary font-semibold" : "text-muted-foreground hover:text-foreground"} ${isSquare ? "opacity-60 cursor-not-allowed" : ""}`}
+                type="button"
+                disabled={isSquare}
+              >
+                <RectangleHorizontal className="w-4 h-4" />
+                Landscape
+              </button>
+              <button
+                onClick={() => !isSquare && handleOrientationCurrentPrint("portrait")}
+                className={`flex-1 h-10 flex items-center justify-center gap-2 text-xs font-body transition-colors touch-manipulation ${currentOrientation === "portrait" ? "bg-primary/20 text-primary font-semibold" : "text-muted-foreground hover:text-foreground"} ${isSquare ? "opacity-60 cursor-not-allowed" : ""}`}
+                type="button"
+                disabled={isSquare}
+              >
+                <RectangleVertical className="w-4 h-4" />
+                Portrait
+              </button>
+            </div>
+            {isSquare && (
+              <p className="text-[11px] text-muted-foreground font-body">
+                Orientation is the same for square sizes.
+              </p>
+            )}
+          </div>
+
           {/* Quantity selector - Show at top when a small size is selected */}
           {!currentPrintIsCustom && currentPrintSizeIdx >= 0 && currentPrintSizeIdx < 10 && (
             <div className="flex items-center gap-2 bg-primary/5 border border-primary/20 rounded-lg px-3 py-2">
@@ -960,6 +1022,9 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
                         <button
                           key={q}
                           onClick={() => {
+                            // Keep focus on Print 1 when quantity changes to avoid landing
+                            // on an empty additional print and appearing like the main image disappeared.
+                            setViewingPrintIndex(0);
                             onQuantity(q);
                             if (q >= 2) {
                               const current = [...additionalPrints];

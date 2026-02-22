@@ -524,8 +524,10 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
                     })
                   ];
 
-              // Find the maximum dimension to scale all prints proportionally
-              const maxDimension = Math.max(...printSizes.map(p => Math.max(p.w, p.h)));
+              // FIXED: Scale based on actual display WIDTH to maintain proper relative sizes
+              // This ensures 8x12 appears larger than 8x10, etc.
+              // Find the maximum WIDTH (not max dimension) to scale all prints proportionally
+              const maxWidth = Math.max(...printSizes.map(p => p.w));
               
               // Calculate scale factor to fit all prints (max 85% of container width)
               const maxGroupWidth = 85; // max % width the group can occupy
@@ -533,17 +535,20 @@ const StepSize = ({ imageUrl, sizeIdx, customWidth, customHeight, quantity, mate
               const totalGaps = (quantity - 1) * gapPct;
               const availableWidth = maxGroupWidth - totalGaps;
               
-              // Scale based on the largest print, but ensure all fit
-              const baseScale = (availableWidth / quantity) / 100;
-              const scaleFactor = Math.min(baseScale, 0.25); // Cap at 25% per print max
+              // Scale based on the largest print's WIDTH, ensuring all fit
+              // Use width-based scaling so wider prints appear wider
+              const baseScale = availableWidth / 100;
               
-              // Calculate each print's width based on its actual size relative to the largest
+              // Calculate each print's width based on its actual WIDTH relative to the largest width
+              // This ensures proper visual scaling: 8x12 (w=12) will be larger than 8x10 (w=10)
               const printWidths = printSizes.map(print => {
-                const relativeSize = Math.max(print.w, print.h) / maxDimension;
-                return Math.max(relativeSize * scaleFactor * 100, 8); // Min 8% width
+                const relativeWidth = print.w / maxWidth;
+                // Scale proportionally: larger width = larger display width
+                const scaledWidth = relativeWidth * baseScale * 100;
+                return Math.max(scaledWidth, 8); // Min 8% width to ensure visibility
               });
               
-              // Normalize widths to fit within available space
+              // Normalize widths to fit within available space while maintaining relative proportions
               const totalWidth = printWidths.reduce((sum, w) => sum + w, 0);
               const normalizedWidths = totalWidth > availableWidth 
                 ? printWidths.map(w => (w / totalWidth) * availableWidth)
